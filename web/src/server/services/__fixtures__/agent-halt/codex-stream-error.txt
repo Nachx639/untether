@@ -1,0 +1,8 @@
+•  Explored
+  └  Read lanzar.ts
+
+■ stream disconnected before completion: error sending request for url (https://chatgpt.com/backend-api/codex/responses)
+
+› Ask Codex to do anything
+
+  GPT-6-Astra xhigh · ~/Projects/.untether-worktrees/bakery/seguridad-llave-secretos-y-conexiones

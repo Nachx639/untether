@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "quickStartCommands": [
+    {
+      "name": "✨ claude",
+      "command": "claude"
+    },
+    {
+      "command": "zsh"
+    }
+  ],
+  "repositoryBasePath": "~/Projects",
+  "preferences": {
+    "notifications": {
+      "enabled": true,
+      "sessionStart": false,
+      "sessionExit": false,
+      "commandCompletion": false,
+      "commandError": true,
+      "bell": false,
+      "soundEnabled": true,
+      "vibrationEnabled": false
+    }
+  },
+  "shieldNewSessions": true,
+  "autoUpdateInstalledApp": true,
+  "autoApprove": true
+}

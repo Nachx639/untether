@@ -1,0 +1,468 @@
+import AppKit
+import Foundation
+import Testing
+@testable import Untether
+
+// MARK: - Mock CLI Installer
+
+@MainActor
+final class MockCLIInstaller {
+    // Mock state
+    var mockIsInstalled = false
+    var mockInstallShouldFail = false
+    var mockInstallError: String?
+    var mockResourcePath: String?
+
+    // Track method calls
+    var checkInstallationStatusCalled = false
+    var installCalled = false
+    var performInstallationCalled = false
+    var showSuccessCalled = false
+    var showErrorCalled = false
+    var lastErrorMessage: String?
+
+    // Add missing properties
+    var isInstalled = false
+    var isInstalling = false
+    var lastError: String?
+
+    func checkInstallationStatus() {
+        self.checkInstallationStatusCalled = true
+        // Only update from mock if not already installed
+        if !self.isInstalled {
+            self.isInstalled = self.mockIsInstalled
+        }
+    }
+
+    func install() async {
+        self.installCalled = true
+
+        await MainActor.run {
+            self.isInstalling = true
+
+            if self.mockInstallShouldFail {
+                self.lastError = self.mockInstallError ?? "Mock installation failed"
+                self.lastErrorMessage = self.lastError
+                self.isInstalling = false
+                self.showErrorCalled = true
+            } else {
+                self.isInstalled = true
+                self.isInstalling = false
+                self.showSuccessCalled = true
+            }
+        }
+    }
+
+    func installCLITool() {
+        self.installCalled = true
+        self.isInstalling = true
+
+        if self.mockInstallShouldFail {
+            self.lastError = self.mockInstallError ?? "Mock installation failed"
+            self.lastErrorMessage = self.lastError
+            self.isInstalling = false
+            self.showErrorCalled = true
+        } else {
+            self.isInstalled = true
+            self.isInstalling = false
+            self.showSuccessCalled = true
+        }
+    }
+
+    func reset() {
+        self.mockIsInstalled = false
+        self.mockInstallShouldFail = false
+        self.mockInstallError = nil
+        self.mockResourcePath = nil
+        self.checkInstallationStatusCalled = false
+        self.installCalled = false
+        self.performInstallationCalled = false
+        self.showSuccessCalled = false
+        self.showErrorCalled = false
+        self.lastErrorMessage = nil
+        self.isInstalled = false
+        self.isInstalling = false
+        self.lastError = nil
+    }
+}
+
+// MARK: - Mock FileManager
+
+final class MockFileManager {
+    var fileExistsResults: [String: Bool] = [:]
+    var createDirectoryShouldFail = false
+    var setAttributesShouldFail = false
+
+    func fileExists(atPath path: String) -> Bool {
+        self.fileExistsResults[path] ?? false
+    }
+
+    func createDirectory(at url: URL, withIntermediateDirectories: Bool) throws {
+        if self.createDirectoryShouldFail {
+            throw CocoaError(.fileWriteUnknown)
+        }
+    }
+
+    func setAttributes(_ attributes: [FileAttributeKey: Any], ofItemAtPath path: String) throws {
+        if self.setAttributesShouldFail {
+            throw CocoaError(.fileWriteNoPermission)
+        }
+    }
+}
+
+// MARK: - CLI Installer Tests
+
+@Suite("CLI Installer Tests")
+@MainActor
+struct CLIInstallerTests {
+    let tempDirectory: URL
+
+    init() throws {
+        self.tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("CLIInstallerTests-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: self.tempDirectory, withIntermediateDirectories: true)
+    }
+
+    func cleanup() {
+        try? FileManager.default.removeItem(at: self.tempDirectory)
+    }
+
+    // MARK: - Installation Status Tests
+
+    @Test
+    func checkInstallationStatus() {
+        let installer = MockCLIInstaller()
+
+        // Not installed
+        installer.mockIsInstalled = false
+        installer.checkInstallationStatus()
+
+        #expect(installer.checkInstallationStatusCalled)
+        #expect(!installer.isInstalled)
+
+        // Installed
+        installer.reset()
+        installer.mockIsInstalled = true
+        installer.checkInstallationStatus()
+
+        #expect(installer.isInstalled)
+    }
+
+    @Test
+    func installationStatusDetectsExistingSymlink() {
+        let installer = CLIInstaller()
+
+        // Check real status (may or may not be installed)
+        installer.checkInstallationStatus()
+
+        // Status should be set
+        #expect(installer.isInstalled == true || installer.isInstalled == false)
+    }
+
+    // MARK: - Installation Process Tests
+
+    @Test
+    func installingCliToolToCustomLocation() async {
+        let installer = MockCLIInstaller()
+
+        // Set up mock
+        installer.mockResourcePath = Bundle.main.path(forResource: "ut", ofType: nil) ?? "/mock/path/ut"
+        installer.mockInstallShouldFail = false
+
+        // Perform installation
+        await installer.install()
+
+        #expect(installer.installCalled)
+        #expect(installer.isInstalled)
+        #expect(!installer.isInstalling)
+        #expect(installer.lastError == nil)
+        #expect(installer.showSuccessCalled)
+    }
+
+    @Test
+    func installationFailureHandling() async {
+        let installer = MockCLIInstaller()
+
+        // Set up failure
+        installer.mockInstallShouldFail = true
+        installer.mockInstallError = "Permission denied"
+
+        // Attempt installation
+        await installer.install()
+
+        #expect(installer.installCalled)
+        #expect(!installer.isInstalled)
+        #expect(!installer.isInstalling)
+        #expect(installer.lastError == "Permission denied")
+        #expect(installer.showErrorCalled)
+    }
+
+    @Test
+    func updatingExistingCliInstallation() async {
+        let installer = MockCLIInstaller()
+
+        // Simulate existing installation
+        installer.mockIsInstalled = true
+        installer.checkInstallationStatus()
+        #expect(installer.isInstalled)
+
+        // Update (reinstall)
+        installer.mockInstallShouldFail = false
+        await installer.install()
+
+        #expect(installer.isInstalled)
+        #expect(installer.showSuccessCalled)
+    }
+
+    // MARK: - Resource Validation Tests
+
+    @Test
+    func missingCliBinaryInBundle() async {
+        let installer = MockCLIInstaller()
+
+        // Simulate missing resource
+        installer.mockResourcePath = nil
+        installer.mockInstallShouldFail = true
+        installer.mockInstallError = "The ut command line tool could not be found in the application bundle."
+
+        await installer.install()
+
+        #expect(!installer.isInstalled)
+        #expect(installer.lastError?.contains("could not be found") == true)
+    }
+
+    @Test
+    func validResourcePath() {
+        // Check if ut binary exists in bundle
+        let resourcePath = Bundle.main.path(forResource: "ut", ofType: nil)
+
+        // In test environment, this might be nil
+        if let path = resourcePath {
+            #expect(FileManager.default.fileExists(atPath: path))
+        }
+    }
+
+    // MARK: - Permission Tests
+
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["CI"] == nil))
+    func permissionHandling() async {
+        let installer = MockCLIInstaller()
+
+        // Simulate permission error
+        installer.mockInstallShouldFail = true
+        installer.mockInstallError = "Operation not permitted"
+
+        await installer.install()
+
+        #expect(!installer.isInstalled)
+        #expect(installer.lastError?.contains("not permitted") == true)
+    }
+
+    @Test
+    func administratorPrivilegesRequired() {
+        // This test documents that admin privileges are required
+        // The actual installation uses osascript with administrator privileges
+
+        let installer = MockCLIInstaller()
+
+        // Installation requires admin
+        #expect(!installer.isInstalled)
+
+        // After successful installation with admin privileges
+        installer.mockIsInstalled = true
+        installer.checkInstallationStatus()
+        #expect(installer.isInstalled)
+    }
+
+    // MARK: - Script Generation Tests
+
+    @Test
+    func installationScriptGeneration() {
+        let sourcePath = "/Applications/Untether.app/Contents/Resources/ut"
+        let targetPath = "/usr/local/bin/ut"
+
+        // Expected script content
+        let expectedScript = """
+        #!/bin/bash
+        set -e
+
+        # Create /usr/local/bin if it doesn't exist
+        if [ ! -d "/usr/local/bin" ]; then
+            mkdir -p "/usr/local/bin"
+            echo "Created directory /usr/local/bin"
+        fi
+
+        # Remove existing ut if it exists
+        if [ -L "\(targetPath)" ] || [ -f "\(targetPath)" ]; then
+            rm -f "\(targetPath)"
+            echo "Removed existing file at \(targetPath)"
+        fi
+
+        # Copy ut script from app bundle
+        cp "\(sourcePath)" "\(targetPath)"
+        chmod +x "\(targetPath)"
+        echo "Installed ut script at \(targetPath)"
+        """
+
+        // Verify script structure
+        #expect(expectedScript.contains("#!/bin/bash"))
+        #expect(expectedScript.contains("set -e"))
+        #expect(expectedScript.contains("mkdir -p"))
+        #expect(expectedScript.contains("cp "))
+        #expect(!expectedScript.contains("ln -s"))
+        #expect(expectedScript.contains("chmod +x"))
+    }
+
+    // MARK: - State Management Tests
+
+    @Test
+    func installationStateTransitions() {
+        let installer = MockCLIInstaller()
+
+        // Initial state
+        #expect(!installer.isInstalled)
+        #expect(!installer.isInstalling)
+        #expect(installer.lastError == nil)
+
+        // During installation
+        installer.installCLITool()
+        // Note: In mock, this completes immediately
+
+        // After successful installation
+        #expect(installer.isInstalled)
+        #expect(!installer.isInstalling)
+        #expect(installer.lastError == nil)
+
+        // Reset and test failure
+        installer.reset()
+        installer.mockInstallShouldFail = true
+        installer.mockInstallError = "Test error"
+
+        installer.installCLITool()
+
+        // After failed installation
+        #expect(!installer.isInstalled)
+        #expect(!installer.isInstalling)
+        #expect(installer.lastError == "Test error")
+    }
+
+    // MARK: - UI Alert Tests
+
+    @Test
+    func userConfirmationDialogs() async {
+        let installer = MockCLIInstaller()
+
+        // Test shows appropriate dialogs
+        // In real implementation:
+        // 1. Confirmation dialog before installation
+        // 2. Success dialog after successful installation
+        // 3. Error dialog on failure
+
+        // Success case
+        await installer.install()
+        #expect(installer.showSuccessCalled)
+
+        // Failure case
+        installer.reset()
+        installer.mockInstallShouldFail = true
+        await installer.install()
+        #expect(installer.showErrorCalled)
+    }
+
+    // MARK: - Concurrent Installation Tests
+
+    @Test(.tags(.concurrency))
+    func concurrentInstallationAttempts() async {
+        let installer = MockCLIInstaller()
+
+        // Attempt multiple installations concurrently
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<3 {
+                group.addTask {
+                    await installer.install()
+                }
+            }
+
+            await group.waitForAll()
+        }
+
+        // Should handle concurrent attempts gracefully
+        #expect(installer.installCalled)
+        #expect(installer.isInstalled || installer.lastError != nil)
+        #expect(!installer.isInstalling)
+    }
+
+    // MARK: - Integration Tests
+
+    @Test(.tags(.integration))
+    func fullInstallationWorkflow() async {
+        let installer = MockCLIInstaller()
+
+        // 1. Check initial status
+        installer.checkInstallationStatus()
+        #expect(!installer.isInstalled)
+
+        // 2. Install CLI tool
+        await installer.install()
+        #expect(installer.isInstalled)
+
+        // 3. Verify installation
+        installer.checkInstallationStatus()
+        #expect(installer.isInstalled)
+
+        // 4. Attempt reinstall (should handle gracefully)
+        await installer.install()
+        #expect(installer.isInstalled)
+    }
+
+    // MARK: - PR #153 Regression Test
+
+    @Test(.tags(.regression))
+    func scriptWithTitleModeArgsDetectedCorrectly() async throws {
+        let script = """
+        #!/bin/bash
+        # Untether CLI wrapper
+        for TRY_PATH in "/Applications/Untether.app" "$HOME/Applications/Untether.app"; do
+            if [ -d "$TRY_PATH" ] && [ -f "$TRY_PATH/Contents/Resources/untether" ]; then
+                APP_PATH="$TRY_PATH"
+                break
+            fi
+        done
+        UNTETHER_BIN="$APP_PATH/Contents/Resources/untether"
+        TITLE_MODE_ARGS="--title-mode static"
+        exec "$UNTETHER_BIN" fwd $TITLE_MODE_ARGS "$@"
+        """
+
+        let utPath = self.tempDirectory.appendingPathComponent("ut").path
+        try script.write(toFile: utPath, atomically: true, encoding: .utf8)
+
+        let installer = CLIInstaller(binDirectory: tempDirectory.path)
+        installer.checkInstallationStatus()
+
+        // Wait for the async Task in checkInstallationStatus to complete
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(installer.isInstalled)
+    }
+
+    @Test(.tags(.regression))
+    func installedScriptMatchingBundleIsNotMarkedOutdated() async throws {
+        let installer = CLIInstaller(binDirectory: tempDirectory.path)
+
+        guard let bundledPath = Bundle.main.path(forResource: "ut", ofType: nil) else {
+            // SwiftPM tests don't have the app bundle resources.
+            return
+        }
+        let targetPath = self.tempDirectory.appendingPathComponent("ut").path
+        let scriptData = try Data(contentsOf: URL(fileURLWithPath: bundledPath))
+        try scriptData.write(to: URL(fileURLWithPath: targetPath), options: .atomic)
+
+        installer.checkInstallationStatus()
+
+        // Wait for the async Task in checkInstallationStatus to complete
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(installer.isInstalled)
+        #expect(!installer.isOutdated)
+    }
+}

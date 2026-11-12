@@ -1,0 +1,369 @@
+/* Neón futurista: bevelled plates of dark glass that open with an orange tab and close with a
+ * rail and a tick, keys with an amber bracket, an amber frame for what is read and typed, an
+ * orange one for what is selected, on the shared paint hooks only. Values and the bevels' clips
+ * live in neon-futuristic.css. */
+
+/* Bars: a graphite plate with a fillet under it. */
+html[data-look="neon-futuristic"] .ut-surface--bar {
+  background-color: var(--ut-session-bar);
+  background-image: var(--ut-plate-bar);
+  box-shadow: var(--ut-bar-relief);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* The app's top bars: the orange tab at the start of the upper edge, and at the end of the
+   lower one an amber rail over its own light. */
+html[data-look="neon-futuristic"] .ut-surface--bar:where(.ut-home-header),
+html[data-look="neon-futuristic"] .ut-surface--bar:where(.ut-phone-header),
+html[data-look="neon-futuristic"] .ut-surface--bar:where(.ut-sidebar-header),
+html[data-look="neon-futuristic"] .ut-surface--bar:where(.session-header-container) {
+  background-image: var(--ut-tab-hot), var(--ut-tab-cold), var(--ut-rail-glow), var(--ut-plate-bar);
+  background-size: min(116px, 24%) 2px, min(180px, 30%) 2px, min(180px, 30%) 12px, 100% 100%;
+  background-position: left top, right bottom, right bottom, 0 0;
+  background-repeat: no-repeat;
+  box-shadow: var(--ut-bar-relief-top);
+}
+
+/* Plates that may open something stay whole: a straight frame, the orange tab and the rail. */
+html[data-look="neon-futuristic"] .ut-group,
+html[data-look="neon-futuristic"] .ut-surface--panel,
+html[data-look="neon-futuristic"] .ut-surface--detail {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-tab-hot), var(--ut-rail), var(--ut-tick-hot), var(--ut-plate);
+  background-size: 72px 2px, 48px 2px, 8px 8px, 100% 100%;
+  background-position: left top, right 8px bottom, right bottom, 0 0;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  border-color: var(--ut-plate-edge);
+  box-shadow: var(--ut-surface-edge);
+}
+
+/* Bevelled plates: the frame, the stroke along both cuts, the tab, the rail and its tick. */
+html[data-look="neon-futuristic"] .ut-card,
+html[data-look="neon-futuristic"] .ut-surface--request,
+html[data-look="neon-futuristic"] .ut-surface--notice {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-chamfer), var(--ut-chamfer), var(--ut-tab-hot), var(--ut-rail), var(--ut-tick-hot), var(--ut-plate);
+  background-size: 18px 18px, 18px 18px, 92px 2px, 48px 2px, 8px 8px, 100% 100%;
+  background-position: right top, left bottom, left top, right 8px bottom, right bottom, 0 0;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  border-color: var(--ut-plate-edge);
+  box-shadow: var(--ut-surface-edge);
+}
+
+html[data-look="neon-futuristic"] .ut-surface--request {
+  box-shadow: var(--ut-needs-item-shadow);
+}
+
+/* The failure: a warm plate with a salmon tab; the words say it too. */
+html[data-look="neon-futuristic"] .ut-surface--detail {
+  background-color: var(--ut-detail-fill);
+  background-image: var(--ut-tab-danger), var(--ut-rail), var(--ut-tick-hot), var(--ut-plate-rose);
+  border-color: var(--ut-detail-edge);
+}
+
+html[data-look="neon-futuristic"] .ut-surface--failed {
+  box-shadow: inset 3px 0 0 var(--ut-danger-text), var(--ut-surface-edge);
+}
+
+/* The shield notice: the same warm plate, bevelled. It is also a detail, so it follows it. */
+html[data-look="neon-futuristic"] .ut-surface--notice {
+  background-color: var(--ut-banner-bg);
+  background-image: var(--ut-chamfer-rose), var(--ut-chamfer-rose), var(--ut-tab-hot), var(--ut-rail), var(--ut-tick-hot), var(--ut-plate-rose);
+  background-size: 18px 18px, 18px 18px, 92px 2px, 48px 2px, 8px 8px, 100% 100%;
+  background-position: right top, left bottom, left top, right 8px bottom, right bottom, 0 0;
+  border: var(--ut-banner-border);
+  box-shadow: var(--ut-banner-relief);
+}
+
+/* Floating pieces: the top bar's plate, the orange tab above and the amber rail below. */
+html[data-look="neon-futuristic"] .ut-surface--floating,
+html[data-look="neon-futuristic"] .ut-dialog,
+html[data-look="neon-futuristic"] .ut-menu,
+html[data-look="neon-futuristic"] .ut-toast,
+html[data-look="neon-futuristic"] .ut-tooltip {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-tab-hot), var(--ut-tab-cold), var(--ut-plate-bar);
+  background-size: min(72px, 24%) 2px, min(120px, 30%) 2px, 100% 100%;
+  background-position: left top, right bottom, 0 0;
+  background-repeat: no-repeat;
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Keys: a dark plate with a bronze frame, bevelled, an amber bracket in the lower right corner. */
+html[data-look="neon-futuristic"] .ut-surface--action,
+html[data-look="neon-futuristic"] .ut-surface--request-action,
+html[data-look="neon-futuristic"] .ut-btn--secondary,
+html[data-look="neon-futuristic"] .ut-btn--danger {
+  background-color: var(--ut-piece-control-fill);
+  background-image: var(--ut-chamfer-key), var(--ut-chamfer-key), var(--ut-tab-cold), var(--ut-tab-cold), var(--ut-plate-key);
+  background-size: 10px 10px, 10px 10px, 8px 1px, 1px 8px, 100% 100%;
+  background-position: right top, left bottom, right 3px bottom 3px, right 3px bottom 3px, 0 0;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-control-relief);
+}
+
+html[data-look="neon-futuristic"] .ut-surface--request-action,
+html[data-look="neon-futuristic"] .ut-surface--action {
+  border: 1px solid var(--ut-border-strong);
+  border-radius: var(--ut-action-radius);
+}
+
+html[data-look="neon-futuristic"] .ut-chip {
+  background-color: var(--ut-piece-control-fill);
+  border-color: var(--ut-border-strong);
+  color: var(--ut-text);
+}
+
+/* Embedded controls (tabs, toolbar toggles): flat, a bronze frame. */
+html[data-look="neon-futuristic"] .ut-surface--control {
+  background-color: var(--ut-piece-control-fill);
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-piece-control);
+}
+
+/* The destructive key: salmon ink, frame and strokes. */
+html[data-look="neon-futuristic"] .ut-btn--danger,
+html[data-look="neon-futuristic"] .ut-surface--action:where(.ut-surface--danger) {
+  background-image: var(--ut-chamfer-danger), var(--ut-chamfer-danger), var(--ut-tab-danger), var(--ut-tab-danger), var(--ut-plate-key);
+  color: var(--ut-danger-text);
+  border-color: var(--ut-danger-text);
+}
+
+/* A failure said in words (a task's status line) only takes the salmon ink. */
+html[data-look="neon-futuristic"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+html[data-look="neon-futuristic"] .ut-btn--danger-ghost {
+  color: var(--ut-danger-text);
+}
+
+/* Labels: monospace-sized plates with a frame; the failure's is salmon. */
+html[data-look="neon-futuristic"] .ut-surface--badge,
+html[data-look="neon-futuristic"] .ut-badge,
+html[data-look="neon-futuristic"] .ut-kbd {
+  background-color: var(--ut-badge-fill);
+  color: var(--ut-text-muted);
+  box-shadow: var(--ut-segment-idle-shadow);
+}
+
+html[data-look="neon-futuristic"] .ut-badge--danger {
+  background-color: var(--ut-danger-fill);
+  color: var(--ut-danger-text);
+  box-shadow: inset 0 0 0 1px var(--ut-danger-text);
+}
+
+/* Fields: a clean dark ground, nothing under what is typed. */
+html[data-look="neon-futuristic"] .ut-surface--inset,
+html[data-look="neon-futuristic"] .ut-field,
+html[data-look="neon-futuristic"] .ut-select {
+  background-color: var(--ut-field-bg);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-field-relief);
+}
+
+html[data-look="neon-futuristic"] .ut-segmented {
+  background-color: var(--ut-field-bg);
+  border-color: var(--ut-border-strong);
+}
+
+/* The «what to do» box: an amber frame with painted bevels, a long tab above and a rail below. */
+html[data-look="neon-futuristic"] .ut-surface--well {
+  background-color: var(--ut-composer-bg);
+  background-image: var(--ut-well-corner-top), var(--ut-well-corner-bottom), var(--ut-tab-hot), var(--ut-rail), var(--ut-well-edge), var(--ut-well-edge), var(--ut-well-edge), var(--ut-well-edge);
+  background-size: 18px 18px, 18px 18px, min(180px, 40%) 2px, min(140px, 30%) 2px, calc(100% - 18px) 1px, 1px calc(100% - 18px), calc(100% - 18px) 1px, 1px calc(100% - 18px);
+  background-position: right top, left bottom, left top, right bottom, left top, right bottom, right bottom, left top;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  border-color: var(--ut-composer-border);
+  box-shadow: var(--ut-composer-relief);
+}
+
+/* Small ancillary controls stay flat inside their owner. */
+html[data-look="neon-futuristic"] .ut-surface--compact,
+html[data-look="neon-futuristic"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-look="neon-futuristic"] .ut-switch {
+  box-shadow: inset 0 0 0 1px var(--ut-border-strong);
+}
+
+/* The record: deep black, an amber rail, bevelled, 4 px scanlines under its lines. It is also a
+   well, so it follows it. */
+html[data-look="neon-futuristic"] .ut-surface--record {
+  background-color: var(--ut-record-bg);
+  background-image: var(--ut-chamfer-cold), var(--ut-chamfer-cold), var(--ut-scanlines);
+  background-size: 18px 18px, 18px 18px, auto;
+  background-position: right top, left bottom, 0 0;
+  background-repeat: no-repeat, no-repeat, repeat;
+  background-origin: border-box;
+  border-color: var(--ut-record-edge);
+  box-shadow: var(--ut-record-relief);
+}
+
+/* Selection: a dark amber plate with an orange frame and line, and amber ink. Never color alone. */
+html[data-look="neon-futuristic"] .ut-surface--selected,
+html[data-look="neon-futuristic"] .ut-surface--control:where([aria-selected="true"]),
+html[data-look="neon-futuristic"] .ut-surface--control:where([aria-current="page"]),
+html[data-look="neon-futuristic"] .ut-surface--control:where([aria-pressed="true"]),
+html[data-look="neon-futuristic"] .ut-surface--panel:where([aria-pressed="true"]),
+html[data-look="neon-futuristic"] .ut-surface--badge:where([aria-pressed="true"]),
+html[data-look="neon-futuristic"] .ut-icon-btn:where([aria-pressed="true"]) {
+  background-color: var(--ut-segment-selected-bg);
+  color: var(--ut-accent-light);
+  border-color: var(--ut-accent);
+  box-shadow: var(--ut-selected-relief);
+}
+
+/* The selected row: the bevelled amber plate with its orange frame, rail and tick. */
+html[data-look="neon-futuristic"] .ut-surface--selected-row {
+  background-color: var(--ut-surface-selected);
+  background-image: var(--ut-chamfer-hot), var(--ut-chamfer-hot), var(--ut-tab-cold), var(--ut-tick-hot), var(--ut-plate-selected);
+  background-size: 18px 18px, 18px 18px, 48px 2px, 8px 8px, 100% 100%;
+  background-position: right top, left bottom, right 8px bottom, right bottom, 0 0;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  box-shadow: var(--ut-row-selected-shadow);
+}
+
+/* Claude / Codex: two bevelled keys; the chosen one has the orange frame, line and ink. */
+html[data-look="neon-futuristic"] .ut-surface--segment {
+  background-color: var(--ut-piece-control-fill);
+  background-image: var(--ut-chamfer-key), var(--ut-chamfer-key), var(--ut-plate-key);
+  background-size: 10px 10px, 10px 10px, 100% 100%;
+  background-position: right top, left bottom, 0 0;
+  background-repeat: no-repeat;
+  color: var(--ut-text);
+  box-shadow: var(--ut-segment-idle-shadow);
+}
+
+html[data-look="neon-futuristic"] .ut-surface--segment:where(.selected) {
+  background-color: var(--ut-segment-selected-bg);
+  background-image: var(--ut-chamfer-hot), var(--ut-chamfer-hot), none;
+  color: var(--ut-segment-selected-ink);
+  box-shadow: var(--ut-segment-selected-shadow);
+}
+
+/* The main action: orange light with dark ink, bevelled, a paler lip along its lower right
+   edge. It follows the neutral paint so it is never erased. */
+html[data-look="neon-futuristic"] .ut-surface--primary,
+html[data-look="neon-futuristic"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: var(--ut-plate-primary);
+  background-size: 100% 100%;
+  background-position: 0 0;
+  color: var(--ut-text-on-accent);
+  border-color: var(--ut-accent-light);
+  box-shadow: var(--ut-primary-relief);
+}
+
+/* A request's and the notice's button are quiet keys in the recipe, even where the app marks
+   them as the row's main action. */
+html[data-look="neon-futuristic"] .ut-surface--request-action {
+  background-color: var(--ut-needs-act-bg);
+  background-image: var(--ut-chamfer-key), var(--ut-chamfer-key), var(--ut-tab-cold), var(--ut-tab-cold), var(--ut-plate-key);
+  background-size: 10px 10px, 10px 10px, 8px 1px, 1px 8px, 100% 100%;
+  background-position: right top, left bottom, right 3px bottom 3px, right 3px bottom 3px, 0 0;
+  color: var(--ut-needs-act-fg);
+  border-color: var(--ut-needs-act-border);
+  box-shadow: var(--ut-control-relief);
+}
+
+/* A sheet's own button (Cancel) is a key, not a sheet. */
+html[data-look="neon-futuristic"] .ut-surface--floating:where(button) {
+  background-color: var(--ut-piece-control-fill);
+  background-image: none;
+  box-shadow: var(--ut-segment-idle-shadow);
+}
+
+@media (hover: hover) {
+  html[data-look="neon-futuristic"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="neon-futuristic"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="neon-futuristic"] .ut-surface--action:hover:not(:disabled),
+  html[data-look="neon-futuristic"] .ut-surface--request-action:hover:not(:disabled),
+  html[data-look="neon-futuristic"] .ut-surface--control:hover:not(:disabled) {
+    border-color: var(--ut-cold);
+    box-shadow: var(--ut-control-hover);
+  }
+  html[data-look="neon-futuristic"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="neon-futuristic"] .ut-menu-item:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+  }
+  html[data-look="neon-futuristic"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="neon-futuristic"] .ut-surface--primary:hover:not(:disabled) {
+    background-color: var(--ut-primary-hover);
+    background-image: none;
+    border-color: var(--ut-primary-hover);
+    color: var(--ut-text-on-accent);
+    box-shadow: var(--ut-primary-relief);
+  }
+}
+
+/* Pressed: the light goes inside. */
+html[data-look="neon-futuristic"] .ut-btn:active:not(:disabled),
+html[data-look="neon-futuristic"] .ut-surface--action:active:not(:disabled),
+html[data-look="neon-futuristic"] .ut-surface--request-action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+
+/* Disabled: a dull plate with a dashed frame and no mark; the text stays legible. */
+html[data-look="neon-futuristic"] .ut-btn:disabled,
+html[data-look="neon-futuristic"] .ut-icon-btn:disabled,
+html[data-look="neon-futuristic"] .ut-menu-item:disabled,
+html[data-look="neon-futuristic"] .ut-field:disabled,
+html[data-look="neon-futuristic"] .ut-surface--control:disabled,
+html[data-look="neon-futuristic"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  border-color: var(--ut-border-strong);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+html[data-look="neon-futuristic"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  outline: 1px dashed var(--ut-border-strong);
+  outline-offset: -1px;
+}
+
+/* Focus: a solid amber ring. On a bevelled key it goes inside, where the cut cannot take it. */
+html[data-look="neon-futuristic"] .ut-icon-btn:focus-visible,
+html[data-look="neon-futuristic"] .ut-chip:focus-visible,
+html[data-look="neon-futuristic"] .ut-menu-item:focus-visible,
+html[data-look="neon-futuristic"] .ut-switch:focus-visible,
+html[data-look="neon-futuristic"] .ut-field:focus-visible,
+html[data-look="neon-futuristic"] .ut-select:focus-visible,
+html[data-look="neon-futuristic"] .ut-surface--control:focus-visible,
+html[data-look="neon-futuristic"] .ut-surface--inset:focus-visible,
+html[data-look="neon-futuristic"] .ut-surface--well:focus-within {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: 3px;
+}
+
+html[data-look="neon-futuristic"] .ut-btn:focus-visible,
+html[data-look="neon-futuristic"] .ut-surface--action:focus-visible,
+html[data-look="neon-futuristic"] .ut-surface--request-action:focus-visible,
+html[data-look="neon-futuristic"] .ut-surface--segment:focus-visible {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: -5px;
+}
+
+html[data-look="neon-futuristic"] .ut-section-label {
+  color: var(--ut-text-muted);
+  text-shadow: none;
+}

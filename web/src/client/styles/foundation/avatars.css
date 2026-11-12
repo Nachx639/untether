@@ -1,0 +1,168 @@
+/* The mark of a session or task on an external model provider (provider-badge.ts). */
+ut-provider-badge {
+  display: inline-flex;
+  flex: none;
+  align-self: center;
+  align-items: center;
+  color: var(--color-text-dim);
+}
+.ut-provider-emoji {
+  font-size: 13px;
+  line-height: 1;
+}
+/* Nothing to add beside a logo that already shows the provider's icon: no gap, no margin. */
+ut-provider-badge:empty,
+.psr-flags:has(> ut-provider-badge:empty:only-child) {
+  display: none;
+}
+/* The provider's icon in the agent's place, as big as the logo it replaces (providerLogo()).
+   Its box is the logo's; an emoji drawn wider than its font size stays centred on it. */
+.ut-provider-logo {
+  --ut-provider-logo-size: 16px;
+  width: var(--ut-provider-logo-size);
+  height: var(--ut-provider-logo-size);
+  font-size: var(--ut-provider-logo-size);
+  line-height: 1;
+  white-space: nowrap;
+}
+.ut-provider-logo > .ut-provider-emoji {
+  font-size: inherit;
+}
+/* However big the file: as small as the badge's emoji wherever a tile doesn't size it. */
+.ut-provider-img {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+/* An image is flush to its edges where an emoji has air: drawn a little bigger to match it. */
+.ut-provider-logo > .ut-provider-img {
+  flex: none;
+  width: 125%;
+  max-width: none;
+  height: 125%;
+  object-fit: contain;
+  filter: var(--ut-logo-image-filter);
+}
+.ut-provider-corner > .ut-provider-img,
+[data-icon='project'] .ut-provider-logo > .ut-provider-img {
+  width: 100%;
+  height: 100%;
+}
+.psr-avatar .ut-provider-logo {
+  --ut-provider-logo-size: 20px;
+  color: inherit;
+}
+/* An image or emoji of its own (a provider's or avatarIcons) is the whole avatar: no tile behind
+   it, whatever state tints that tile; it fills the side, the state dot stays. A project's logo
+   keeps its tile and corner marks. The image overflows a little because PNGs carry air. */
+:is(.psr-avatar, .ut-side-avatar, .ut-card-avatar, .ut-switch-avatar):not([data-icon]):has(
+    > .ut-logo-full
+  ) {
+  background: none !important;
+  box-shadow: none !important;
+}
+:is(.psr-avatar, .ut-side-avatar, .ut-card-avatar, .ut-switch-avatar):not([data-icon]) > .ut-logo-full {
+  width: 100%;
+  height: 100%;
+  container-type: size;
+}
+:is(.psr-avatar, .ut-side-avatar, .ut-card-avatar, .ut-switch-avatar):not([data-icon])
+  > .ut-logo-full
+  > .ut-provider-img {
+  width: 112%;
+  height: 112%;
+}
+/* The emoji font rounds its size: at the side's own size it covers it in every browser checked. */
+:is(.psr-avatar, .ut-side-avatar, .ut-card-avatar, .ut-switch-avatar):not([data-icon])
+  > .ut-logo-full
+  > .ut-provider-emoji {
+  font-size: 100cqmin;
+}
+/* Apple's emoji draw about 1.25x their font size: the desktop card's 24 px tile needs a smaller one. */
+.ut-card-avatar > .ut-provider-logo > .ut-provider-emoji {
+  font-size: 14px;
+}
+[data-icon='project'] > .ut-provider-logo {
+  --ut-provider-logo-size: 10px;
+}
+.ut-card-avatar[data-icon='project'] > .ut-provider-logo > .ut-provider-emoji {
+  font-size: inherit;
+}
+.psr-avatar[data-icon='project'] .ut-provider-logo {
+  --ut-provider-logo-size: 12px;
+}
+/* The badge on a project's logo: the small corner mark's place, size and ring (list.css). */
+.ut-provider-corner {
+  --ut-provider-logo-size: 10px;
+}
+.psr-avatar .ut-provider-corner {
+  --ut-provider-logo-size: 12px;
+}
+.ut-switch-avatar .ut-provider-logo {
+  --ut-provider-logo-size: 20px;
+}
+.ut-inline-project {
+  position: relative;
+}
+.ut-inline-project > .ut-provider-corner {
+  --ut-provider-logo-size: 9px;
+  top: -3px;
+  left: -3px;
+  padding: 0;
+  border-width: 1px;
+  border-radius: var(--ut-r-3);
+}
+/* Live in colour, finished in grey: an emoji has its own colours, the tile's tint can't reach it.
+   One filter, on the mark itself (2026-11-09): on the logo's box it sat over the image's own
+   filter, on a size container the image overflows; on a real iPhone, in a long "Hechas" list,
+   those layers were painted out of their rows after scrolling (not reproduced in the twin). */
+.psr-avatar[data-state='exited'] .ut-provider-logo > *,
+.ut-side-avatar[data-status^='exited'] > .ut-provider-logo > *,
+.ut-card.is-exited .ut-card-avatar > .ut-provider-logo > *,
+.ut-srow.is-exited .ut-card-glyph > .ut-provider-logo > * {
+  filter: grayscale(1);
+}
+.psr-avatar[data-state='exited'] .ut-provider-logo > .ut-provider-img,
+.ut-side-avatar[data-status^='exited'] > .ut-provider-logo > .ut-provider-img,
+.ut-card.is-exited .ut-card-avatar > .ut-provider-logo > .ut-provider-img,
+.ut-srow.is-exited .ut-card-glyph > .ut-provider-logo > .ut-provider-img {
+  filter: var(--ut-logo-image-filter-done);
+}
+/* The avatar's layers (mark, state dot, corner badge) stack among themselves only. */
+.psr-avatar {
+  isolation: isolate;
+}
+.psr-sheet-title ut-provider-badge {
+  margin-inline-start: 6px;
+  vertical-align: baseline;
+}
+.psr-time-alert {
+  color: var(--color-status-warning-text);
+  font-weight: var(--ut-fw-semibold);
+}
+.psr-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+}
+.psr-preview {
+  margin-top: 2px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+  word-break: break-word;
+}
+.psr-you {
+  color: var(--color-text-dim);
+}
+.psr-path {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}

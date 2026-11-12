@@ -1,0 +1,434 @@
+@media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+  /* ---- Rows (phone-session-row.ts, Agents too): 72 px, one anatomy ---- */
+  .psr-list {
+    margin: 0 calc(var(--ut-rows-inset, 0px) - var(--p-gutter, 16px));
+  }
+  .psr {
+    align-items: center;
+    gap: 12px;
+    min-height: var(--ut-phone-row-h, var(--p-row-h, 72px));
+    padding: 8px 4px 8px var(--p-gutter, 16px);
+  }
+  .psr-has-choices,
+  .psr:has(.psr-choices) {
+    align-items: flex-start;
+  }
+  .psr-has-choices .psr-avatar {
+    margin-top: 2px;
+  }
+  .psr-selected {
+    background-color: var(--color-selected);
+    box-shadow: var(--ut-row-selected-shadow);
+  }
+  .psr-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--ut-r-avatar);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-muted);
+    font-size: 16px;
+  }
+  .psr-avatar > svg {
+    width: 20px;
+    height: 20px;
+  }
+  /* An orchestrator's row (2026-10-20): its project's icon fills the tile and the agent's mark
+     sits small in the top-left corner (the state dot keeps the bottom-right one). An icon that
+     fails to load drops data-icon: the plain tile comes back. */
+  .psr-avatar-icon,
+  .psr-avatar-glyph {
+    display: none;
+  }
+  .psr-avatar[data-icon='project'] .psr-avatar-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    object-fit: cover;
+  }
+  .psr-avatar:not([data-icon]) .psr-avatar-glyph {
+    display: contents;
+  }
+  .psr-avatar[data-icon='project'] .psr-avatar-glyph,
+  .psr-avatar > .ut-provider-corner {
+    display: flex;
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--ut-r-logo);
+    border: 2px solid var(--color-bg);
+    background: var(--color-avatar-live-bg);
+    color: var(--color-avatar-live-fg);
+  }
+  .psr-avatar[data-icon='project']:has(> .ut-provider-corner) .psr-avatar-glyph {
+    right: -4px;
+    left: auto;
+  }
+  .psr-avatar-glyph > svg {
+    width: 20px;
+    height: 20px;
+  }
+  .psr-avatar[data-icon='project'] .psr-avatar-glyph > svg {
+    width: 12px;
+    height: 12px;
+  }
+  /* Live in colour, finished in grey (2026-10-12): rowAvatar() stamps the row state on the
+     tile. A live session (agent, shell, "En este Mac") gets the accent tint with the glyph in
+     the accent's text shade; "needs you" tints amber; finished keeps the neutral tile. No hashed
+     hues or brand gradients (styles.css's legacy ones lose to these). Previews and skeletons
+     carry no data-state and stay neutral. */
+  .psr-avatar[data-state] {
+    background: var(--color-avatar-live-bg);
+    color: var(--color-avatar-live-fg);
+  }
+  .psr-avatar[data-state='waiting'] {
+    background: var(--color-avatar-attn-bg);
+    color: var(--color-avatar-attn-fg);
+  }
+  .psr-avatar[data-state='exited'] {
+    background: var(--color-avatar-off-bg);
+    color: var(--color-avatar-off-fg);
+  }
+  .psr-dot {
+    right: -3px;
+    bottom: -3px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--color-bg);
+  }
+  /* One dot: working pulses in the accent (the only thing that does), waiting is amber, alive
+     and resting (idle agent, shell) is green, finished is grey. */
+  .psr-dot-working {
+    background: var(--color-primary);
+    animation: psr-pulse-primary 1.6s ease-in-out infinite;
+  }
+  .psr-dot-waiting {
+    background: var(--color-attention);
+    animation: none;
+  }
+  .psr-dot-idle,
+  .psr-dot-shell {
+    background: var(--color-alive);
+  }
+  .psr-dot-exited {
+    background: var(--color-text-dim);
+  }
+  .psr-top {
+    align-items: baseline;
+    gap: 6px;
+  }
+  .psr-title {
+    font: 500 var(--p-text-row, 16px) / 20px var(--font-ui);
+    color: var(--color-text);
+  }
+  .psr-time {
+    font: 400 var(--p-text-caption, 13px) / 18px var(--font-ui);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-dim);
+  }
+  .psr-time-alert {
+    color: var(--color-attention-text);
+    font-weight: var(--ut-fw-semibold);
+  }
+  .psr-flags {
+    display: inline-flex;
+    flex: none;
+    align-self: center;
+    gap: 4px;
+    min-width: 12px;
+    color: var(--color-text-dim);
+  }
+  .psr-flag {
+    display: inline-flex;
+    opacity: 1;
+    font-size: inherit;
+  }
+  .psr-flag-orch {
+    color: var(--color-primary-text);
+  }
+  .psr-unread .psr-title {
+    font-weight: var(--ut-fw-bold);
+    color: var(--color-text-bright);
+  }
+  .psr-unread .psr-time {
+    color: var(--color-text-dim);
+    font-weight: var(--ut-fw-normal);
+  }
+  .psr-unread .psr-preview {
+    color: var(--color-text-muted);
+  }
+  .psr-unread-dot {
+    width: 8px;
+    height: 8px;
+    margin: 0;
+    background: var(--color-text-bright);
+  }
+  .psr-caption {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--color-text-dim);
+  }
+  .psr-caption .psr-subtitle {
+    flex: 0 1 auto;
+    font-size: 12px;
+  }
+  .psr-where {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .psr-caption.psr-choices-detail {
+    display: block;
+    text-overflow: ellipsis;
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+  }
+  .psr-mac-window {
+    font-size: 12px;
+    color: var(--color-text-dim);
+  }
+  .psr-mac-mark {
+    display: inline-flex;
+  }
+  .psr-preview {
+    display: block;
+    margin-top: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--p-text-body, 15px);
+    line-height: 20px;
+    color: var(--color-text-dim);
+  }
+  .psr-working {
+    color: var(--color-text-muted);
+    font-weight: var(--ut-fw-medium);
+  }
+  .psr-sep {
+    color: var(--color-text-dim);
+  }
+  .psr-elapsed {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--color-text-dim);
+  }
+  .psr-status .psr-last-line {
+    display: inline;
+    margin: 0;
+    font-size: 13px;
+  }
+  .psr-exited {
+    color: var(--color-text-dim);
+  }
+  /* Suspended to free memory (2026-10-31): a quiet mark, not an alarm. */
+  .psr-paused {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-text-dim);
+    font-size: 13px;
+  }
+  .psr-paused-error {
+    color: var(--color-status-warning);
+  }
+  /* Needs input: the status line is a 44 px button to the reply sheet. */
+  .psr-needs-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    max-width: 100%;
+    min-height: 44px;
+    margin: -6px 0 -6px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-attention-text);
+    font: 600 var(--p-text-body, 15px) / 20px var(--font-ui);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .psr-needs-btn > svg {
+    flex: none;
+  }
+  .psr-needs-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .psr-choices {
+    gap: 4px;
+    margin-top: 6px;
+  }
+  /* With quick answers the row is eyebrow, what they approve, then the pills (spec 3.6): the
+     44 px "Te necesita" line overlaps its neighbours' padding so the row stays ≤ 140 px
+     (QA 2026-10-12: moving the detail out of the caption made it 155). */
+  .psr-has-choices .psr-needs-btn {
+    margin: -8px 0 -11px;
+  }
+  .psr-has-choices .psr-choices {
+    gap: 2px;
+    margin-top: 0;
+  }
+  .psr-choice-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .psr-choice {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    max-width: 100%;
+    min-width: 56px;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: var(--ut-r-pill);
+    border: 1px solid var(--color-border-light);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text);
+    font: 500 var(--p-text-body, 15px) / 20px var(--font-ui);
+    overflow-wrap: normal;
+  }
+  .psr-choice bdi {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .psr-choice.primary {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-on-fill);
+    font-weight: var(--ut-fw-semibold);
+  }
+  .psr-choice.sending {
+    border-color: var(--color-primary);
+  }
+  .psr-menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--ut-r-lg);
+    color: var(--color-text-dim);
+    font-size: inherit;
+  }
+  .psr-reply {
+    flex: none;
+    align-self: center;
+    min-height: 44px;
+    margin-right: 8px;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--color-attention) 45%, transparent);
+    border-radius: var(--ut-r-pill);
+    background: var(--color-attention-muted);
+    color: var(--color-attention-text);
+    font: 600 var(--p-text-body, 15px) var(--font-ui);
+  }
+  .psr-resume {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    margin-top: 6px;
+    padding: 0 14px;
+    border-radius: var(--ut-r-pill);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text);
+    font: 500 14px var(--font-ui);
+  }
+  .psr-resume::before {
+    content: '';
+    position: absolute;
+    inset: -4px 0;
+  }
+  .psr-resume:disabled {
+    opacity: 0.55;
+  }
+  /* Swipe actions: Más + Cerrar behind the trailing edge, Fijar behind the leading one. */
+  .psr-swipe-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text);
+    font: 600 13px/16px var(--font-ui);
+  }
+  .psr-swipe-btn-danger {
+    background: var(--color-status-error);
+    color: var(--color-on-fill);
+  }
+  .psr-swipe-btn-long {
+    font-size: 12px;
+  }
+  .psr-swipe-btn-answer {
+    background: var(--color-attention);
+    color: var(--color-on-fill);
+  }
+  /* Loading: four rows in the real geometry. */
+  .psr-skeleton {
+    pointer-events: none;
+  }
+  .psr-skeleton .psr-avatar {
+    display: block;
+  }
+  .psr-skeleton .psr-body {
+    display: block;
+  }
+
+  /* The tight list (small screens) keeps the same row and control geometry: only the space
+     between blocks shrinks (legacy .phone-list-tight rules, styles.css). */
+  .phone-list-tight .psr {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .phone-list-tight .ask-claude {
+    margin-bottom: 4px;
+    padding: 8px 8px 4px 12px;
+  }
+  .phone-list-tight .ask-claude-bar {
+    margin-top: 2px;
+  }
+  .phone-list-tight .nb-banner {
+    margin-bottom: 8px;
+    padding: 0 0 0 12px;
+  }
+  .phone-list-tight .phone-search {
+    margin-bottom: 8px;
+    padding: 0 12px;
+  }
+  .phone-list-tight .phone-search-hidden {
+    margin: 0;
+  }
+  .phone-list-tight .pvr-header {
+    margin: 12px 0 0;
+  }
+
+  /* ---- Agents tab, select mode (agent-mission.ts): the same anatomy plus a check ---- */
+  .vtm-row {
+    padding-right: var(--p-gutter, 16px);
+    cursor: pointer;
+  }
+  .vtm-row .psr-main {
+    min-width: 0;
+  }
+  .vtm-needs {
+    cursor: pointer;
+  }
+}

@@ -1,0 +1,139 @@
+/* ---- Desktop home (design spec 5.1, 2026-10-12) ---------------------------------------- */
+@layer components {
+  /* Content column: 1600px at most, page padding 24px (32px from 1600px, --page-pad).
+     Left-aligned with the full-width header (centered, at 1920px the toolbar and grid started
+     ~160px right of the logo; 2026-10-12). */
+  .ut-list-content {
+    width: 100%;
+    max-width: var(--content-max);
+    margin: 0;
+    padding: var(--ut-workspace-top, 12px) var(--page-pad) 40px;
+    box-sizing: border-box;
+  }
+
+  /* Toolbar (48px): search, filters, group/view/sort, more. Sticky at the top of the list. */
+  .ut-list-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--color-bg) var(--ut-header-alpha, 88%), transparent);
+    backdrop-filter: var(--ut-toolbar-blur);
+    -webkit-backdrop-filter: var(--ut-toolbar-blur);
+  }
+  .ut-list-toolbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 48px;
+    max-width: var(--content-max);
+    margin: 0;
+    padding: 0 var(--page-pad);
+    box-sizing: border-box;
+    font-family: var(--font-ui);
+  }
+  .ut-list-search {
+    position: relative;
+    flex: 0 1 288px;
+    min-width: 160px;
+  }
+  .ut-list-search > svg {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translateY(-50%);
+    color: var(--color-text-dim);
+    pointer-events: none;
+  }
+  .ut-list-search > .ut-field {
+    height: 28px;
+    padding-left: 28px;
+    padding-right: 30px;
+    background: var(--color-bg-tertiary);
+    border-color: transparent;
+  }
+  .ut-list-search > .ut-kbd {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  .ut-list-search > .ut-field:focus + .ut-kbd {
+    display: none;
+  }
+  .ut-filter-count {
+    color: var(--color-text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .ut-segmented > [aria-pressed='true'] .ut-filter-count {
+    color: var(--color-text-muted);
+  }
+  .ut-filter-count--attention {
+    color: var(--color-attention-text);
+    font-weight: var(--ut-fw-semibold);
+  }
+  .ut-toolbar-spacer {
+    flex: 1;
+  }
+  .ut-toolbar-sep {
+    width: 1px;
+    height: 16px;
+    background: var(--color-border);
+    flex: none;
+  }
+  .ut-toolbar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 28px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--color-text-muted);
+    font: 500 12px/16px var(--font-ui);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .ut-toolbar-toggle:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+  .ut-toolbar-toggle .ut-switch {
+    width: 28px;
+    height: 16px;
+    pointer-events: none;
+  }
+  .ut-toolbar-toggle .ut-switch::after {
+    width: 12px;
+    height: 12px;
+  }
+  .ut-toolbar-toggle .ut-switch[aria-checked='true']::after {
+    transform: translateX(12px);
+  }
+  .ut-toolbar-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 6px 0 8px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--color-text-muted);
+    font: 500 12px/16px var(--font-ui);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .ut-toolbar-menu-btn:hover,
+  .ut-toolbar-menu-btn[aria-expanded='true'] {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+  .ut-toolbar-menu-btn > svg {
+    width: 14px;
+    height: 14px;
+  }
+}

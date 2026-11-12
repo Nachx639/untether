@@ -1,0 +1,137 @@
+/* Phone session list: chat-style rows (phone-session-row.ts) */
+/* A style can make each list one rounded group of rows (--ut-rows-*, iOS Nativo 2026-11-10):
+   the list is the card, its rows are clear and a rule of the style's own (--ut-row-rule, a
+   background over the row) parts them. Neutral: the full-width list with its hairlines. */
+.psr-list {
+  margin: 0 calc(var(--ut-rows-inset, 0px) - 1rem);
+  border-top: var(--ut-row-list-edge);
+  border-radius: var(--ut-rows-radius, 0px);
+  background: var(--ut-rows-bg, transparent);
+  box-shadow: var(--ut-rows-shadow, none);
+  overflow: var(--ut-rows-overflow, visible);
+}
+.psr {
+  font-family: var(--font-ui);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: var(--ut-row-gap) var(--ut-row-inset) 0;
+  padding: 12px 8px 12px 16px;
+  border: var(--ut-row-border);
+  border-bottom: var(--ut-row-divider);
+  border-radius: var(--ut-row-radius);
+  background: var(--ut-row-bg);
+  background-image: var(--ut-row-rule, var(--ut-grain));
+  background-size: var(--ut-row-rule-size, auto);
+  background-position: var(--ut-row-rule-position, 0 0);
+  background-repeat: var(--ut-row-rule-repeat, repeat);
+  box-shadow: var(--ut-row-shadow);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms ease, opacity 200ms ease, transform 200ms ease;
+}
+.psr:active {
+  background: var(--color-surface-hover);
+}
+.psr-selected {
+  /* On the accent tint the dim grey (time, folder) fell to 3.8:1: muted reaches 4.5. */
+  --color-text-dim: var(--color-text-muted);
+  --ut-text-dim: var(--ut-text-muted);
+  background: var(--color-primary-muted);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+.psr-killing {
+  opacity: 0.4;
+  transform: translateX(-12px);
+  pointer-events: none;
+}
+.psr-avatar {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--ut-r-circle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  line-height: 1;
+}
+.psr-avatar-claude {
+  background: linear-gradient(145deg, #e58a68, #c96442);
+  color: #fff7f2;
+}
+.psr-avatar-shell {
+  background: #1f2430;
+  color: var(--color-primary-light);
+}
+.psr-prompt {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: var(--ut-fw-bold);
+}
+.psr-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--ut-r-circle);
+  border: 2.5px solid var(--color-bg);
+}
+.psr-dot-working {
+  background: var(--color-status-info);
+  animation: psr-pulse 1.4s ease-in-out infinite;
+}
+.psr-dot-waiting {
+  background: var(--color-status-warning);
+}
+.psr-dot-idle,
+.psr-dot-shell {
+  background: var(--color-status-success);
+}
+.psr-dot-exited {
+  background: var(--color-text-dim);
+}
+@keyframes psr-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--ut-pulse-info);
+  }
+  50% {
+    box-shadow: 0 0 0 5px var(--ut-pulse-info-end);
+  }
+}
+.psr-body {
+  flex: 1;
+  min-width: 0;
+}
+.psr-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.psr-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--ut-phone-row-title, 1rem);
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-text);
+}
+.psr-time {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+}
+.psr-flag {
+  flex: none;
+  font-size: 0.6875rem;
+  line-height: 1;
+  opacity: 0.75;
+}

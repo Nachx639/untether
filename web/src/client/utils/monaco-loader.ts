@@ -1,0 +1,174 @@
+/**
+ * Monaco Editor Loader
+ *
+ * Handles loading and initialization of Monaco Editor for the application.
+ * This module ensures Monaco is properly loaded and configured before use.
+ */
+import { createLogger } from './logger.js';
+import { isDarkMode } from './theme-utils.js';
+
+const logger = createLogger('monaco-loader');
+
+// Declare monaco on window
+declare global {
+  interface Window {
+    monaco: typeof import('monaco-editor');
+  }
+}
+
+/** The one initialization, shared by every caller (also those that arrive while it runs). */
+let initialization: Promise<void> | null = null;
+let loadingPromise: Promise<void> | null = null;
+
+/**
+ * Load the standalone Monaco ESM bundle.
+ */
+async function loadMonacoEditor(): Promise<void> {
+  if (loadingPromise) return loadingPromise;
+
+  // Disable workers - they interfere with diff computation. Monaco falls back
+  // to synchronous mode, which is sufficient for the file editor.
+  window.MonacoEnvironment = {
+    getWorker: (_workerId: string, _label: string): Worker => new Worker('data:,'),
+  };
+
+  loadingPromise = new Promise((resolve, reject) => {
+    let stylesheetPromise = Promise.resolve();
+    if (!document.querySelector('link[href="/monaco-editor/monaco.css"]')) {
+      stylesheetPromise = new Promise((resolveStylesheet, rejectStylesheet) => {
+        const stylesheet = document.createElement('link');
+        stylesheet.rel = 'stylesheet';
+        stylesheet.href = '/monaco-editor/monaco.css';
+        stylesheet.onload = () => resolveStylesheet();
+        stylesheet.onerror = () => rejectStylesheet(new Error('Failed to load Monaco stylesheet'));
+        document.head.appendChild(stylesheet);
+      });
+    }
+
+    const loaderScript = document.createElement('script');
+    loaderScript.type = 'module';
+    loaderScript.src = '/monaco-editor/monaco.js';
+
+    loaderScript.onload = async () => {
+      try {
+        await stylesheetPromise;
+        if (!window.monaco) {
+          reject(new Error('Monaco bundle loaded without initializing the editor API'));
+          return;
+        }
+        logger.debug('Monaco Editor loaded via ESM');
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    loaderScript.onerror = () => {
+      reject(new Error('Failed to load Monaco loader script'));
+    };
+
+    document.head.appendChild(loaderScript);
+  });
+
+  return loadingPromise;
+}
+
+/**
+ * Initialize Monaco Editor with custom configuration
+ */
+export function initializeMonaco(): Promise<void> {
+  // 2026-11-11: the "done" flag was set only at the end, after waiting for the bundle, so two
+  // editors opening together both initialized: the shell language registered twice and two
+  // theme observers left for good.
+  initialization ??= initialize().catch((error) => {
+    initialization = null;
+    throw error;
+  });
+  return initialization;
+}
+
+async function initialize(): Promise<void> {
+  try {
+    logger.debug('Loading Monaco Editor...');
+
+    // Load Monaco if not already loaded
+    if (!window.monaco) {
+      await loadMonacoEditor();
+    }
+
+    logger.debug('Initializing Monaco Editor...');
+
+    // Make Monaco available globally
+    const monaco = window.monaco;
+
+    // Configure languages
+    monaco.languages.register({ id: 'shell' });
+    monaco.languages.setMonarchTokensProvider('shell', {
+      tokenizer: {
+        root: [
+          [/^#.*$/, 'comment'],
+          [/\$\w+/, 'variable'],
+          [
+            /\b(echo|cd|ls|grep|find|chmod|mkdir|rm|cp|mv|touch|cat|sed|awk|curl|wget|git|pnpm|npm|yarn|docker|kubectl)\b/,
+            'keyword',
+          ],
+          [/"([^"\\]|\\.)*"/, 'string'],
+          [/'([^'\\]|\\.)*'/, 'string'],
+        ],
+      },
+    });
+
+    // Set initial theme based on current theme
+    monaco.editor.setTheme(isDarkMode() ? 'vs-dark' : 'vs');
+
+    // Watch for theme changes
+    const themeObserver = new MutationObserver(() => {
+      monaco.editor.setTheme(isDarkMode() ? 'vs-dark' : 'vs');
+    });
+
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    // Add custom themes if needed
+    /*monaco.editor.defineTheme('untether-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '608b4e' },
+        { token: 'keyword', foreground: '569cd6' },
+        { token: 'string', foreground: 'ce9178' },
+        { token: 'number', foreground: 'b5cea8' },
+        { token: 'type', foreground: '4ec9b0' },
+        { token: 'class', foreground: '4ec9b0' },
+        { token: 'function', foreground: 'dcdcaa' },
+        { token: 'variable', foreground: '9cdcfe' },
+        { token: 'constant', foreground: '4fc1ff' },
+        { token: 'parameter', foreground: '9cdcfe' },
+        { token: 'property', foreground: '9cdcfe' },
+        { token: 'punctuation', foreground: 'd4d4d4' },
+        { token: 'operator', foreground: 'd4d4d4' },
+        { token: 'namespace', foreground: '4ec9b0' },
+      ],
+      colors: {
+        'editor.background': '#1e1e1e',
+        'editor.foreground': '#d4d4d4',
+        'editorLineNumber.foreground': '#858585',
+        'editorLineNumber.activeForeground': '#c6c6c6',
+        'editor.selectionBackground': '#264f78',
+        'editor.lineHighlightBackground': '#2a2a2a',
+        'editorCursor.foreground': '#ff6a00',
+        'editor.findMatchBackground': '#515c6a',
+        'editor.findMatchHighlightBackground': '#ea5e5e55',
+        'editorIndentGuide.background': '#404040',
+        'editorIndentGuide.activeBackground': '#707070',
+      },
+    });*/
+
+    logger.debug('Monaco Editor initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize Monaco Editor:', error);
+    throw error;
+  }
+}

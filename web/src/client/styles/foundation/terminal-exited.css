@@ -1,0 +1,41 @@
+/* Phosphor Terminal Decay effect for exited sessions */
+.session-exited {
+  filter: sepia(0.3) hue-rotate(45deg) brightness(0.8) contrast(1.2);
+  position: relative;
+  transition: filter 0.5s ease-out;
+}
+
+.session-exited::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 20, 0, 0.4) 100%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  animation: phosphor-fade 2s ease-out;
+}
+
+@keyframes phosphor-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Additional subtle scanline effect for exited sessions */
+.session-exited::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 0, 0.03),
+    rgba(0, 255, 0, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  opacity: 0.5;
+}

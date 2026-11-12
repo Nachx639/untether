@@ -1,0 +1,167 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RemoteRegistry } from './remote-registry.js';
+
+vi.mock('../server.js', () => ({
+  isShuttingDown: () => false,
+}));
+
+vi.mock('../utils/logger.js', () => ({
+  createLogger: () => ({
+    log: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
+}));
+
+describe('RemoteRegistry health checks', () => {
+  let registry: RemoteRegistry;
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    registry = new RemoteRegistry();
+  });
+
+  afterEach(() => {
+    registry.destroy();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  function registerRemote(id: string) {
+    return registry.register({
+      id,
+      name: `remote-${id}`,
+      url: `http://remote-${id}.example`,
+      token: 'token',
+    }).remote;
+  }
+
+  it('treats an identical remote id as an idempotent registration refresh', () => {
+    fetchMock.mockResolvedValue({ ok: true } as Response);
+    const original = registerRemote('same');
+    const refresh = registry.register({
+      id: original.id,
+      name: original.name,
+      url: original.url,
+      token: original.token,
+    });
+
+    expect(refresh).toEqual({ remote: original, created: false });
+    expect(registry.getRemotes()).toEqual([original]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("never lets one remote's report unmap another remote's session", () => {
+    fetchMock.mockResolvedValue({ ok: true } as Response);
+    const a = registerRemote('a');
+    const b = registerRemote('b');
+    registry.addSessionToRemote(a.id, 's-a');
+
+    registry.removeSessionFromRemote('s-a', b.id);
+    expect(registry.getRemoteBySessionId('s-a')?.id).toBe(a.id);
+    registry.removeSessionFromRemote('s-a', a.id);
+    expect(registry.getRemoteBySessionId('s-a')).toBeUndefined();
+  });
+
+  it('rejects a different remote that collides by name or id', () => {
+    fetchMock.mockResolvedValue({ ok: true } as Response);
+    const original = registerRemote('original');
+
+    expect(() =>
+      registry.register({
+        id: 'other-id',
+        name: original.name,
+        url: 'http://other.example',
+        token: 'other-token',
+      })
+    ).toThrow('already registered');
+    expect(() =>
+      registry.register({
+        id: original.id,
+        name: original.name,
+        url: 'http://other.example',
+        token: original.token,
+      })
+    ).toThrow('already registered');
+  });
+
+  function deferredResponse() {
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<Response>((_resolve, rejectPromise) => {
+      reject = rejectPromise;
+    });
+    return { promise, reject };
+  }
+
+  it('keeps a remote registered after a transient failure', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('temporary network failure'));
+
+    const remote = registerRemote('one-failure');
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(registry.getRemote(remote.id)).toBe(remote);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('unregisters a remote after three consecutive failures', async () => {
+    fetchMock.mockRejectedValue(new Error('network unavailable'));
+
+    registerRemote('three-failures');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(registry.getRemote('three-failures')).toBeDefined();
+
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(registry.getRemote('three-failures')).toBeDefined();
+
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(registry.getRemote('three-failures')).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('resets the failure threshold after a successful health check', async () => {
+    fetchMock
+      .mockRejectedValueOnce(new Error('temporary network failure'))
+      .mockResolvedValueOnce({ ok: true } as Response)
+      .mockRejectedValue(new Error('network unavailable'));
+
+    registerRemote('recovered');
+    await vi.advanceTimersByTimeAsync(0);
+
+    await vi.advanceTimersByTimeAsync(15000);
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(registry.getRemote('recovered')).toBeDefined();
+
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(registry.getRemote('recovered')).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+  });
+
+  it('ignores stale checks after a remote id is re-registered', async () => {
+    const firstStaleCheck = deferredResponse();
+    const secondStaleCheck = deferredResponse();
+    fetchMock
+      .mockReturnValueOnce(firstStaleCheck.promise)
+      .mockReturnValueOnce(secondStaleCheck.promise)
+      .mockResolvedValueOnce({ ok: true } as Response)
+      .mockRejectedValueOnce(new Error('replacement failure'));
+
+    const original = registerRemote('reused');
+    await vi.advanceTimersByTimeAsync(15000);
+
+    expect(registry.unregister(original.id)).toBe(true);
+    const replacement = registerRemote('reused');
+    await vi.advanceTimersByTimeAsync(0);
+
+    firstStaleCheck.reject(new Error('stale failure one'));
+    secondStaleCheck.reject(new Error('stale failure two'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    await vi.advanceTimersByTimeAsync(15000);
+    expect(registry.getRemote(replacement.id)).toBe(replacement);
+  });
+});

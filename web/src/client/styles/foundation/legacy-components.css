@@ -1,0 +1,147 @@
+/* Custom components */
+@layer components {
+  /* Terminal icon (its glow is gone, 2026-10-12) */
+  .terminal-icon {
+    @apply text-primary;
+  }
+
+  /* Input fields with unified style */
+  .input-field {
+    @apply bg-bg-secondary border border-border rounded-lg px-4 py-3 text-text w-full;
+    @apply transition-colors duration-200 ease-in-out;
+    @apply hover:border-border-focus focus:outline-none;
+    @apply text-left placeholder:text-text-muted;
+  }
+
+  /* The native chevron sat on the text of the long options (2026-10-12). */
+  select.input-field {
+    padding-right: 2.25rem;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+  }
+
+  /* Unified button styles: the same look as .ut-btn (below) under the old names, which the
+     phone UI uses; no glow, no scale on press (2026-10-12). Focus: the global ring. */
+  .btn,
+  .btn-sm,
+  .btn-md,
+  .btn-lg,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost {
+    @apply font-medium rounded-ctl focus:outline-none;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    transition-property: background-color, border-color, color, opacity;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-md {
+    @apply px-4 py-2;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-lg;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-primary text-on-fill;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-primary) 88%, var(--ut-mix-lighten));
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-bg-tertiary text-text border border-border;
+    @apply hover:bg-surface-hover;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 text-text-muted;
+    @apply hover:text-text hover:bg-surface-hover;
+  }
+
+  .btn-primary:active,
+  .btn-secondary:active,
+  .btn-ghost:active {
+    filter: brightness(0.95);
+  }
+
+  .card-elevated {
+    @apply bg-bg-elevated rounded-xl p-6 shadow-card;
+    @apply hover:shadow-elevated hover:bg-surface-hover;
+    @apply transition-colors duration-200;
+  }
+  
+  /* Status badges */
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-pill text-xs font-medium;
+  }
+  
+  .status-badge-success {
+    @apply bg-status-success/20 text-status-success;
+  }
+  
+  .status-badge-warning {
+    @apply bg-status-warning/20 text-status-warning;
+  }
+  
+  .status-badge-error {
+    @apply bg-status-error/20 text-status-error;
+  }
+  
+  .status-badge-info {
+    @apply bg-status-info/20 text-status-info;
+  }
+
+  /* Modal backdrop (modal-wrapper, session-create-form). */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-bg/80;
+    z-index: 1000;
+    /* Home-screen app on iPhone: keep modals clear of the status bar and home indicator. */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Disable all transitions and animations (phones; the desktop fades in, below) */
+    transition: none !important;
+    animation: none !important;
+  }
+  /* Desktop: a neutral scrim with a soft blur instead of the page color at 80% (2026-10-12). */
+  @media (min-width: 1024px) {
+    .modal-backdrop {
+      background: var(--ut-overlay);
+      backdrop-filter: blur(6px) saturate(1.1);
+      -webkit-backdrop-filter: blur(6px) saturate(1.1);
+    }
+    [data-theme='light'] .modal-backdrop {
+      background: var(--ut-overlay-soft);
+    }
+  }
+
+  /* Modal content: an elevated surface (design spec 2.7). */
+  .modal-content {
+    @apply bg-bg-elevated border border-border rounded-xl;
+    box-shadow: var(--shadow-e3);
+    position: relative;
+    z-index: 1001;
+    /* Disable all transitions and animations */
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Modal positioning when used as sibling to backdrop */
+  .modal-positioned {
+    @apply fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
+    @apply max-h-[calc(100vh-2rem)];
+    @apply overflow-y-auto;
+    z-index: 1001; /* Ensure it's above the backdrop */
+  }
+
+  .badge {
+    @apply px-2 py-1 rounded-rem text-xs font-mono font-semibold;
+  }
+
+  }

@@ -1,0 +1,108 @@
+/* Shared paint only: white pieces, 1 px rules, black main action. Density lives in the values file. */
+html[data-look="minimal-pro"] .ut-card {
+  background: var(--ut-bg-app);
+  border: 0;
+  border-bottom: 1px solid var(--ut-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-look="minimal-pro"] .ut-surface--floating,
+html[data-look="minimal-pro"] .ut-dialog,
+html[data-look="minimal-pro"] .ut-menu,
+html[data-look="minimal-pro"] .ut-toast,
+html[data-look="minimal-pro"] .ut-tooltip {
+  background: var(--ut-surface-raised);
+  color: var(--ut-text);
+  outline: 1px solid var(--ut-border);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="minimal-pro"] .ut-surface--detail {
+  background: var(--ut-bg-app);
+  outline: 1px solid var(--ut-border);
+}
+html[data-look="minimal-pro"] .ut-surface--inset,
+html[data-look="minimal-pro"] .ut-field,
+html[data-look="minimal-pro"] .ut-select {
+  background-color: var(--ut-bg-app);
+  border-color: var(--ut-border-strong);
+  box-shadow: none;
+}
+html[data-look="minimal-pro"] .ut-btn--secondary {
+  background: var(--ut-bg-app);
+  border-color: var(--ut-border-strong);
+}
+html[data-look="minimal-pro"] .ut-btn--primary {
+  background: var(--ut-accent);
+  border-color: var(--ut-accent);
+  color: var(--ut-text-on-accent);
+}
+html[data-look="minimal-pro"] .ut-btn--danger {
+  background: var(--ut-bg-app);
+  border-color: var(--ut-border-strong);
+  color: var(--ut-text);
+}
+html[data-look="minimal-pro"] .ut-btn--secondary:hover:not(:disabled),
+html[data-look="minimal-pro"] .ut-btn--danger:hover:not(:disabled) {
+  background: var(--ut-surface-hover);
+  border-color: var(--ut-text);
+}
+html[data-look="minimal-pro"] .ut-btn--primary:hover:not(:disabled) {
+  background: var(--ut-accent-hover);
+}
+html[data-look="minimal-pro"] .ut-btn--primary:active:not(:disabled) {
+  background: var(--ut-accent-pressed);
+}
+html[data-look="minimal-pro"] .ut-btn:focus-visible,
+html[data-look="minimal-pro"] .ut-icon-btn:focus-visible,
+html[data-look="minimal-pro"] .ut-chip:focus-visible,
+html[data-look="minimal-pro"] .ut-menu-item:focus-visible,
+html[data-look="minimal-pro"] .ut-field:focus-visible,
+html[data-look="minimal-pro"] .ut-select:focus-visible,
+html[data-look="minimal-pro"] .ut-surface--control:focus-visible,
+html[data-look="minimal-pro"] .ut-surface--inset:focus-visible {
+  outline: 2px solid var(--ut-focus-ring);
+  outline-offset: 4px;
+  box-shadow: none;
+}
+
+html[data-look="minimal-pro"] .ut-btn--secondary:active:not(:disabled),
+html[data-look="minimal-pro"] .ut-btn--ghost:active:not(:disabled) {
+  background: var(--ut-control-pressed-bg);
+}
+html[data-look="minimal-pro"] .ut-surface--action:focus-visible,
+html[data-look="minimal-pro"] .ut-surface--well:focus-within {
+  outline: 2px solid var(--ut-focus-ring);
+  outline-offset: 4px;
+  box-shadow: none;
+}
+
+/* Notices remain open rows, even when they share the detail surface with a task. */
+html[data-look="minimal-pro"] .ut-surface--notice {
+  background: var(--ut-bg-app);
+  outline: none;
+}
+
+/* The one tinted piece: a state label that says failure, permission or warning. */
+html[data-look="minimal-pro"] .ut-badge--danger,
+html[data-look="minimal-pro"] .ut-badge--warning {
+  background: var(--ut-attention-soft);
+  border-color: transparent;
+  color: var(--ut-attention-text);
+}
+
+/* Disabled: grey ground, dimmer ink and the control's own edge; nothing fades, so it stays legible. */
+html[data-look="minimal-pro"] .ut-btn:disabled,
+html[data-look="minimal-pro"] .ut-icon-btn:disabled,
+html[data-look="minimal-pro"] .ut-menu-item:disabled,
+html[data-look="minimal-pro"] .ut-field:disabled,
+html[data-look="minimal-pro"] .ut-switch:disabled,
+html[data-look="minimal-pro"] .ut-surface--control:disabled,
+html[data-look="minimal-pro"] .ut-surface--action:disabled,
+html[data-look="minimal-pro"] .ut-surface--primary:disabled {
+  background: var(--ut-surface-2);
+  border-color: var(--ut-border-strong);
+  color: var(--ut-text-dim);
+  box-shadow: none;
+}

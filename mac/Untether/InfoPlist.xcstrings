@@ -1,0 +1,114 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSAppleEventsUsageDescription" : {
+      "comment" : "macOS permission prompt: why Untether controls terminal apps (Automation)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untether uses AppleScript to spawn a terminal when you create a new session in the dashboard. This allows Untether to automatically open your preferred terminal application and connect it to the remote session."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untether usa AppleScript para abrir un terminal cuando creas una sesión nueva en el panel. Así Untether puede abrir automáticamente tu aplicación de terminal preferida y conectarla a la sesión remota."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untether utilise AppleScript pour ouvrir un terminal quand vous créez une session dans le tableau de bord. Untether peut ainsi ouvrir automatiquement votre application de terminal préférée et la connecter à la session distante."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Untether usa AppleScript para abrir um terminal quando você cria uma sessão no painel. Assim o Untether pode abrir automaticamente seu aplicativo de terminal preferido e conectá-lo à sessão remota."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当你在仪表板中新建会话时，Untether 会使用 AppleScript 打开一个终端。这样 Untether 就能自动打开你偏好的终端应用，并将其连接到远程会话。"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‏يستخدم Untether لغة AppleScript لفتح طرفية عند إنشاء جلسة جديدة في لوحة التحكم. يتيح ذلك لـ Untether فتح تطبيق الطرفية المفضل لديك تلقائيًا وربطه بالجلسة البعيدة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ড্যাশবোর্ডে নতুন সেশন তৈরি করলে Untether একটি টার্মিনাল খুলতে AppleScript ব্যবহার করে। এর ফলে Untether স্বয়ংক্রিয়ভাবে আপনার পছন্দের টার্মিনাল অ্যাপ খুলে রিমোট সেশনের সাথে যুক্ত করতে পারে।"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "जब आप डैशबोर्ड में नया सेशन बनाते हैं, तो Untether टर्मिनल खोलने के लिए AppleScript इस्तेमाल करता है। इससे Untether अपने-आप आपका पसंदीदा टर्मिनल ऐप खोलकर उसे रिमोट सेशन से जोड़ पाता है।"
+          }
+        }
+      }
+    },
+    "NSUserNotificationsUsageDescription" : {
+      "comment" : "macOS permission prompt: why Untether shows notifications",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untether will notify you about important events such as new terminal connections, and session status changes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untether te avisará de eventos importantes, como nuevas conexiones de terminal y cambios en el estado de las sesiones."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untether vous préviendra des événements importants, comme les nouvelles connexions de terminal et les changements d’état des sessions."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Untether vai avisar você sobre eventos importantes, como novas conexões de terminal e mudanças no status das sessões."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untether 会在发生重要事件时通知你，例如新的终端连接和会话状态变化。"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‏سيُعلمك Untether بالأحداث المهمة، مثل اتصالات الطرفية الجديدة وتغيّر حالة الجلسات."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untether আপনাকে গুরুত্বপূর্ণ ঘটনার কথা জানাবে, যেমন নতুন টার্মিনাল সংযোগ ও সেশনের অবস্থার পরিবর্তন।"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untether आपको ज़रूरी घटनाओं की सूचना देगा, जैसे नए टर्मिनल कनेक्शन और सेशन की स्थिति में बदलाव।"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

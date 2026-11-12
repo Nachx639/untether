@@ -1,0 +1,116 @@
+/* The top of the home-screen app (iOS 26+/27, 2026-10-04). With black-translucent and
+   viewport-fit=cover the page paints under the status bar, and iOS draws its Liquid Glass
+   scroll-edge effect there: a progressive blur over the web view reaching ~40 pt past the
+   status bar, which frosted the list's title and buttons. It is system chrome, not ours: no
+   filter, backdrop-filter, opacity, transform or containment applies to the header or any
+   of its ancestors, and #ut-boot is display: none by then.
+
+   WebKit is said to drop it when a fixed or sticky opaque box covers the top edge. On the
+   iPhone SE simulator (iOS 27) neither a fixed band over the status bar nor a sticky opaque
+   header did. So by default (html[data-edge-fix='pad'], utils/edge-fix.ts) the list header's
+   content starts below the blurred zone, 40 px under the inset, its opaque background
+   filling the zone: the blur then falls on plain colour. The clearance is 0 where there is
+   no inset (landscape: no status bar). A long press on the version in Settings switches to
+   'sticky' (the band and a sticky header) or 'off', to compare on a device.
+   Home-screen app only (html[data-standalone], viewport-init.js). */
+.ut-status-bar {
+  display: none;
+}
+html[data-standalone]:not([data-edge-fix='off']) .ut-status-bar {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background-color: var(--color-bg-secondary);
+  z-index: 47;
+}
+html[data-standalone][data-edge-fix='pad'] .main-list-scroll > app-header .app-header {
+  /* Over full-header.ts's inline padding-top (0.75rem + inset). */
+  padding-top: calc(
+    env(safe-area-inset-top, 0px) +
+      max(0.75rem, min(40px, calc(env(safe-area-inset-top, 0px) * 100)))
+  ) !important;
+}
+/* A modeled header still needs iOS standalone scroll-edge clearance: system blur is
+   outside CSS. Keep the title below that zone, filled with the same solid header color. */
+html[data-look="clay"][data-standalone][data-edge-fix='pad'] .main-list-scroll > app-header .app-header {
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--ut-list-header-clearance)) !important;
+}
+html[data-look="clay"][data-standalone]:not([data-edge-fix='off']) .ut-status-bar {
+  background-color: var(--ut-status-bar-bg);
+}
+/* The session view's header, the same (2026-10-04: its title and buttons were frosted in the
+   home-screen app). Its row starts 40 px under the inset, the header area's opaque background
+   filling the zone; nothing where there is no inset, so landscape keeps every terminal row.
+   Not with the preview split open: the panel above clears the top (its rule sets 0). */
+html[data-standalone][data-edge-fix='pad']
+  body:not(.preview-split-open)
+  session-view
+  .session-header-area {
+  /* Over session-view.ts's padding-top: env(safe-area-inset-top) !important. */
+  padding-top: calc(
+    env(safe-area-inset-top, 0px) + min(40px, calc(env(safe-area-inset-top, 0px) * 100))
+  ) !important;
+}
+/* Above the rows and the floating "+" (40), under the band (same colour) and the sheets. */
+html[data-standalone][data-edge-fix='sticky'] .main-list-scroll > app-header {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 45;
+}
+
+/* The app fills the visible screen; the list view scrolls inside it (see app.ts sidebarClasses). */
+untether-app {
+  display: block;
+  height: 100%;
+}
+.main-list-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+/* The list's bottom bar (counts, "Cerrar todas") stays at the bottom of the screen, or of the
+   sessions sidebar, when the list is short: it floated mid-screen in the home-screen app
+   (2026-10-03). Each level down to the list's content is a growing column; the bar keeps
+   sticking to the bottom when the list is long. */
+.main-list-scroll > .flex-1,
+.split-view-sidebar .sidebar-scroll-area {
+  display: flex;
+  flex-direction: column;
+}
+.main-list-scroll session-list,
+.main-list-scroll [data-testid='session-list-container'],
+.sidebar-scroll-area session-list,
+.sidebar-scroll-area [data-testid='session-list-container'] {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.main-list-scroll [data-testid='session-list-container'] > .p-4,
+.sidebar-scroll-area [data-testid='session-list-container'] > .p-4 {
+  flex: 1 0 auto;
+}
+
+/* The preview is already open above the session: its chip in the session header is noise. */
+body.preview-split-open .ut-preview-chip {
+  display: none;
+}
+
+/* Narrow phones (iPhone SE): the preview bar didn't fit, the address shrank to ":518" under the
+   reload button (2026-10-03). Forward goes (back stays), the session name and buttons tighten. */
+@media (max-width: 400px) {
+  .pv-bar [data-testid='preview-forward'] {
+    display: none;
+  }
+  .pv-back-name {
+    max-width: 22vw;
+  }
+  .pv-bar .pv-btn {
+    width: 34px;
+  }
+  .pv-bar .pv-btn.pv-back {
+    width: auto;
+  }
+}

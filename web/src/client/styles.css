@@ -1,0 +1,56 @@
+/* The app's stylesheet: only the order of its parts. Rules live in the files below, one per
+   shared piece or zone, so a change edits the piece's own file and two tasks touching different
+   pieces never meet in the same lines (2026-11-11). The order is the cascade: a new file goes
+   where its rules belong in it. The styles (looks) are not here: styles/looks/ (docs/ui-tokens.md). */
+@import "tailwindcss";
+@import "./styles/tokens.css";
+
+/* The foundation: variables, the base layer, the shared .ut-* pieces (ut-*.css, one
+   `@layer components` that each file opens and closes for itself) and the legacy unlayered rules. */
+@import "./styles/foundation/variables.css";
+@import "./styles/foundation/base.css";
+@import "./styles/foundation/legacy-components.css";
+@import "./styles/foundation/ut-surfaces.css";
+@import "./styles/foundation/ut-buttons-chips.css";
+@import "./styles/foundation/ut-fields.css";
+@import "./styles/foundation/ut-menus-lists.css";
+@import "./styles/foundation/ut-dialogs-toasts.css";
+@import "./styles/foundation/ut-touch.css";
+@import "./styles/foundation/surface-effects.css";
+@import "./styles/foundation/modal-wrapper.css";
+@import "./styles/foundation/utilities.css";
+@import "./styles/foundation/fonts.css";
+@import "./styles/foundation/touch-scroll.css";
+@import "./styles/foundation/terminal.css";
+@import "./styles/foundation/view-transitions.css";
+@import "./styles/foundation/terminal-exited.css";
+@import "./styles/foundation/session-transitions.css";
+@import "./styles/foundation/mobile-terminal.css";
+@import "./styles/foundation/phone-rows.css";
+@import "./styles/foundation/avatars.css";
+@import "./styles/foundation/phone-row-lines.css";
+@import "./styles/foundation/phone-header-menu.css";
+@import "./styles/foundation/sheet-actions.css";
+@import "./styles/foundation/sheet-primitives.css";
+@import "./styles/foundation/sheet-confirm-rename.css";
+@import "./styles/foundation/sheet-whats-new.css";
+@import "./styles/foundation/sheet-answer.css";
+@import "./styles/foundation/start-screen.css";
+@import "./styles/foundation/composer.css";
+@import "./styles/foundation/a11y.css";
+@import "./styles/foundation/notifications.css";
+@import "./styles/foundation/preview-panel.css";
+@import "./styles/foundation/phone-compact-layouts.css";
+@import "./styles/foundation/preview-rows.css";
+@import "./styles/foundation/standalone.css";
+@import "./styles/foundation/shield-share.css";
+
+/* Area stylesheets (design spec 3.7): each area edits only its own file. Last, so their
+   rules win ties with the foundation ones above. */
+@import "./styles/list.css";
+@import "./styles/session.css";
+@import "./styles/dialogs.css";
+@import "./styles/layout.css";
+
+/* After the areas: material paint that existing pieces opt into. */
+@import "./styles/material.css";

@@ -1,0 +1,32 @@
+{
+  "name": "node-pty",
+  "version": "1.0.0",
+  "description": "Minimal PTY implementation without threading - vendored from node-pty",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b",
+  "scripts": {
+    "build": "tsc && node-gyp rebuild",
+    "clean": "node -e \"['lib', 'build'].forEach(path => require('node:fs').rmSync(path, {recursive: true, force: true}))\"",
+    "install": "node-gyp rebuild"
+  },
+  "dependencies": {
+    "node-addon-api": "^8.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "node-gyp": "^12.4.0",
+    "prebuild": "^13.0.1",
+    "typescript": "^7.0.2"
+  },
+  "gypfile": true,
+  "license": "MIT",
+  "pnpm": {
+    "overrides": {
+      "follow-redirects@1": "1.16.2",
+      "node-ninja": "npm:node-gyp@^12.4.0",
+      "nw-gyp": "npm:node-gyp@^12.4.0",
+      "tar@<7.5.21": "^7.5.21"
+    }
+  }
+}

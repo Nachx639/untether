@@ -1,0 +1,89 @@
+#!/usr/bin/env node
+// A stand-in for Claude Code in the suspend/wake e2e test (session-suspend.e2e.test.ts). It
+// writes what Untether reads from the real one: ~/.claude/sessions/<pid>.json (status idle
+// since long ago, its conversation and start) and the conversation's transcript under
+// ~/.claude/projects, ending with a finished turn. `--resume <id>` continues that transcript.
+// Every start appends its arguments to $FAKE_CLAUDE_LOG. Typed lines become user turns; what
+// is typed shows after its `❯` until Enter, like Claude's input box (a draft the suspender sees).
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const args = process.argv.slice(2);
+const home = process.env.CLAUDE_CONFIG_DIR || path.join(process.env.HOME, '.claude');
+const at = args.indexOf('--resume');
+const conversation = at >= 0 ? args[at + 1] : process.env.FAKE_CLAUDE_CONV || crypto.randomUUID();
+const cwd = process.cwd();
+const dir = path.join(home, 'projects', cwd.replace(/[^A-Za-z0-9]/g, '-'));
+const transcript = path.join(dir, `${conversation}.jsonl`);
+fs.mkdirSync(dir, { recursive: true });
+fs.mkdirSync(path.join(home, 'sessions'), { recursive: true });
+if (process.env.FAKE_CLAUDE_LOG) {
+  fs.appendFileSync(process.env.FAKE_CLAUDE_LOG, `${JSON.stringify({ pid: process.pid, args })}\n`);
+}
+const startedAt = Date.now();
+// No procStart: Claude writes it in the Mac's time zone, and the test server runs in UTC.
+const sessionFile = path.join(home, 'sessions', `${process.pid}.json`);
+const writeSession = (status) =>
+  fs.writeFileSync(
+    sessionFile,
+    JSON.stringify({
+      pid: process.pid,
+      sessionId: conversation,
+      cwd,
+      startedAt,
+      version: '9.9.9',
+      kind: 'interactive',
+      status,
+      // Idle "for hours": the suspender's idle time is read from here.
+      statusUpdatedAt: status === 'idle' ? startedAt - 3 * 60 * 60_000 : Date.now(),
+      updatedAt: Date.now(),
+    })
+  );
+const turns = () =>
+  fs.existsSync(transcript)
+    ? fs
+        .readFileSync(transcript, 'utf8')
+        .split('\n')
+        .filter((line) => line.includes('"type":"user"')).length
+    : 0;
+const append = (entry) =>
+  fs.appendFileSync(transcript, `${JSON.stringify({ ...entry, timestamp: new Date().toISOString(), sessionId: conversation })}\n`);
+const turn = (text) => {
+  append({ type: 'user', message: { role: 'user', content: text } });
+  const n = turns();
+  append({
+    type: 'assistant',
+    message: { role: 'assistant', content: [{ type: 'text', text: `echo ${text} (turn ${n})` }], stop_reason: 'end_turn' },
+  });
+  return n;
+};
+if (at < 0) turn('first message');
+writeSession('idle');
+process.stdout.write(`fake claude ${at >= 0 ? `resumed ${conversation} with ${turns()} turns` : `started ${conversation}`}\r\n`);
+process.stdout.write('❯ ');
+process.stdin.setRawMode?.(true);
+let line = '';
+process.stdin.on('data', (data) => {
+  for (const ch of data.toString()) {
+    if (ch === '\r' || ch === '\n') {
+      if (line.trim()) {
+        const n = turn(line.trim());
+        process.stdout.write(`\r\necho ${line.trim()} (turn ${n})\r\n❯ `);
+      }
+      line = '';
+    } else {
+      line += ch;
+      process.stdout.write(ch);
+    }
+  }
+});
+const end = () => {
+  try {
+    fs.unlinkSync(sessionFile);
+  } catch {}
+  process.exit(0);
+};
+process.on('SIGTERM', end);
+process.on('SIGHUP', end);
+setInterval(() => {}, 1 << 30);

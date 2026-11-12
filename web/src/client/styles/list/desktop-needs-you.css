@@ -1,0 +1,176 @@
+@layer components {
+  /* «Te necesita» (2026-11-08, list-needs-you.ts): what waits for the user, most urgent
+     first, one row each: glyph, title, its reason in ONE line, how long, and its button. */
+  .ut-needs {
+    margin-bottom: 16px;
+    border: var(--ut-needs-outline, 1px) solid var(--ut-needs-edge);
+    border-radius: var(--ut-needs-radius, var(--ut-r-12));
+    background: var(--ut-needs-bg);
+    font-family: var(--font-ui);
+    overflow: hidden;
+  }
+  .ut-needs-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--ut-needs-head-h, 36px);
+    padding: var(--ut-needs-head-pad, 4px 8px 0 12px);
+  }
+  .ut-needs-label {
+    flex: 1;
+    min-width: 0;
+    font: var(--ut-needs-label-style, normal) var(--ut-needs-label-weight, var(--ut-needs-title-weight, 600)) var(--ut-needs-label-size, 12px)/var(--ut-needs-label-line, 16px) var(--ut-needs-label-font, var(--font-ui));
+    letter-spacing: var(--ut-needs-label-tracking, 0.04em);
+    text-transform: var(--ut-needs-label-case, uppercase);
+    color: var(--ut-needs-label-ink, var(--color-attention-text));
+  }
+  .ut-needs-toggle,
+  .ut-needs-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--ut-action-h, 32px);
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--ut-r-8);
+    background: transparent;
+    color: var(--ut-needs-action-ink, var(--color-attention-text));
+    font: var(--ut-action-weight, 600) var(--ut-action-size, 13px)/var(--ut-action-line, 18px) var(--font-ui);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* A style whose backdrop is bright behind the head gives «Solo esto» an opaque capsule
+     (--ut-needs-toggle-*); by default it is the plain text button. */
+  .ut-needs-toggle {
+    padding: var(--ut-needs-toggle-pad, 0 8px);
+    border-radius: var(--ut-needs-toggle-radius, var(--ut-r-8));
+    background: var(--ut-needs-toggle-bg, transparent);
+    box-shadow: var(--ut-needs-toggle-edge, none);
+  }
+  .ut-needs-toggle[aria-pressed='true'] {
+    background: var(--ut-needs-toggle-pressed-bg, color-mix(in srgb, var(--color-attention) 24%, transparent));
+  }
+  .ut-needs-more {
+    margin: 0 4px 4px;
+  }
+  .ut-needs-list {
+    margin: 0;
+    padding: var(--ut-needs-list-pad, 0 4px 4px);
+    list-style: none;
+    border-top: var(--ut-needs-row-border, 0 solid transparent);
+  }
+  .ut-needs-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--ut-needs-row-h, 48px);
+    padding-right: var(--ut-needs-row-end, 8px);
+    border-radius: var(--ut-needs-item-radius);
+    background-color: var(--ut-needs-fill-1);
+    background-image: var(--ut-grain);
+    box-shadow: var(--ut-needs-item-shadow);
+    border-bottom: var(--ut-needs-row-border, 0 solid transparent);
+  }
+  .ut-list-surface {
+    background-image: var(--ut-workspace-backdrop, var(--ut-grain));
+    background-size: var(--ut-workspace-backdrop-size, auto);
+    background-position: var(--ut-workspace-backdrop-position, 0 0);
+    background-repeat: var(--ut-workspace-backdrop-repeat, repeat);
+  }
+  .sidebar-scroll-area.ut-list-surface {
+    background-image: var(--ut-sidebar-backdrop, var(--ut-grain));
+    background-size: var(--ut-sidebar-backdrop-size, auto);
+    background-position: var(--ut-sidebar-backdrop-position, 0 0);
+    background-repeat: var(--ut-sidebar-backdrop-repeat, repeat);
+  }
+  .ut-needs-item:nth-child(3n + 2) {
+    background-color: var(--ut-needs-fill-2);
+  }
+  .ut-needs-item:nth-child(3n) {
+    background-color: var(--ut-needs-fill-3);
+  }
+  .ut-needs-item + .ut-needs-item {
+    margin-top: var(--ut-needs-gap);
+    box-shadow: var(--ut-needs-divider);
+  }
+  .ut-needs-main {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--ut-needs-main-gap, 10px);
+    min-width: 0;
+    min-height: var(--ut-needs-main-h, 48px);
+    padding: var(--ut-needs-main-pad, 6px 8px);
+    border: 0;
+    border-radius: var(--ut-r-8);
+    background: transparent;
+    color: var(--color-text);
+    text-align: start;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ut-needs-main:hover {
+    background: var(--ut-needs-hover, color-mix(in srgb, var(--color-attention) 16%, transparent));
+  }
+  .ut-needs-main > svg,
+  .ut-needs-main > .ut-agent-glyph {
+    flex: none;
+    color: var(--color-text-muted);
+  }
+  .ut-needs-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .ut-needs-name,
+  .ut-needs-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ut-needs-name {
+    font: var(--ut-needs-title-weight, 600) var(--ut-needs-title-size, 14px)/var(--ut-needs-title-line, 18px) var(--ut-needs-title-font, var(--font-ui));
+  }
+  .ut-needs-line {
+    color: var(--ut-needs-line-ink, var(--color-attention-text));
+    font: var(--ut-needs-meta-weight, 500) var(--ut-needs-meta-size, 12px)/var(--ut-needs-meta-line, 16px) var(--font-ui);
+  }
+  /* Optional: a style can set apart the line of a request that waits for an answer or an OK. */
+  .ut-needs-item[data-action='answer'] .ut-needs-line,
+  .ut-needs-item[data-action='confirm'] .ut-needs-line {
+    color: var(--ut-needs-answer-ink, var(--ut-needs-line-ink, var(--color-attention-text)));
+  }
+  .ut-needs-item[data-tier='failed'] .ut-needs-line {
+    color: var(--color-status-error-text);
+  }
+  .ut-needs-time {
+    flex: none;
+    color: var(--color-text-muted);
+    font: 500 var(--ut-needs-time-size, 12px)/var(--ut-needs-time-line, 16px) var(--font-ui);
+    font-variant-numeric: tabular-nums;
+  }
+  .ut-needs-act {
+    flex: none;
+    min-height: var(--ut-action-h, 32px);
+    padding: 0 var(--ut-action-pad, 12px);
+    border: 1px solid var(--ut-needs-act-border);
+    border-radius: var(--ut-action-radius, var(--ut-r-pill));
+    background: var(--ut-needs-act-bg);
+    box-shadow: var(--ut-action-relief);
+    color: var(--ut-needs-act-fg);
+    font: var(--ut-action-weight, 600) var(--ut-action-size, 13px)/var(--ut-action-line, 18px) var(--font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ut-needs-act--merge {
+    border-color: transparent;
+    background: var(--color-primary);
+    color: var(--color-on-fill);
+  }
+  .ut-needs-act:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}

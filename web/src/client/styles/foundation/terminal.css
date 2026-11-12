@@ -1,0 +1,148 @@
+/* Enhanced terminal container styling */
+.terminal-container {
+  overflow: hidden;
+}
+
+/* Terminal line styling */
+.terminal-line {
+  display: block;
+  white-space: pre;
+  overflow: hidden;
+}
+
+/* Terminal character specific styling */
+.terminal-char {
+  display: inline-block;
+  font-family: inherit;
+  font-variant-ligatures: none;
+  font-feature-settings: 'liga' 0;
+  white-space: pre;
+}
+
+/* Terminal text decoration support */
+.terminal-char.bold {
+  font-weight: bold;
+}
+
+.terminal-char.italic {
+  font-style: italic;
+}
+
+.terminal-char.underline {
+  text-decoration: underline;
+}
+
+.terminal-char.dim {
+  opacity: 0.5;
+}
+
+.terminal-char.strikethrough {
+  text-decoration: line-through;
+}
+
+.terminal-char.overline {
+  text-decoration: overline;
+}
+
+.terminal-char.inverse {
+  filter: invert(1);
+}
+
+.terminal-char.invisible {
+  opacity: 0;
+}
+
+/* Enhanced cursor styling */
+.terminal-char.cursor {
+  animation: cursor-blink 1s infinite;
+  background-color: #23d18b !important; /* Green cursor */
+  color: #000000 !important; /* Black text on cursor */
+}
+
+@keyframes cursor-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0.3;
+  }
+}
+
+/* Ensure terminal container has proper size */
+#terminal-player,
+#interactive-terminal {
+  min-height: 480px;
+  min-width: 640px;
+  width: 100%;
+}
+
+/* Enhanced terminal focus indicator */
+.terminal-focused {
+  box-shadow: 0 0 0 2px var(--color-primary);
+  border-color: var(--color-primary) !important;
+  transition: all 0.2s ease-out;
+}
+
+/* Enhanced keyboard capture indicator */
+.keyboard-capture-indicator {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  padding: 6px 12px;
+  border-radius: var(--ut-r-md);
+  font-size: 12px;
+  font-weight: var(--ut-fw-medium);
+  z-index: 1000;
+  animation: slideInFromTop 0.3s ease-out;
+  box-shadow: var(--ut-glow-2-8) color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Terminal link styling */
+
+/* Floating action buttons with backdrop blur */
+.scroll-to-bottom {
+  @apply absolute flex items-center justify-center;
+  @apply w-12 h-12 rounded-md;
+  @apply bg-bg/20 border border-border/50;
+  @apply text-text text-2xl;
+  @apply cursor-pointer select-none;
+  @apply transition-all duration-200;
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  box-shadow: var(--ut-drop-8-30);
+}
+
+/* Position scroll button */
+.scroll-to-bottom {
+  @apply bottom-3 left-3 z-10;
+}
+
+/* Hover state for both buttons */
+.scroll-to-bottom:hover {
+  @apply bg-bg/40 border-primary text-primary;
+  @apply -translate-y-0.5 shadow-glow-sm;
+  backdrop-filter: blur(16px) saturate(1.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.8);
+}
+
+/* Active state for both buttons */
+.scroll-to-bottom:active {
+  @apply translate-y-0;
+}

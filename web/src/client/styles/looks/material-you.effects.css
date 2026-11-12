@@ -1,0 +1,300 @@
+/* Material You: tonal surfaces without edges, grouped requests, four button ranks (filled,
+ * tonal, outlined, text) and state layers, on the shared paint hooks only. Values live in
+ * material-you.css. Nothing here filters or blends what is inside a piece. */
+
+/* Bars are tonal level 1: no line below, no shadow. */
+html[data-look="material-you"] .ut-surface--bar {
+  background-color: var(--ut-session-bar);
+  background-image: none;
+  box-shadow: none;
+  border-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Cards, groups and panels: a tonal container, told from the sheet by color alone. */
+/* A group (Settings) is rows 4 px apart inside one clipped shape, like the requests. */
+html[data-look="material-you"] .ut-group {
+  background-color: var(--ut-group-bg);
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+html[data-look="material-you"] .ut-card,
+html[data-look="material-you"] .ut-surface--panel {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Requests are one group: 4 px apart, straight inside, 28 px at the group's outer corners. */
+html[data-look="material-you"] .ut-surface--request {
+  box-shadow: none;
+}
+html[data-look="material-you"] .ut-surface--request:first-child {
+  border-top-left-radius: var(--ut-r-xl);
+  border-top-right-radius: var(--ut-r-xl);
+}
+html[data-look="material-you"] .ut-surface--request:last-child {
+  border-bottom-left-radius: var(--ut-r-xl);
+  border-bottom-right-radius: var(--ut-r-xl);
+}
+
+/* The failure notice: the rose container, the one sheet with a short shadow. */
+html[data-look="material-you"] .ut-surface--detail {
+  background-color: var(--ut-attention-soft);
+  background-image: none;
+  border-color: transparent;
+  box-shadow: var(--ut-elev-1);
+}
+
+html[data-look="material-you"] .ut-surface--notice {
+  background-color: var(--ut-banner-bg);
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* The record: a lavender container, flat. */
+html[data-look="material-you"] .ut-surface--record {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Floating pieces: the raised surface with elevation, no outline. */
+html[data-look="material-you"] .ut-surface--floating,
+html[data-look="material-you"] .ut-dialog,
+html[data-look="material-you"] .ut-toast {
+  background-color: var(--ut-surface-raised);
+  background-image: none;
+  color: var(--ut-text);
+  border-color: transparent;
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="material-you"] .ut-menu,
+html[data-look="material-you"] .ut-tooltip {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  color: var(--ut-text);
+  border-color: transparent;
+  box-shadow: var(--ut-elev-2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="material-you"] .ut-surface--floating:where(button) {
+  box-shadow: var(--ut-elev-1);
+}
+
+/* Outlined: every secondary action is violet lettering inside a 1 px firm outline. */
+html[data-look="material-you"] .ut-btn--secondary,
+html[data-look="material-you"] .ut-btn--danger,
+html[data-look="material-you"] .ut-chip {
+  background-color: transparent;
+  background-image: none;
+  color: var(--ut-accent-text);
+  border-color: var(--ut-outline);
+  box-shadow: none;
+}
+html[data-look="material-you"] .ut-chip {
+  color: var(--ut-text);
+}
+/* Text: the quietest rank. */
+html[data-look="material-you"] .ut-btn--ghost {
+  color: var(--ut-accent-text);
+}
+html[data-look="material-you"] .ut-btn--danger,
+html[data-look="material-you"] .ut-btn--danger-ghost,
+html[data-look="material-you"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+/* Tonal: the actions outside .ut-btn (Nueva, a row's action). */
+html[data-look="material-you"] .ut-surface--action {
+  background-color: var(--ut-tonal);
+  background-image: none;
+  color: var(--ut-accent-ink);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-look="material-you"] .ut-surface--badge,
+html[data-look="material-you"] .ut-badge,
+html[data-look="material-you"] .ut-kbd {
+  background-color: var(--ut-surface-2);
+  color: var(--ut-accent-ink);
+  box-shadow: none;
+}
+
+/* Fields are filled, with a firm outline: never a pastel edge alone. */
+html[data-look="material-you"] .ut-surface--well {
+  background-color: var(--ut-well-fill);
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+html[data-look="material-you"] .ut-surface--inset,
+html[data-look="material-you"] .ut-field,
+html[data-look="material-you"] .ut-select {
+  background-color: var(--ut-well-fill);
+  background-image: none;
+  border-color: var(--ut-outline);
+  box-shadow: none;
+}
+
+/* The segmented control: an outlined capsule; the choice is tonal. */
+html[data-look="material-you"] .ut-segmented {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--ut-outline);
+}
+
+/* Small ancillary controls stay flat inside their owner. */
+html[data-look="material-you"] .ut-surface--control,
+html[data-look="material-you"] .ut-surface--compact,
+html[data-look="material-you"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-look="material-you"] .ut-switch {
+  box-shadow: inset 0 0 0 2px var(--ut-outline);
+}
+html[data-look="material-you"] .ut-switch:where([aria-checked="true"]),
+html[data-look="material-you"] .ut-switch:where(:checked) {
+  box-shadow: none;
+}
+
+/* Selection: a full-width capsule in the selected tone, with darker violet lettering. */
+html[data-look="material-you"] .ut-surface--selected-row,
+html[data-look="material-you"] .ut-surface--selected {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-accent-ink);
+  box-shadow: none;
+}
+html[data-look="material-you"] .ut-surface--control:where([aria-selected="true"]),
+html[data-look="material-you"] .ut-surface--control:where([aria-current="page"]),
+html[data-look="material-you"] .ut-surface--control:where([aria-pressed="true"]),
+html[data-look="material-you"] .ut-surface--panel:where([aria-pressed="true"]),
+html[data-look="material-you"] .ut-surface--badge:where([aria-pressed="true"]),
+html[data-look="material-you"] .ut-icon-btn:where([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-accent-ink);
+  box-shadow: none;
+}
+html[data-look="material-you"] .ut-surface--segment:where(.selected) {
+  background-color: var(--ut-segment-selected-bg);
+  color: var(--ut-segment-selected-ink);
+  box-shadow: none;
+}
+
+/* Filled: deep violet with white lettering, the one main action. */
+html[data-look="material-you"] .ut-surface--primary,
+html[data-look="material-you"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: none;
+  color: var(--ut-text-on-accent);
+  border-color: transparent;
+  box-shadow: none;
+}
+/* A request's action is a white capsule on its rose row; answering, confirming and merging are
+   filled. The shield notice's action is tonal. */
+html[data-look="material-you"] .ut-surface--request-action {
+  background-color: var(--ut-needs-act-bg);
+  background-image: none;
+  color: var(--ut-needs-act-fg);
+  border-color: transparent;
+  box-shadow: none;
+}
+html[data-look="material-you"] .ut-surface--request-action:where([data-action="answer"]),
+html[data-look="material-you"] .ut-surface--request-action:where([data-action="confirm"]),
+html[data-look="material-you"] .ut-surface--request-action:where([data-action="merge"]) {
+  background-color: var(--ut-accent);
+  color: var(--ut-text-on-accent);
+}
+html[data-look="material-you"] .ut-surface--request-action:where(.ut-shield-banner-action) {
+  background-color: var(--ut-banner-action-bg);
+  color: var(--ut-banner-action-ink);
+}
+
+/* State layers: one flat veil over the piece's own color; the filled button gains a short
+   shadow under the pointer and loses it when pressed. */
+@media (hover: hover) {
+  html[data-look="material-you"] .ut-btn:hover:not(:disabled),
+  html[data-look="material-you"] .ut-chip:hover:not(:disabled),
+  html[data-look="material-you"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="material-you"] .ut-menu-item:hover:not(:disabled),
+  html[data-look="material-you"] .ut-surface--control:hover:not(:disabled),
+  html[data-look="material-you"] .ut-surface--action:hover:not(:disabled),
+  html[data-look="material-you"] .ut-surface--primary:hover:not(:disabled),
+  html[data-look="material-you"] .ut-surface--request-action:hover:not(:disabled) {
+    background-image: var(--ut-state-hover);
+  }
+  html[data-look="material-you"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="material-you"] .ut-surface--primary:hover:not(:disabled) {
+    box-shadow: var(--ut-elev-1);
+  }
+}
+html[data-look="material-you"] .ut-btn:active:not(:disabled),
+html[data-look="material-you"] .ut-chip:active:not(:disabled),
+html[data-look="material-you"] .ut-icon-btn:active:not(:disabled),
+html[data-look="material-you"] .ut-menu-item:active:not(:disabled),
+html[data-look="material-you"] .ut-surface--control:active:not(:disabled),
+html[data-look="material-you"] .ut-surface--action:active:not(:disabled),
+html[data-look="material-you"] .ut-surface--primary:active:not(:disabled),
+html[data-look="material-you"] .ut-surface--request-action:active:not(:disabled) {
+  background-image: var(--ut-state-press);
+  box-shadow: none;
+}
+
+/* Disabled: a flat grey-lavender with a dashed edge; the text stays opaque and legible. */
+html[data-look="material-you"] .ut-btn:disabled,
+html[data-look="material-you"] .ut-icon-btn:disabled,
+html[data-look="material-you"] .ut-menu-item:disabled,
+html[data-look="material-you"] .ut-field:disabled,
+html[data-look="material-you"] .ut-surface--control:disabled,
+html[data-look="material-you"] .ut-surface--primary:disabled,
+html[data-look="material-you"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+html[data-look="material-you"] .ut-btn:disabled,
+html[data-look="material-you"] .ut-icon-btn:disabled,
+html[data-look="material-you"] .ut-menu-item:disabled,
+html[data-look="material-you"] .ut-switch:disabled,
+html[data-look="material-you"] .ut-surface--primary:disabled,
+html[data-look="material-you"] .ut-surface--action:disabled {
+  outline: 1px dashed var(--ut-outline);
+  outline-offset: -1px;
+}
+html[data-look="material-you"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  box-shadow: none;
+}
+
+/* Focus: a violet ring, 3 px, apart from the piece. */
+html[data-look="material-you"] .ut-btn:focus-visible,
+html[data-look="material-you"] .ut-icon-btn:focus-visible,
+html[data-look="material-you"] .ut-chip:focus-visible,
+html[data-look="material-you"] .ut-menu-item:focus-visible,
+html[data-look="material-you"] .ut-switch:focus-visible,
+html[data-look="material-you"] .ut-field:focus-visible,
+html[data-look="material-you"] .ut-select:focus-visible,
+html[data-look="material-you"] .ut-surface--control:focus-visible,
+html[data-look="material-you"] .ut-surface--inset:focus-visible,
+html[data-look="material-you"] .ut-surface--action:focus-visible,
+html[data-look="material-you"] .ut-surface--primary:focus-visible,
+html[data-look="material-you"] .ut-surface--request-action:focus-visible,
+html[data-look="material-you"] .ut-surface--well:focus-within {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: 3px;
+}

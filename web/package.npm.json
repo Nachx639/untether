@@ -1,0 +1,80 @@
+{
+  "name": "untether",
+  "version": "1.0.0-beta.18",
+  "description": "Terminal sharing server with web interface - run terminals in your browser, with ngrok tunnel support for remote access",
+  "main": "lib/cli.js",
+  "bin": {
+    "untether": "./bin/untether"
+  },
+  "files": [
+    "lib/",
+    "public/",
+    "bin/",
+    "forwarders/",
+    "scripts/postinstall.js",
+    "scripts/install-ut-command.js",
+    "scripts/docker-entrypoint.sh",
+    "node-pty/",
+    "prebuilds/",
+    "README.md",
+    "README.standalone.md",
+    "Dockerfile.standalone"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "engines": {
+    "node": ">=22.12.0 <25"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nachx639/untether.git",
+    "directory": "web"
+  },
+  "homepage": "https://github.com/Nachx639/untether",
+  "bugs": {
+    "url": "https://github.com/Nachx639/untether/issues"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js",
+    "start": "node lib/cli.js",
+    "untether": "node lib/cli.js"
+  },
+  "dependencies": {
+    "bonjour-service": "^1.4.4",
+    "compression": "^1.8.2",
+    "express": "^5.3.0",
+    "ghostty-web": "^0.4.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "lit": "^3.3.3",
+    "mime-types": "^3.0.2",
+    "monaco-editor": "^0.55.1",
+    "multer": "^2.5.0",
+    "postject": "1.0.0-alpha.6",
+    "web-push": "^3.6.7",
+    "ws": "^8.22.0",
+    "node-addon-api": "^8.9.2"
+  },
+  "optionalDependencies": {
+    "authenticate-pam": "^1.0.5"
+  },
+  "keywords": [
+    "terminal",
+    "web-terminal",
+    "terminal-emulator",
+    "multiplexer",
+    "websocket",
+    "ngrok",
+    "tunnel",
+    "remote-access",
+    "docker",
+    "npx",
+    "asciinema",
+    "pty",
+    "xterm"
+  ],
+  "author": "Untether",
+  "license": "MIT"
+}

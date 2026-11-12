@@ -1,0 +1,294 @@
+/* Cómic: ink frames, drawn corners and hard print shadows on the shared paint hooks only. Values
+ * live in comic.css. The halftone stays in the margins of a panel, behind nothing that is read;
+ * nothing here filters, blends or moves what a piece holds. */
+
+/* Bars are cream paper closed by a 3 px ink rule. */
+html[data-look="comic"] .ut-surface--bar {
+  background-color: var(--ut-session-bar);
+  background-image: var(--ut-bar-fill);
+  box-shadow: var(--ut-bar-rule);
+  border-color: var(--ut-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="comic"] .ut-surface--bar:where(.ut-home-header),
+html[data-look="comic"] .ut-surface--bar:where(.ut-phone-header),
+html[data-look="comic"] .ut-surface--bar:where(.ut-sidebar-header),
+html[data-look="comic"] .ut-surface--bar:where(.ut-session-header),
+html[data-look="comic"] .ut-surface--bar:where(.ut-ph-header) {
+  box-shadow: var(--ut-bar-relief);
+}
+
+/* Panels: cream, a 3 px ink frame with uneven corners and the print shadow. */
+html[data-look="comic"] .ut-card,
+html[data-look="comic"] .ut-group,
+html[data-look="comic"] .ut-surface--panel {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  border: 3px solid var(--ut-border);
+  border-radius: var(--ut-wobble-card);
+  box-shadow: var(--ut-panel-shadow);
+}
+
+/* A request: a panel of its own, halftone in its two margins only. Every second one is drawn
+   with other corners, so the column does not look stamped. */
+html[data-look="comic"] .ut-surface--request {
+  background-image: var(--ut-dots-start), var(--ut-dots-end);
+  background-position: left top, right top;
+  background-size: 56px 7px, 42px 7px;
+  background-repeat: repeat-y, repeat-y;
+  border: 3px solid var(--ut-border);
+  box-shadow: var(--ut-needs-item-shadow);
+}
+html[data-look="comic"] .ut-surface--request:nth-child(2n) {
+  border-radius: var(--ut-wobble-card-alt);
+}
+
+/* The failure notice and the shield notice: flat peach paper in an ink frame; the error is said
+   in words, in the danger ink. */
+html[data-look="comic"] .ut-surface--detail {
+  background-color: var(--ut-paper-peach);
+  background-image: none;
+  border-color: var(--ut-border);
+  box-shadow: inset 0 0 0 3px var(--ut-border);
+}
+html[data-look="comic"] .ut-surface--notice {
+  background-color: var(--ut-banner-bg);
+  background-image: none;
+  border: var(--ut-banner-border);
+  border-radius: var(--ut-wobble-card);
+  box-shadow: var(--ut-banner-relief);
+}
+
+/* Floating pieces: cream paper; the frame and the print shadow come from the elevation. */
+html[data-look="comic"] .ut-surface--floating,
+html[data-look="comic"] .ut-dialog,
+html[data-look="comic"] .ut-menu,
+html[data-look="comic"] .ut-toast,
+html[data-look="comic"] .ut-tooltip {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="comic"] .ut-menu,
+html[data-look="comic"] .ut-toast,
+html[data-look="comic"] .ut-tooltip {
+  box-shadow: var(--ut-elev-2);
+}
+/* A sheet's own close button sits at the screen's edge: a short shadow that fits there. */
+html[data-look="comic"] .ut-surface--floating:where(button) {
+  box-shadow: inset 0 0 0 2px var(--ut-border), var(--ut-control-relief-small);
+}
+
+/* Controls: cream, a 2 px ink outline with drawn corners and a hard shadow. */
+html[data-look="comic"] .ut-btn,
+html[data-look="comic"] .ut-chip,
+html[data-look="comic"] .ut-surface--action {
+  border: 2px solid var(--ut-border);
+  border-radius: var(--ut-wobble-ctl);
+}
+html[data-look="comic"] .ut-surface--action,
+html[data-look="comic"] .ut-btn--secondary,
+html[data-look="comic"] .ut-btn--danger,
+html[data-look="comic"] .ut-chip {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: var(--ut-control-relief);
+}
+html[data-look="comic"] .ut-chip {
+  box-shadow: var(--ut-control-relief-small);
+}
+html[data-look="comic"] .ut-btn--ghost,
+html[data-look="comic"] .ut-btn--danger-ghost {
+  border-color: transparent;
+  box-shadow: none;
+}
+html[data-look="comic"] .ut-btn--danger,
+html[data-look="comic"] .ut-btn--danger-ghost,
+html[data-look="comic"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+/* Tags: a small inked label, as the «falló» of the recipe. */
+html[data-look="comic"] .ut-surface--badge,
+html[data-look="comic"] .ut-badge,
+html[data-look="comic"] .ut-status,
+html[data-look="comic"] .ut-kbd {
+  box-shadow: inset 0 0 0 1.5px var(--ut-border);
+}
+html[data-look="comic"] .ut-kbd {
+  background-color: var(--ut-surface-1);
+  color: var(--ut-text);
+}
+
+/* Fields: the lightest paper inside an ink outline, with a hard inner shadow; no halftone under
+   the writing. */
+html[data-look="comic"] .ut-surface--inset,
+html[data-look="comic"] .ut-surface--well,
+html[data-look="comic"] .ut-field,
+html[data-look="comic"] .ut-select {
+  background-color: var(--ut-well-fill);
+  background-image: none;
+  border-color: var(--ut-border);
+}
+/* A well keeps its owner's shadow (the speech bubble's frame); only true fields are sunken. */
+html[data-look="comic"] .ut-surface--inset,
+html[data-look="comic"] .ut-field,
+html[data-look="comic"] .ut-select {
+  box-shadow: var(--ut-field-relief);
+}
+html[data-look="comic"] .ut-field,
+html[data-look="comic"] .ut-select {
+  border-width: 2px;
+  border-style: solid;
+}
+
+/* The record: flat blue paper in an ink frame; monospace, nothing under its letters. After the
+   fields, because the record is a well too. */
+html[data-look="comic"] .ut-surface--record {
+  background-color: var(--ut-paper-blue);
+  background-image: none;
+  color: var(--ut-text);
+  border: 3px solid var(--ut-border);
+  border-radius: var(--ut-wobble-card-alt);
+  box-shadow: var(--ut-panel-shadow);
+}
+
+html[data-look="comic"] .ut-segmented {
+  background-color: var(--ut-surface-2);
+  box-shadow: inset 0 0 0 2px var(--ut-border);
+}
+
+/* Small ancillary controls stay flat inside their owner: lettering, not slabs. */
+html[data-look="comic"] .ut-surface--control,
+html[data-look="comic"] .ut-surface--compact,
+html[data-look="comic"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-look="comic"] .ut-switch {
+  box-shadow: inset 0 0 0 2px var(--ut-border);
+}
+
+/* Selection: orange, an ink outline and a hard shadow; never color alone. */
+html[data-look="comic"] .ut-surface--selected-row,
+html[data-look="comic"] .ut-surface--selected {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-text);
+  border-color: var(--ut-border);
+  box-shadow: var(--ut-row-selected-shadow);
+}
+/* :is(), not :where(): a pressed icon elsewhere takes the accent as its ink, which would vanish on
+   the orange fill. */
+html[data-look="comic"] .ut-surface--control:is([aria-selected="true"]),
+html[data-look="comic"] .ut-surface--control:is([aria-current="page"]),
+html[data-look="comic"] .ut-surface--control:is([aria-pressed="true"]),
+html[data-look="comic"] .ut-surface--panel:is([aria-pressed="true"]),
+html[data-look="comic"] .ut-surface--badge:is([aria-pressed="true"]),
+html[data-look="comic"] .ut-icon-btn:is([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: var(--ut-tab-selected-shadow);
+}
+html[data-look="comic"] .ut-surface--segment:where(.selected) {
+  background-color: var(--ut-segment-selected-bg);
+  color: var(--ut-segment-selected-ink);
+  box-shadow: var(--ut-segment-selected-shadow);
+}
+
+/* Orange with ink lettering: the main action. It follows the neutral paint so it is never erased. */
+html[data-look="comic"] .ut-surface--primary,
+html[data-look="comic"] .ut-surface--request-action,
+html[data-look="comic"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: none;
+  color: var(--ut-text-on-accent);
+  border: 2px solid var(--ut-border);
+  border-radius: var(--ut-wobble-ctl);
+  box-shadow: var(--ut-control-relief);
+}
+
+@media (hover: hover) {
+  html[data-look="comic"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="comic"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="comic"] .ut-chip:hover:not(:disabled),
+  html[data-look="comic"] .ut-surface--action:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+  }
+  html[data-look="comic"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="comic"] .ut-surface--control:hover:not(:disabled),
+  html[data-look="comic"] .ut-menu-item:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+  }
+  html[data-look="comic"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="comic"] .ut-surface--primary:hover:not(:disabled),
+  html[data-look="comic"] .ut-surface--request-action:hover:not(:disabled) {
+    background-color: var(--ut-accent-hover);
+    color: var(--ut-text-on-accent);
+  }
+}
+
+/* Pressed: the piece lands on the paper, its shadow gone. */
+html[data-look="comic"] .ut-btn:active:not(:disabled),
+html[data-look="comic"] .ut-chip:active:not(:disabled),
+html[data-look="comic"] .ut-surface--action:active:not(:disabled),
+html[data-look="comic"] .ut-surface--primary:active:not(:disabled),
+html[data-look="comic"] .ut-surface--request-action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+
+/* Disabled: flat paper, a dashed outline and no shadow; the text stays opaque and legible. */
+html[data-look="comic"] .ut-btn:disabled,
+html[data-look="comic"] .ut-icon-btn:disabled,
+html[data-look="comic"] .ut-menu-item:disabled,
+html[data-look="comic"] .ut-field:disabled,
+html[data-look="comic"] .ut-surface--control:disabled,
+html[data-look="comic"] .ut-surface--primary:disabled,
+html[data-look="comic"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+html[data-look="comic"] .ut-btn:disabled,
+html[data-look="comic"] .ut-surface--primary:disabled,
+html[data-look="comic"] .ut-surface--action:disabled {
+  border-style: dashed;
+}
+html[data-look="comic"] .ut-icon-btn:disabled,
+html[data-look="comic"] .ut-menu-item:disabled,
+html[data-look="comic"] .ut-switch:disabled {
+  outline: 2px dashed var(--ut-border);
+  outline-offset: -2px;
+}
+html[data-look="comic"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  box-shadow: none;
+}
+
+/* Focus: an ink ring, 3 px, apart from the piece. */
+html[data-look="comic"] .ut-btn:focus-visible,
+html[data-look="comic"] .ut-icon-btn:focus-visible,
+html[data-look="comic"] .ut-chip:focus-visible,
+html[data-look="comic"] .ut-menu-item:focus-visible,
+html[data-look="comic"] .ut-switch:focus-visible,
+html[data-look="comic"] .ut-field:focus-visible,
+html[data-look="comic"] .ut-select:focus-visible,
+html[data-look="comic"] .ut-surface--control:focus-visible,
+html[data-look="comic"] .ut-surface--inset:focus-visible,
+html[data-look="comic"] .ut-surface--action:focus-visible,
+html[data-look="comic"] .ut-surface--primary:focus-visible,
+html[data-look="comic"] .ut-surface--request-action:focus-visible,
+html[data-look="comic"] .ut-surface--well:focus-within {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: 3px;
+}

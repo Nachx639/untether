@@ -1,0 +1,47 @@
+#!/bin/sh
+# untether-push-guard: public copy
+#
+# 2026-11-12: the pre-push hook of the PUBLIC copy. scripts/public-export.sh writes it into the
+# destination's .git/hooks on every export, with the public repository's address (the "homepage"
+# of web/package.json) in place of the marker below. From that copy only this leaves:
+#
+#   - towards the public repository, by https or ssh, and nowhere else;
+#   - commits the exporter made: author and committer are both the neutral address. A commit
+#     made by hand in the copy, or history fetched from the working repository, is refused.
+#
+# git runs it as: pre-push <remote name> <remote url>, with one line per ref on standard input:
+# <local ref> <local sha> <remote ref> <remote sha>.
+ALLOWED="@PUBLIC_REPO@"
+EXPORTER="contributors@untether.invalid"
+
+url="${2:-}"
+lower=$(printf '%s' "$url" | tr '[:upper:]' '[:lower:]')
+case "$lower" in
+  https://github.com/*) repo=${lower#https://github.com/} ;;
+  git@github.com:*) repo=${lower#git@github.com:} ;;
+  ssh://git@github.com/*) repo=${lower#ssh://git@github.com/} ;;
+  *) repo="" ;;
+esac
+repo=${repo%/}
+repo=${repo%.git}
+if [ "$repo" != "$ALLOWED" ]; then
+  echo "pre-push: BLOCKED. This copy is only pushed to $ALLOWED on GitHub (https or ssh)." >&2
+  echo "pre-push: destination refused: ${url:-<none>}" >&2
+  exit 1
+fi
+
+while read -r _ sha _ _; do
+  # A deletion pushes no commit (the public repository's own rules refuse it).
+  [ "$sha" = 0000000000000000000000000000000000000000 ] && continue
+  if ! authors=$(git log --format='%ae %ce' "$sha" 2> /dev/null); then
+    echo "pre-push: BLOCKED. Cannot read the history of $sha." >&2
+    exit 1
+  fi
+  foreign=$(printf '%s\n' "$authors" | grep -v -x "$EXPORTER $EXPORTER" | sort -u | head -3 | tr '\n' ' ')
+  if [ -n "$foreign" ]; then
+    echo "pre-push: BLOCKED. Commits the exporter did not make (author committer: $foreign)." >&2
+    echo "pre-push: only what scripts/public-export.sh commits is published." >&2
+    exit 1
+  fi
+done
+exit 0

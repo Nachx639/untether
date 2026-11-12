@@ -1,0 +1,184 @@
+@layer components {
+  /* A repo header after cards starts a new block: more room above it than the grid gap. */
+  .session-flex-responsive > .ut-grid-header:not(:first-child),
+  .ut-rows > .ut-grid-header:not(:first-child) {
+    margin-top: 12px;
+  }
+  .ut-rows > .ut-grid-header,
+  .ut-rows-group > .ut-grid-header {
+    margin-bottom: 4px;
+  }
+  /* List view grouped: one block per group (a drop target, list-drag.ts). */
+  .ut-rows-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .ut-rows > .ut-rows-group + .ut-rows-group,
+  .ut-rows > .ut-rows-group + .ut-drop-zone {
+    margin-top: 12px;
+  }
+
+  /* ---- Drag and drop in the sidebar and the desktop home (utils/list-drag.ts) ---- */
+  body.ut-list-dragging,
+  body.ut-list-dragging * {
+    cursor: grabbing !important;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .ut-drag-source {
+    opacity: 0.45;
+  }
+  /* Whatever can be dragged drags from any point, its title too (2026-11-07, user report: the drag
+     did not always start, text got selected instead): no text selection, no native drag of its
+     images or links. One
+     rule for every element with the attribute (utils/list-drag.ts), never row by row. */
+  [data-drag-session],
+  [data-drag-group] {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  :is([data-drag-session], [data-drag-group]) :is(img, a, svg) {
+    -webkit-user-drag: none;
+  }
+  :is([data-drag-session], [data-drag-group]) :is(input, textarea, [contenteditable]) {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  /* A row dropped before or after another: the line between them (data-drag-axis="x": the
+     cards side by side, a line on their left or right). */
+  [data-drag-session] {
+    display: block;
+    position: relative;
+  }
+  :is(.ut-drop-row-before, .ut-drop-row-after)::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    left: 4px;
+    right: 4px;
+    height: 2px;
+    border-radius: var(--ut-r-pill);
+    background: var(--color-primary);
+    pointer-events: none;
+  }
+  .ut-drop-row-before::after {
+    top: -1px;
+  }
+  .ut-drop-row-after::after {
+    bottom: -1px;
+  }
+  [data-drag-axis='x']:is(.ut-drop-row-before, .ut-drop-row-after)::after {
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    height: auto;
+  }
+  [data-drag-axis='x'].ut-drop-row-before::after {
+    left: -9px;
+    right: auto;
+  }
+  [data-drag-axis='x'].ut-drop-row-after::after {
+    left: auto;
+    right: -9px;
+  }
+  [data-group-key] {
+    border-radius: var(--radius-ctl);
+    transition: background-color 120ms ease, box-shadow 120ms ease;
+  }
+  /* A session over a group: the group lights up. */
+  [data-group-key].ut-drop-target {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-primary) 60%, transparent);
+  }
+  /* A header over a group: the line where it will go. */
+  [data-group-key].ut-drop-before {
+    box-shadow: 0 -2px 0 0 var(--color-primary);
+  }
+  [data-group-key].ut-drop-after {
+    box-shadow: 0 2px 0 0 var(--color-primary);
+  }
+  [data-group-axis='x'].ut-drop-before {
+    box-shadow: -3px 0 0 0 var(--color-primary);
+  }
+  [data-group-axis='x'].ut-drop-after {
+    box-shadow: 3px 0 0 0 var(--color-primary);
+  }
+  .ut-drop-zone {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1.5px dashed var(--color-border-strong);
+    border-radius: var(--radius-ctl);
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: 12px;
+  }
+  .ut-drop-zone--compact {
+    margin: 8px 8px 0;
+  }
+  .ut-group-block + .ut-drop-zone,
+  .ut-grid-packed > .ut-drop-zone {
+    grid-column: 1 / -1;
+  }
+  .ut-drop-zone-hint {
+    color: var(--color-text-dim);
+  }
+  .ut-drag-ghost {
+    position: fixed;
+    top: 0;
+    left: 0;
+    max-width: 240px;
+    padding: 4px 10px;
+    overflow: hidden;
+    border-radius: var(--radius-ctl);
+    background: var(--color-bg-elevated);
+    box-shadow: var(--ut-drop-16-25);
+    color: var(--color-text-bright);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+  /* Grouped grid: each repo a subgrid block; small ones pack side by side, in group order
+     (not dense, which pulled later groups and "No repository" ahead; 2026-10-12). */
+  .ut-grid-packed {
+    grid-auto-flow: row;
+    row-gap: 24px;
+  }
+  .ut-group-block {
+    display: grid;
+    grid-template-columns: subgrid;
+    align-content: start;
+    row-gap: 16px;
+    min-width: 0;
+  }
+  .ut-group-block > .ut-grid-header {
+    margin: 0 0 -4px;
+  }
+  .ut-popover-host {
+    position: relative;
+    z-index: 1100;
+  }
+  /* Narrower desktop windows: the toolbar drops its text labels before it would wrap. */
+  @media (max-width: 1199px) {
+    .ut-toolbar-toggle-label,
+    .ut-sort-label {
+      display: none;
+    }
+  }
+}
+
+@layer components {
+  /* The hero button's shortcut hint (2026-10-12): quiet on the orange primary too. */
+  .ut-empty-kbd {
+    margin-left: 4px;
+  }
+  .ut-btn--primary > .ut-empty-kbd {
+    border-color: color-mix(in srgb, currentColor 30%, transparent);
+    background: color-mix(in srgb, currentColor 14%, transparent);
+    color: inherit;
+  }
+}

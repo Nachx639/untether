@@ -1,0 +1,123 @@
+/* Width selector specific styles */
+.width-selector-container {
+  @apply backdrop-blur-sm;
+}
+
+/* Ensure width selector button doesn't get clipped */
+.width-selector-button {
+  position: relative;
+}
+
+/* Micro-interactions and animations */
+@layer utilities {
+  /* Reserve the scrollbar's room so content does not jump when it appears. */
+  .ut-scroll-stable {
+    scrollbar-gutter: stable;
+  }
+
+  /* Hide scrollbar for webkit browsers */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Hide scrollbar for Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  /* Smooth transitions for interactive elements */
+  .interactive {
+    @apply transition-all duration-200 ease-out;
+  }
+  
+  .interactive-fast {
+    @apply transition-all duration-150 ease-out;
+  }
+  
+  .interactive-slow {
+    @apply transition-all duration-300 ease-out;
+  }
+  
+  /* Hover lift effect for cards */
+  .hover-lift {
+    @apply transition-transform duration-200 ease-out;
+  }
+  
+  .hover-lift:hover {
+    @apply -translate-y-0.5 shadow-elevated;
+  }
+  
+  /* Hover glow effect */
+  .hover-glow:hover {
+    @apply shadow-glow;
+  }
+  
+  .hover-glow-sm:hover {
+    @apply shadow-glow-sm;
+  }
+  
+  .hover-glow-lg:hover {
+    @apply shadow-glow-lg;
+  }
+  
+  /* Focus within styles */
+  .focus-within-glow:focus-within {
+    @apply shadow-glow-sm ring-2 ring-primary/50;
+  }
+  
+  /* Smooth color transitions */
+  .transition-colors-all {
+    @apply transition-colors duration-200 ease-out;
+  }
+  
+  /* Scale on click */
+  .active-scale:active {
+    @apply scale-95;
+  }
+  
+  /* Pulse animation utility */
+  .pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .7;
+    }
+  }
+  
+  /* Slide animations */
+  .slide-in-from-right {
+    animation: slideInFromRight 0.3s ease-out;
+  }
+  
+  .slide-in-from-bottom {
+    animation: slideInFromBottom 0.3s ease-out;
+  }
+  
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideInFromBottom {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}

@@ -1,0 +1,30 @@
+
+  >_ OpenAI Codex (v0.164.0)
+     ~/proyecto/repo
+
+
+› APROBAR esto
+
+
+• Running touch zz-denied
+
+
+  Would you like to run the following command?
+
+  Environment: local
+
+  Reason: prueba del dialogo
+
+  $ touch zz-denied
+
+
+› 1. Yes, proceed (y)
+  2. Yes, and don't ask again for commands that start with `touch zz-denied` (p)
+  3. No, and tell Codex what to do differently (esc)
+
+  Press enter to confirm or esc to cancel
+
+
+
+
+

@@ -1,0 +1,454 @@
+import AppKit
+import Darwin.sys.mount
+import Foundation
+import os.log
+
+/// Service responsible for detecting if the app is running from a DMG and offering to move it to Applications.
+///
+/// ## Overview
+/// This service automatically detects when the app is running from a temporary location (such as a DMG,
+/// Downloads folder, or Desktop) and offers to move it to the Applications folder for better user experience.
+/// This is a common pattern for macOS apps to ensure they're installed in the proper location.
+///
+/// ## How It Works
+/// The detection uses multiple strategies in order of preference:
+/// 1. **DMG Detection**: Uses `hdiutil` to check if the app is running from a mounted disk image
+/// 2. **Path-based Detection**: Checks if the app is running from Downloads, Desktop, or Documents folders
+/// 3. **Applications Check**: Verifies the app isn't already in /Applications or ~/Applications
+///
+/// ## Usage
+/// Call `checkAndOfferToMoveToApplications()` early in your app lifecycle:
+/// ```swift
+/// let applicationMover = ApplicationMover()
+/// applicationMover.checkAndOfferToMoveToApplications()
+/// ```
+///
+/// ## Safety Considerations
+/// - Always prompts user before performing any operations
+/// - Handles existing apps in Applications folder with replace confirmation
+/// - Provides clear error messages and graceful failure handling
+/// - Logs all operations for debugging purposes
+/// - Only operates when not running from Applications folder already
+///
+/// ## Implementation Notes
+/// Based on proven techniques from PFMoveApplication/LetsMove libraries, using:
+/// - `statfs()` for mount point detection
+/// - `hdiutil info` for disk image verification
+/// - Standard FileManager operations for copying
+/// - NSWorkspace for relaunching from new location
+@MainActor
+final class ApplicationMover {
+    struct ApplicationIdentity: Equatable {
+        let bundleIdentifier: String
+        let buildVersion: String
+    }
+
+    // MARK: - Properties
+
+    private let logger = Logger(subsystem: BundleIdentifiers.loggerSubsystem, category: "ApplicationMover")
+
+    // MARK: - Public Interface
+
+    /// Checks if the app should be moved to Applications and offers to do so if needed.
+    /// This should be called early in the app lifecycle, typically in applicationDidFinishLaunching.
+    func checkAndOfferToMoveToApplications() {
+        self.logger.info("ApplicationMover: Starting check...")
+        self.logger.info("ApplicationMover: Bundle path: \(Bundle.main.bundlePath)")
+
+        guard self.shouldOfferToMove() else {
+            self.logger.info("ApplicationMover: App is already in Applications or move not needed")
+            return
+        }
+
+        self.logger.info("ApplicationMover: App needs to be moved, offering to move to Applications")
+        self.offerToMoveToApplications()
+    }
+
+    // MARK: - Private Implementation
+
+    /// Determines if we should offer to move the app to Applications
+    private func shouldOfferToMove() -> Bool {
+        let bundlePath = Bundle.main.bundlePath
+        let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String ?? "Untether"
+        self.logger.info("ApplicationMover: Checking bundle path: \(bundlePath)")
+
+        return Self.shouldOfferToMove(
+            bundlePath: bundlePath,
+            appName: appName,
+            currentIdentity: Self.applicationIdentity(for: Bundle.main),
+            homeDirectory: NSHomeDirectory(),
+            installedIdentity: { path in
+                Bundle(path: path).flatMap(Self.applicationIdentity(for:))
+            },
+            isRunningFromDMG: self.isRunningFromDMG(_:))
+    }
+
+    /// Determines whether a temporary copy should offer installation.
+    ///
+    /// An existing installation wins even when the user accidentally launches the original
+    /// downloaded copy again. Otherwise that copy repeatedly offers to replace the app it already installed.
+    static func shouldOfferToMove(
+        bundlePath: String,
+        appName: String,
+        currentIdentity: ApplicationIdentity?,
+        homeDirectory: String,
+        installedIdentity: (String) -> ApplicationIdentity?,
+        isRunningFromDMG: (String) -> Bool) -> Bool
+    {
+        if self.isInApplicationsFolder(bundlePath, homeDirectory: homeDirectory) {
+            return false
+        }
+
+        let installedPaths = [
+            "/Applications/\(appName).app",
+            "\(homeDirectory)/Applications/\(appName).app",
+        ]
+        if let currentIdentity,
+           installedPaths.contains(where: {
+               guard let installedIdentity = installedIdentity($0) else { return false }
+               return self.isSameOrNewer(installedIdentity, than: currentIdentity)
+           })
+        {
+            return false
+        }
+
+        return isRunningFromDMG(bundlePath) ||
+            self.isRunningFromTemporaryLocation(bundlePath, homeDirectory: homeDirectory)
+    }
+
+    private nonisolated static func applicationIdentity(for bundle: Bundle) -> ApplicationIdentity? {
+        guard let bundleIdentifier = bundle.bundleIdentifier,
+              let buildVersion = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+        else {
+            return nil
+        }
+
+        return ApplicationIdentity(
+            bundleIdentifier: bundleIdentifier,
+            buildVersion: buildVersion)
+    }
+
+    private nonisolated static func isSameOrNewer(
+        _ installedIdentity: ApplicationIdentity,
+        than currentIdentity: ApplicationIdentity) -> Bool
+    {
+        guard installedIdentity.bundleIdentifier == currentIdentity.bundleIdentifier else { return false }
+
+        return installedIdentity.buildVersion.compare(
+            currentIdentity.buildVersion,
+            options: .numeric) != .orderedAscending
+    }
+
+    /// Checks if the app is already in the Applications folder
+    private nonisolated static func isInApplicationsFolder(_ path: String, homeDirectory: String) -> Bool {
+        let applicationsPath = "/Applications/"
+        let userApplicationsPath = homeDirectory + "/Applications/"
+
+        return path.hasPrefix(applicationsPath) || path.hasPrefix(userApplicationsPath)
+    }
+
+    /// Checks if the app is running from a DMG (mounted disk image)
+    /// Uses the proven approach from PFMoveApplication/LetsMove
+    private func isRunningFromDMG(_ path: String) -> Bool {
+        self.logger.info("ApplicationMover: Checking if running from DMG for path: \(path)")
+
+        guard let diskImageDevice = containingDiskImageDevice(for: path) else {
+            self.logger.info("ApplicationMover: No disk image device found")
+            return false
+        }
+
+        self.logger.info("ApplicationMover: App is running from disk image device: \(diskImageDevice)")
+        return true
+    }
+
+    /// Determines the disk image device containing the given path
+    /// Based on the proven PFMoveApplication implementation
+    private func containingDiskImageDevice(for path: String) -> String? {
+        self.logger.info("ApplicationMover: Checking disk image device for path: \(path)")
+
+        var fs = statfs()
+        let result = statfs(path, &fs)
+
+        // If statfs fails or this is the root filesystem, not a disk image
+        guard result == 0 else {
+            self.logger.info("ApplicationMover: statfs failed with result: \(result)")
+            return nil
+        }
+
+        guard (fs.f_flags & UInt32(MNT_ROOTFS)) == 0 else {
+            self.logger.info("ApplicationMover: Path is on root filesystem")
+            return nil
+        }
+
+        // Get the device name from the mount point
+        let deviceNameTuple = fs.f_mntfromname
+        let deviceName = withUnsafePointer(to: deviceNameTuple) {
+            $0.withMemoryRebound(to: CChar.self, capacity: MemoryLayout.size(ofValue: deviceNameTuple)) {
+                String(cString: $0)
+            }
+        }
+
+        self.logger.info("ApplicationMover: Device name: \(deviceName)")
+
+        // Use hdiutil to check if this device is a disk image
+        return self.checkDeviceIsDiskImage(deviceName)
+    }
+
+    /// Checks if the given device is a mounted disk image using hdiutil
+    private func checkDeviceIsDiskImage(_ deviceName: String) -> String? {
+        self.logger.info("ApplicationMover: Checking if device is disk image: \(deviceName)")
+
+        let task = Process()
+        task.launchPath = "/usr/bin/hdiutil"
+        task.arguments = ["info", "-plist"]
+
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = Pipe() // Suppress stderr
+
+        do {
+            self.logger.debug("ApplicationMover: Running hdiutil info -plist")
+            try task.run()
+
+            // Read before waiting: with many mounted images the plist outgrows the pipe
+            // buffer and hdiutil would block on its write while we wait for it to exit.
+            let data: Data
+            do {
+                data = try pipe.fileHandleForReading.readToEnd() ?? Data()
+            } catch {
+                self.logger.debug("ApplicationMover: Could not read hdiutil output: \(error.localizedDescription)")
+                task.waitUntilExit()
+                return nil
+            }
+            task.waitUntilExit()
+
+            guard task.terminationStatus == 0 else {
+                self.logger.debug("ApplicationMover: hdiutil command failed with status: \(task.terminationStatus)")
+                return nil
+            }
+            self.logger.debug("ApplicationMover: hdiutil returned \(data.count) bytes")
+
+            guard let plist = try PropertyListSerialization
+                .propertyList(from: data, options: [], format: nil) as? [String: Any],
+                let images = plist["images"] as? [[String: Any]]
+            else {
+                self.logger.debug("ApplicationMover: No disk images found in hdiutil output")
+                return nil
+            }
+
+            // Check each mounted disk image
+            for image in images {
+                if let entities = image["system-entities"] as? [[String: Any]] {
+                    for entity in entities {
+                        if let entityDevName = entity["dev-entry"] as? String,
+                           entityDevName == deviceName
+                        {
+                            self.logger.debug("Found matching disk image for device: \(deviceName)")
+                            return deviceName
+                        }
+                    }
+                }
+            }
+
+            self.logger.debug("Device \(deviceName) is not a disk image")
+            return nil
+        } catch {
+            self.logger.debug("ApplicationMover: Unable to run hdiutil (expected in some environments): \(error)")
+            return nil
+        }
+    }
+
+    /// Checks if app is running from Downloads, Desktop, or other temporary locations
+    private nonisolated static func isRunningFromTemporaryLocation(_ path: String, homeDirectory: String) -> Bool {
+        let downloadsPath = homeDirectory + "/Downloads/"
+        let desktopPath = homeDirectory + "/Desktop/"
+        let documentsPath = homeDirectory + "/Documents/"
+
+        return path.hasPrefix(downloadsPath) ||
+            path.hasPrefix(desktopPath) ||
+            path.hasPrefix(documentsPath)
+    }
+
+    /// Presents an alert offering to move the app to Applications
+    private func offerToMoveToApplications() {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Move Untether to Applications?", comment: "Alert: moving the app to Applications, title")
+        let informativeText = String(
+            localized: "Untether is currently running from a disk image or temporary location. Would you like to move it to your Applications folder for better performance and convenience?",
+            comment: "Alert: offer to move the app to Applications, message")
+        alert.informativeText = informativeText
+
+        alert.addButton(withTitle: String(localized: "Move to Applications", comment: "Alert: moving the app to Applications, button"))
+        alert.addButton(withTitle: String(localized: "Don't Move", comment: "Alert: moving the app to Applications, button"))
+
+        alert.alertStyle = .informational
+        alert.icon = NSApp.applicationIconImage
+
+        // For menu bar apps, always show as modal dialog since there's typically no main window
+        NSApp.activate(ignoringOtherApps: true)
+        let response = alert.runModal()
+        self.handleMoveResponse(response)
+    }
+
+    /// Handles the user's response to the move offer
+    private func handleMoveResponse(_ response: NSApplication.ModalResponse) {
+        switch response {
+        case .alertFirstButtonReturn:
+            // User chose "Move to Applications"
+            self.logger.info("User chose to move app to Applications")
+            self.performMoveToApplications()
+        case .alertSecondButtonReturn:
+            // User chose "Don't Move"
+            self.logger.info("User chose not to move app to Applications")
+        default:
+            self.logger.debug("Unknown alert response: \(response.rawValue)")
+        }
+    }
+
+    /// Performs the actual move operation to Applications
+    private func performMoveToApplications() {
+        let currentPath = Bundle.main.bundlePath
+        let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String ?? "Untether"
+        let applicationsPath = "/Applications/\(appName).app"
+
+        do {
+            let fileManager = FileManager.default
+
+            // Check if destination already exists
+            if fileManager.fileExists(atPath: applicationsPath) {
+                // Ask user if they want to replace
+                let replaceAlert = NSAlert()
+                replaceAlert.messageText = String(localized: "Replace Existing App?", comment: "Alert: moving the app to Applications, title")
+                replaceAlert.informativeText = String(
+                    localized: "An app with the same name already exists in Applications. Do you want to replace it?",
+                    comment: "Alert: replace the copy in Applications, message")
+                replaceAlert.addButton(withTitle: String(localized: "Replace", comment: "Alert: moving the app to Applications, button"))
+                replaceAlert.addButton(withTitle: String(localized: "Cancel", comment: "Alert: moving the app to Applications, button"))
+                replaceAlert.alertStyle = .warning
+
+                let response = replaceAlert.runModal()
+                if response != .alertFirstButtonReturn {
+                    self.logger.info("User cancelled replacement of existing app")
+                    return
+                }
+
+            }
+
+            try Self.install(appAt: currentPath, to: applicationsPath, fileManager: fileManager)
+            self.logger.info("Successfully copied app to \(applicationsPath)")
+
+            // Show success message and offer to relaunch
+            self.showMoveSuccessAndRelaunch(newPath: applicationsPath)
+        } catch {
+            self.logger.error("Failed to move app to Applications: \(error)")
+            self.showMoveError(error)
+        }
+    }
+
+    /// Shows success message and offers to relaunch from Applications
+    private func showMoveSuccessAndRelaunch(newPath: String) {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "App Moved Successfully", comment: "Alert: moving the app to Applications, title")
+        let informativeText = String(
+            localized: "Untether has been moved to Applications. Would you like to quit this version and launch the one in Applications?",
+            comment: "Alert: the app was moved to Applications, message")
+        alert.informativeText = informativeText
+
+        alert.addButton(withTitle: String(localized: "Relaunch from Applications", comment: "Alert: moving the app to Applications, button"))
+        alert.addButton(withTitle: String(localized: "Continue Running", comment: "Alert: moving the app to Applications, button"))
+
+        alert.alertStyle = .informational
+        alert.icon = NSApp.applicationIconImage
+
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            // Launch the new version and quit this one
+            self.launchFromApplicationsAndQuit(newPath: newPath)
+        }
+    }
+
+    /// Launches the app from Applications and quits the current instance
+    private func launchFromApplicationsAndQuit(newPath: String) {
+        let workspace = NSWorkspace.shared
+        let appURL = URL(fileURLWithPath: newPath)
+
+        Task { @MainActor in
+            let configuration = NSWorkspace.OpenConfiguration()
+            // Use openURL instead of openApplication to avoid non-Sendable return type
+            configuration.activates = true
+            configuration.promptsUserIfNeeded = true
+
+            workspace.open(appURL, configuration: configuration) { _, error in
+                Task { @MainActor in
+                    if let error {
+                        self.logger.error("Failed to launch app from Applications: \(error)")
+                        self.showLaunchError(error)
+                    } else {
+                        self.logger.info("Launched app from Applications, quitting current instance")
+
+                        // Quit current instance after a short delay to ensure the new one starts
+                        Task {
+                            try? await Task.sleep(for: .milliseconds(500))
+                            await MainActor.run {
+                                NSApp.terminate(nil)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Shows error message for move failures
+    private func showMoveError(_ error: Error) {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Failed to Move App", comment: "Alert: moving the app to Applications, title")
+        let reason = error.localizedDescription
+        alert.informativeText = String(
+            localized: "Could not move Untether to Applications: \(reason)",
+            comment: "Alert: moving the app failed, message. Placeholder: reason")
+        alert.addButton(withTitle: UIStrings.ok)
+        alert.alertStyle = .critical
+        alert.runModal()
+    }
+
+    /// Shows error message for launch failures
+    private func showLaunchError(_ error: Error) {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Failed to Launch from Applications", comment: "Alert: moving the app to Applications, title")
+        let reason = error.localizedDescription
+        let informativeText = String(
+            localized: "Could not launch Untether from Applications: \(reason)\n\nYou can manually launch it from Applications later.",
+            comment: "Alert: relaunching from Applications failed, message. Placeholder: reason")
+        alert.informativeText = informativeText
+        alert.addButton(withTitle: UIStrings.ok)
+        alert.alertStyle = .warning
+        alert.runModal()
+    }
+}
+
+extension ApplicationMover {
+    /// Puts the app at `source` in place at `destination`, replacing what is there.
+    ///
+    /// 2026-11-10: the installed app was deleted first and the new one copied after. A copy
+    /// that failed (disk full, permissions) left Applications with no app, or half of one.
+    /// The copy now lands next to the destination and takes its place only once it is whole;
+    /// if anything fails, what was installed is still there.
+    nonisolated static func install(appAt source: String, to destination: String, fileManager: FileManager) throws {
+        let staged = destination + ".installing"
+        try? fileManager.removeItem(atPath: staged)
+        do {
+            try fileManager.copyItem(atPath: source, toPath: staged)
+            if fileManager.fileExists(atPath: destination) {
+                _ = try fileManager.replaceItemAt(
+                    URL(fileURLWithPath: destination),
+                    withItemAt: URL(fileURLWithPath: staged))
+            } else {
+                try fileManager.moveItem(atPath: staged, toPath: destination)
+            }
+        } catch {
+            try? fileManager.removeItem(atPath: staged)
+            throw error
+        }
+    }
+}

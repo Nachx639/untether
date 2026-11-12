@@ -1,0 +1,39 @@
+bun test v1.4.2 (43848b5a7)
+
+a.test.ts:
+1 | import { expect, test, describe } from 'bun:test';
+2 | describe('math', () => {
+3 |   test('adds', () => { expect(1 + 1).toBe(2); });
+4 |   test('subtracts', () => { expect(5 - 3).toBe(3); });
+                                              ^
+error: expect(received).toBe(expected)
+
+Expected: 3
+Received: 2
+
+      at <anonymous> (/tmp/fx/bun/a.test.ts:4:43)
+(fail) math > subtracts [0.33ms]
+1 | import { expect, test, describe } from 'bun:test';
+2 | describe('math', () => {
+3 |   test('adds', () => { expect(1 + 1).toBe(2); });
+4 |   test('subtracts', () => { expect(5 - 3).toBe(3); });
+5 |   test('objects', () => { expect({ a: 1, b: [1, 2] }).toEqual({ a: 1, b: [1, 3] }); });
+                                                          ^
+error: expect(received).toEqual(expected)
+
+@@ -4,3 +4,3 @@
+      1,
+-     3,
++     2,
+    ],
+
+- Expected  - 1
++ Received  + 1
+
+      at <anonymous> (/tmp/fx/bun/a.test.ts:5:55)
+(fail) math > objects [0.14ms]
+
+ 1 pass
+ 2 fail
+ 3 expect() calls
+Ran 3 tests across 1 file. [4.00ms]

@@ -1,0 +1,171 @@
+import Observation
+import SwiftUI
+
+@MainActor
+private final class LivePreviewThrottleState {
+    var lastUpdateTime: Date = .distantPast
+    var pendingSnapshot: BufferSnapshot?
+}
+
+/// Manages live terminal preview subscriptions for session cards.
+///
+/// This service efficiently handles multiple WebSocket subscriptions
+/// for terminal previews, with automatic cleanup and performance optimization.
+@MainActor
+@Observable
+final class LivePreviewManager {
+    static let shared = LivePreviewManager()
+
+    private let logger = Logger(category: "LivePreviewManager")
+    private let bufferClient = BufferWebSocketClient.shared
+    private var subscriptions: [String: LivePreviewSubscription] = [:]
+    private var socketTokens: [String: BufferWebSocketClient.SubscriptionToken] = [:]
+    private var updateTimers: [String: Timer] = [:]
+
+    /// Update interval for previews (in seconds)
+    private let updateInterval: TimeInterval = 1.0
+
+    private init() {}
+
+    /// Subscribe to live updates for a session.
+    func subscribe(to sessionId: String) -> LivePreviewSubscription {
+        // Check if we already have a subscription
+        if let existing = subscriptions[sessionId] {
+            existing.referenceCount += 1
+            return existing
+        }
+
+        // Create new subscription
+        let subscription = LivePreviewSubscription(sessionId: sessionId)
+        self.subscriptions[sessionId] = subscription
+
+        // Set up WebSocket subscription with throttling
+        let throttleState = LivePreviewThrottleState()
+
+        self.socketTokens[sessionId] = self.bufferClient.subscribe(to: sessionId) { [weak self, weak subscription] event in
+            guard let self, let subscription else { return }
+
+            Task { @MainActor in
+                switch event {
+                case let .bufferUpdate(snapshot):
+                    // Throttle updates to prevent overwhelming the UI
+                    let now = Date()
+                    if now.timeIntervalSince(throttleState.lastUpdateTime) >= self.updateInterval {
+                        subscription.latestSnapshot = snapshot
+                        subscription.lastUpdate = now
+                        throttleState.lastUpdateTime = now
+                        throttleState.pendingSnapshot = nil
+                    } else {
+                        // Store pending update
+                        throttleState.pendingSnapshot = snapshot
+
+                        // Schedule delayed update if not already scheduled
+                        if self.updateTimers[sessionId] == nil {
+                            let timer = Timer
+                                .scheduledTimer(withTimeInterval: self.updateInterval, repeats: false) { _ in
+                                    Task { @MainActor in
+                                        if let pending = throttleState.pendingSnapshot {
+                                            subscription.latestSnapshot = pending
+                                            subscription.lastUpdate = Date()
+                                            throttleState.pendingSnapshot = nil
+                                        }
+                                        self.updateTimers.removeValue(forKey: sessionId)
+                                    }
+                                }
+                            self.updateTimers[sessionId] = timer
+                        }
+                    }
+
+                case .exit:
+                    subscription.isSessionActive = false
+
+                default:
+                    break
+                }
+            }
+        }
+
+        return subscription
+    }
+
+    /// Unsubscribe from a session's live updates.
+    func unsubscribe(from sessionId: String) {
+        guard let subscription = subscriptions[sessionId] else { return }
+
+        subscription.referenceCount -= 1
+
+        if subscription.referenceCount <= 0 {
+            // Clean up
+            self.updateTimers[sessionId]?.invalidate()
+            self.updateTimers.removeValue(forKey: sessionId)
+            if let token = self.socketTokens.removeValue(forKey: sessionId) {
+                self.bufferClient.unsubscribe(token)
+            }
+            self.subscriptions.removeValue(forKey: sessionId)
+
+            self.logger.debug("Unsubscribed from session: \(sessionId)")
+        }
+    }
+}
+
+/// Represents a live preview subscription for a terminal session.
+@MainActor
+@Observable
+final class LivePreviewSubscription {
+    let sessionId: String
+    let subscriptionTime = Date()
+
+    var latestSnapshot: BufferSnapshot?
+    var lastUpdate = Date()
+    var isSessionActive = true
+    var referenceCount = 1
+
+    init(sessionId: String) {
+        self.sessionId = sessionId
+    }
+}
+
+/// SwiftUI view modifier for managing live preview subscriptions.
+/// Automatically handles subscription lifecycle based on view appearance.
+struct LivePreviewModifier: ViewModifier {
+    let sessionId: String
+    let isEnabled: Bool
+
+    @State private var subscription: LivePreviewSubscription?
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                if self.isEnabled {
+                    self.subscription = LivePreviewManager.shared.subscribe(to: self.sessionId)
+                }
+            }
+            .onDisappear {
+                if self.subscription != nil {
+                    LivePreviewManager.shared.unsubscribe(from: self.sessionId)
+                    self.subscription = nil
+                }
+            }
+            .environment(\.livePreviewSubscription, self.subscription)
+    }
+}
+
+/// Environment key for passing subscription down the view hierarchy.
+/// Enables child views to access the live preview subscription.
+private struct LivePreviewSubscriptionKey: EnvironmentKey {
+    static let defaultValue: LivePreviewSubscription? = nil
+}
+
+extension EnvironmentValues {
+    var livePreviewSubscription: LivePreviewSubscription? {
+        get { self[LivePreviewSubscriptionKey.self] }
+        set { self[LivePreviewSubscriptionKey.self] = newValue }
+    }
+}
+
+extension View {
+    /// Enables live preview for a session.
+    func livePreview(for sessionId: String, enabled: Bool = true) -> some View {
+        modifier(LivePreviewModifier(sessionId: sessionId, isEnabled: enabled))
+    }
+}

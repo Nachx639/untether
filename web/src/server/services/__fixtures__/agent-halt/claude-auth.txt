@@ -1,0 +1,9 @@
+❯ Arregla el test de login
+
+  ⎿  Failed to authenticate: OAuth session expired and could not be refreshed
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Opus 5.5  ·  contexto 3%
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

@@ -1,0 +1,122 @@
+@media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+  /* ---- Bottom tab bar: 49 px + safe area, the "+" the one primary ---- */
+  .ut-tabbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--p-bar-h, calc(49px + env(safe-area-inset-bottom, 0px)));
+    padding: var(--ut-tabbar-pad-top, 2px) max(12px, env(safe-area-inset-right, 0px)) calc(var(--ut-tabbar-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px))
+      max(8px, env(safe-area-inset-left, 0px));
+    border-top: 1px solid var(--color-border);
+    /* Over the scrolling list: always solid, or a translucent style lets the rows show through. */
+    background: var(--ut-surface-1);
+    font-family: var(--font-ui);
+  }
+  .ut-tabbar-tabs {
+    display: flex;
+    flex: 1;
+    gap: 4px;
+    min-width: 0;
+  }
+  .ut-tab {
+    display: flex;
+    flex: 0 1 84px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: var(--ut-tab-min-width);
+    min-height: 44px;
+    border-radius: var(--ut-r-lg);
+    color: var(--color-text-dim);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ut-tab[aria-selected='true'] {
+    background: var(--ut-tab-selected-bg);
+    box-shadow: var(--ut-tab-selected-shadow);
+    color: var(--color-text-bright);
+  }
+  .ut-tab-label {
+    font: 600 11px/13px var(--font-ui);
+  }
+  .ut-tab-icon {
+    position: relative;
+    display: inline-flex;
+  }
+  .ut-tab-badge.vtm-tab-badge {
+    position: absolute;
+    top: -5px;
+    left: calc(100% - 7px);
+    min-width: 17px;
+    height: 17px;
+    padding: 0 5px;
+    border-radius: var(--ut-r-pill);
+    background: var(--color-attention);
+    color: var(--color-on-fill);
+    font: 700 11px/17px var(--font-ui);
+    text-align: center;
+  }
+  /* «Conversar» over every session (copilot global mode): a labelled pill by the "+", in thumb
+     reach on the phone. Secondary, so the "+" stays the one primary. */
+  .ut-tab-talk {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 44px;
+    padding: 0 14px 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--ut-r-pill);
+    background: var(--color-bg-tertiary);
+    box-shadow: var(--ut-action-relief);
+    color: var(--color-text);
+    font: 600 var(--p-text-body, 15px) var(--font-ui);
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ut-tab-talk:active {
+    background: var(--color-surface-hover);
+  }
+  /* A 320 px phone: the two tabs, «Conversar» with its label and the "+" still fit. */
+  @media (max-width: 359px) {
+    .ut-tab {
+      min-width: 56px;
+    }
+    .ut-tab-talk {
+      gap: 4px;
+      padding: 0 10px 0 8px;
+      font-size: 14px;
+    }
+  }
+  .ut-tab-new {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--ut-r-pill);
+    background: var(--color-primary);
+    box-shadow: var(--ut-action-relief);
+    color: var(--color-on-fill);
+    font: 600 var(--p-text-body, 15px) var(--font-ui);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ut-tab-new:active {
+    background: var(--color-primary-hover, var(--color-primary));
+  }
+  .ut-tab-new-label {
+    display: none;
+  }
+  /* The empty screen's hero has the primary: one orange per screen. */
+  .ut-tab-new--quiet {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text);
+  }
+  session-list.kbd-open .ut-tabbar,
+  session-list.kbd-open .ut-needs--phone {
+    display: none;
+  }
+}

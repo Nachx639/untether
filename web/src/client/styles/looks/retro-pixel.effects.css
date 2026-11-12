@@ -1,0 +1,293 @@
+/* Retro Pixel: stepped ink frames, hard shadows and keys with a light lip, on the shared paint
+ * hooks only. Values live in retro-pixel.css. A frame is a cross of four shadows outside its piece
+ * (no clip-path: a focus ring stays whole); nothing here filters, blends or moves what a piece
+ * holds, and no tile sits under anything that is read. */
+
+/* Bars are pale sky closed by an ink rule. */
+html[data-look="retro-pixel"] .ut-surface--bar {
+  background-color: var(--ut-session-bar);
+  background-image: var(--ut-bar-fill);
+  box-shadow: var(--ut-bar-rule);
+  border-color: var(--ut-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="retro-pixel"] .ut-surface--bar:where(.ut-home-header),
+html[data-look="retro-pixel"] .ut-surface--bar:where(.ut-phone-header),
+html[data-look="retro-pixel"] .ut-surface--bar:where(.ut-sidebar-header),
+html[data-look="retro-pixel"] .ut-surface--bar:where(.ut-session-header),
+html[data-look="retro-pixel"] .ut-surface--bar:where(.ut-ph-header) {
+  box-shadow: var(--ut-bar-relief);
+}
+
+/* Panels: cream inside the stepped frame, over the stepped shadow. */
+html[data-look="retro-pixel"] .ut-card,
+html[data-look="retro-pixel"] .ut-group,
+html[data-look="retro-pixel"] .ut-surface--panel {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  border: 3px solid transparent;
+  box-shadow: var(--ut-panel-shadow);
+}
+/* A Settings group reaches the edge of its sheet, which would cut a frame drawn outside: its
+   frame is a border, over the same stepped shadow. */
+html[data-look="retro-pixel"] .ut-group {
+  border-color: var(--ut-border);
+  box-shadow: var(--ut-group-shadow);
+}
+
+/* A request: a panel of its own, with dither fading in from its left margin only. */
+html[data-look="retro-pixel"] .ut-surface--request {
+  background-image: var(--ut-pixel-dither);
+  background-position: left top;
+  background-size: 40px 8px;
+  background-repeat: repeat-y;
+  border: 3px solid transparent;
+  box-shadow: var(--ut-needs-item-shadow);
+}
+
+/* The failure notice: flat peach in an ink frame (inside, where its sheet would cut a shadow);
+   the shield notice: peach in the stepped frame. The error is said in words, in the danger ink. */
+html[data-look="retro-pixel"] .ut-surface--detail {
+  background-color: var(--ut-paper-peach);
+  background-image: none;
+  border-color: var(--ut-border);
+  box-shadow: inset 0 0 0 4px var(--ut-border);
+}
+html[data-look="retro-pixel"] .ut-surface--notice {
+  background-color: var(--ut-banner-bg);
+  background-image: none;
+  border: var(--ut-banner-border);
+  box-shadow: var(--ut-banner-relief);
+}
+
+/* Floating pieces: cream; the frame and the shadow come from the elevation. */
+html[data-look="retro-pixel"] .ut-surface--floating,
+html[data-look="retro-pixel"] .ut-dialog,
+html[data-look="retro-pixel"] .ut-menu,
+html[data-look="retro-pixel"] .ut-toast,
+html[data-look="retro-pixel"] .ut-tooltip {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  color: var(--ut-text);
+  border-color: transparent;
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="retro-pixel"] .ut-toast,
+html[data-look="retro-pixel"] .ut-tooltip {
+  box-shadow: var(--ut-elev-1);
+}
+/* A sheet's own close button sits at the screen's edge: a frame that fits inside it. */
+html[data-look="retro-pixel"] .ut-surface--floating:where(button) {
+  box-shadow: var(--ut-control-relief-small);
+}
+
+/* Keys: cream, the small stepped frame, a light lip above and a hard shadow below. */
+html[data-look="retro-pixel"] .ut-btn,
+html[data-look="retro-pixel"] .ut-surface--action {
+  border: 0 solid transparent;
+}
+html[data-look="retro-pixel"] .ut-surface--action,
+html[data-look="retro-pixel"] .ut-btn--secondary,
+html[data-look="retro-pixel"] .ut-btn--danger {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: var(--ut-control-relief);
+}
+/* Chips sit inside rows that clip: their frame and lip are inside. */
+html[data-look="retro-pixel"] .ut-chip {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  color: var(--ut-text);
+  border-color: transparent;
+  box-shadow: var(--ut-control-relief-small);
+}
+html[data-look="retro-pixel"] .ut-btn--ghost,
+html[data-look="retro-pixel"] .ut-btn--danger-ghost {
+  box-shadow: none;
+}
+html[data-look="retro-pixel"] .ut-btn--danger,
+html[data-look="retro-pixel"] .ut-btn--danger-ghost,
+html[data-look="retro-pixel"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+/* Tags: a small square label in an ink outline, as the recipe's «falló». */
+html[data-look="retro-pixel"] .ut-surface--badge,
+html[data-look="retro-pixel"] .ut-badge,
+html[data-look="retro-pixel"] .ut-status,
+html[data-look="retro-pixel"] .ut-kbd {
+  box-shadow: inset 0 0 0 2px var(--ut-border);
+}
+html[data-look="retro-pixel"] .ut-kbd {
+  background-color: var(--ut-surface-1);
+  color: var(--ut-text);
+}
+
+/* Fields: the lightest cream inside the small frame, with a hard inner shadow; no dither under
+   the writing. */
+html[data-look="retro-pixel"] .ut-surface--inset,
+html[data-look="retro-pixel"] .ut-surface--well,
+html[data-look="retro-pixel"] .ut-field,
+html[data-look="retro-pixel"] .ut-select {
+  background-color: var(--ut-well-fill);
+  background-image: none;
+  border-color: transparent;
+}
+/* A well keeps its owner's shadow (the composer's frame) and shows its own border in ink (the
+   chat's message box); only true fields are sunken. */
+html[data-look="retro-pixel"] .ut-surface--well {
+  border-color: var(--ut-border);
+}
+html[data-look="retro-pixel"] .ut-surface--inset {
+  box-shadow: var(--ut-piece-inset);
+}
+html[data-look="retro-pixel"] .ut-field,
+html[data-look="retro-pixel"] .ut-select {
+  box-shadow: var(--ut-field-relief);
+}
+
+/* The record: a clear console of pale sky in the stepped frame; monospace, nothing under its
+   letters. After the fields, because the record is a well too. */
+html[data-look="retro-pixel"] .ut-surface--record {
+  background-color: var(--ut-paper-blue);
+  background-image: none;
+  color: var(--ut-text);
+  border: 3px solid transparent;
+  box-shadow: var(--ut-panel-shadow);
+}
+
+html[data-look="retro-pixel"] .ut-segmented {
+  background-color: var(--ut-segment-bg);
+  box-shadow: var(--ut-segment-outline);
+}
+
+/* Small ancillary controls stay flat inside their owner: lettering, not keys. */
+html[data-look="retro-pixel"] .ut-surface--control,
+html[data-look="retro-pixel"] .ut-surface--compact,
+html[data-look="retro-pixel"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-look="retro-pixel"] .ut-switch {
+  box-shadow: inset 0 0 0 2px var(--ut-border);
+}
+
+/* Selection: cartridge green, the whole stepped frame and its shadow; never color alone. */
+html[data-look="retro-pixel"] .ut-surface--selected-row,
+html[data-look="retro-pixel"] .ut-surface--selected {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-text);
+  border-color: transparent;
+  box-shadow: var(--ut-row-selected-shadow);
+}
+/* :is(), not :where(): a pressed icon elsewhere takes the accent as its ink, which would vanish on
+   the green fill. */
+html[data-look="retro-pixel"] .ut-surface--control:is([aria-selected="true"]),
+html[data-look="retro-pixel"] .ut-surface--control:is([aria-current="page"]),
+html[data-look="retro-pixel"] .ut-surface--control:is([aria-pressed="true"]),
+html[data-look="retro-pixel"] .ut-surface--panel:is([aria-pressed="true"]),
+html[data-look="retro-pixel"] .ut-surface--badge:is([aria-pressed="true"]),
+html[data-look="retro-pixel"] .ut-icon-btn:is([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: var(--ut-tab-selected-shadow);
+}
+html[data-look="retro-pixel"] .ut-surface--segment:where(.selected) {
+  background-color: var(--ut-segment-selected-bg);
+  color: var(--ut-segment-selected-ink);
+  box-shadow: var(--ut-segment-selected-shadow);
+}
+
+/* Green with ink lettering: the main action. It follows the neutral paint so it is never erased. */
+html[data-look="retro-pixel"] .ut-surface--primary,
+html[data-look="retro-pixel"] .ut-surface--request-action,
+html[data-look="retro-pixel"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: none;
+  color: var(--ut-text-on-accent);
+  border: 0 solid transparent;
+  box-shadow: var(--ut-control-relief);
+}
+
+/* Hover: the recipe's cartridge yellow. */
+@media (hover: hover) {
+  html[data-look="retro-pixel"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="retro-pixel"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="retro-pixel"] .ut-chip:hover:not(:disabled),
+  html[data-look="retro-pixel"] .ut-surface--action:hover:not(:disabled) {
+    background-color: var(--ut-primary-hover);
+  }
+  html[data-look="retro-pixel"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="retro-pixel"] .ut-surface--control:hover:not(:disabled),
+  html[data-look="retro-pixel"] .ut-menu-item:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+  }
+  html[data-look="retro-pixel"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="retro-pixel"] .ut-surface--primary:hover:not(:disabled),
+  html[data-look="retro-pixel"] .ut-surface--request-action:hover:not(:disabled) {
+    background-color: var(--ut-primary-hover);
+    color: var(--ut-text-on-accent);
+  }
+}
+
+/* Pressed: the key goes down, its shadow gone and its face sunk. */
+html[data-look="retro-pixel"] .ut-btn:active:not(:disabled),
+html[data-look="retro-pixel"] .ut-surface--action:active:not(:disabled),
+html[data-look="retro-pixel"] .ut-surface--primary:active:not(:disabled),
+html[data-look="retro-pixel"] .ut-surface--request-action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+
+/* Disabled: flat grey-blue, a dashed outline and no shadow; the text stays opaque and legible. */
+html[data-look="retro-pixel"] .ut-btn:disabled,
+html[data-look="retro-pixel"] .ut-icon-btn:disabled,
+html[data-look="retro-pixel"] .ut-menu-item:disabled,
+html[data-look="retro-pixel"] .ut-field:disabled,
+html[data-look="retro-pixel"] .ut-surface--control:disabled,
+html[data-look="retro-pixel"] .ut-surface--primary:disabled,
+html[data-look="retro-pixel"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+html[data-look="retro-pixel"] .ut-btn:disabled,
+html[data-look="retro-pixel"] .ut-icon-btn:disabled,
+html[data-look="retro-pixel"] .ut-menu-item:disabled,
+html[data-look="retro-pixel"] .ut-surface--primary:disabled,
+html[data-look="retro-pixel"] .ut-surface--action:disabled,
+html[data-look="retro-pixel"] .ut-switch:disabled {
+  outline: 2px dashed var(--ut-border);
+  outline-offset: -2px;
+}
+html[data-look="retro-pixel"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  box-shadow: none;
+}
+
+/* Focus: an ink ring, 3 px, apart from the piece and its frame. */
+html[data-look="retro-pixel"] .ut-btn:focus-visible,
+html[data-look="retro-pixel"] .ut-icon-btn:focus-visible,
+html[data-look="retro-pixel"] .ut-chip:focus-visible,
+html[data-look="retro-pixel"] .ut-menu-item:focus-visible,
+html[data-look="retro-pixel"] .ut-switch:focus-visible,
+html[data-look="retro-pixel"] .ut-field:focus-visible,
+html[data-look="retro-pixel"] .ut-select:focus-visible,
+html[data-look="retro-pixel"] .ut-surface--control:focus-visible,
+html[data-look="retro-pixel"] .ut-surface--inset:focus-visible,
+html[data-look="retro-pixel"] .ut-surface--action:focus-visible,
+html[data-look="retro-pixel"] .ut-surface--primary:focus-visible,
+html[data-look="retro-pixel"] .ut-surface--request-action:focus-visible,
+html[data-look="retro-pixel"] .ut-surface--well:focus-within {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: 5px;
+}

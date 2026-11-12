@@ -1,0 +1,249 @@
+/* One task: the row (phone), a card (desktop grid) or a quiet row in "Hechas". */
+.tsk {
+  display: flex;
+  flex-direction: column;
+  margin: var(--ut-row-gap) var(--ut-row-inset) 0;
+  border: var(--ut-row-border);
+  border-bottom: var(--ut-row-divider);
+  border-radius: var(--ut-row-radius);
+  --tsk-fill: var(--ut-row-bg);
+  background: var(--ut-row-bg);
+  background-image: var(--ut-row-rule, var(--ut-grain));
+  background-size: var(--ut-row-rule-size, auto);
+  background-position: var(--ut-row-rule-position, 0 0);
+  background-repeat: var(--ut-row-rule-repeat, repeat);
+  box-shadow: var(--ut-row-shadow);
+  transition: box-shadow 200ms ease;
+}
+/* Task rows by state, only when a style names these colors (no default in tokens.css): without
+   the fallback they would repaint the desktop cards, which have a surface of their own. */
+.tsk[data-bucket='working'] {
+  background-color: var(--ut-row-working-bg, var(--tsk-fill));
+}
+.tsk[data-bucket='needs'] {
+  background-color: var(--ut-row-needs-bg, var(--tsk-fill));
+}
+.tsk[data-bucket='ready'] {
+  background-color: var(--ut-row-ready-bg, var(--tsk-fill));
+}
+.tsk[data-bucket='failed'] {
+  background-color: var(--ut-row-failed-bg, var(--tsk-fill));
+}
+.tsk-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: inherit;
+  min-height: var(--ut-phone-row-h, var(--p-row-h, 72px));
+  padding: 12px var(--p-gutter, 16px);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+}
+.tsk-main:active {
+  background: var(--color-surface-hover);
+}
+.tsk-main:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+.tsk-main .psr-avatar {
+  flex: none;
+  margin-top: 2px;
+}
+.tsk[data-bucket='failed'] .psr-avatar {
+  background: color-mix(in srgb, var(--color-status-error) 14%, transparent);
+  color: var(--color-status-error-text);
+}
+.tsk[data-bucket='failed'] .psr-dot {
+  background: var(--color-status-error);
+}
+/* A title that does not fit still tells its row from the next one (2026-11-10: three queued
+   tasks read «Revisión 2ª vuelta: arreglos claros de…» three times on a phone; their ends
+   told them apart). Two shared pieces, unlayered so they win over each row's one-line rule,
+   both around the title's two parts (utils/card-line.ts midCutTitle: `.ut-mid-start` and
+   `.ut-mid-end`). `.ut-title-lines` where the row can grow: two lines, and while even two
+   cut it (`data-cut`, card-line.ts fitTitleLines) its start on the first and its end on the
+   second. `.ut-mid` where only one line fits: the start is cut with «…», the end stays.
+   Never a letter gone without «…» (2026-11-10: the end, held to 62% of the line, was clipped
+   from its left in the styles with large type: «Tokenh examples», «Split lu… nd dinner
+   shifts»). The start gives way first, down to the room of its «…» (`data-keep`); only then
+   the end lets go of its first words, whole: its words fill one line from the last one
+   (`order`, row-reverse) and the ones that wrap are out of sight. */
+.ut-title-lines {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ut-mid,
+.ut-title-lines[data-cut] {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  white-space: pre;
+}
+/* One line: what wraps (an end with no room, `data-leave` below) is out of sight. */
+.ut-mid {
+  max-height: 1lh;
+  overflow: hidden;
+}
+.ut-title-lines[data-cut] {
+  white-space: nowrap;
+}
+/* The line break between the two parts. */
+.ut-title-lines[data-cut]::after {
+  content: '';
+  flex: 0 0 100%;
+  order: 1;
+}
+.ut-mid > *,
+.ut-title-lines[data-cut] > * {
+  flex: none;
+}
+.ut-mid > .ut-mid-start,
+.ut-title-lines[data-cut] > .ut-mid-start {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The start asks the line for the room of its «…» only and grows to its own width with what
+   the end leaves: the room goes to the end's words first (its growth factor, far above). */
+.ut-mid > .ut-mid-start {
+  flex: 100000000 1 auto;
+  max-width: max-content;
+}
+.ut-mid > .ut-mid-start[data-keep] {
+  flex-basis: var(--ut-mid-start-min, 2em);
+}
+/* A start of a few letters can be narrower than that: less, so it is cut before the end is. */
+.ut-mid > .ut-mid-start[data-keep='short'] {
+  flex-basis: 1em;
+}
+/* A basis above zero: with none, the line break would fit on the first line and take it. */
+.ut-title-lines[data-cut] > .ut-mid-start {
+  flex: 1 1 1px;
+}
+/* The end asks the line for nothing and grows to its words, the last ones first. */
+.ut-mid > .ut-mid-end {
+  display: flex;
+  flex: 1000000000000 1 0px;
+  flex-flow: row-reverse wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: max-content;
+  max-height: 1lh;
+  overflow: hidden;
+}
+/* One word wider than its room says so with its own «…». */
+.ut-mid > .ut-mid-end > .ut-mid-word {
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Beside a start long enough to be cut whenever the end has no room (`data-leave`), the end
+   asks for its widest word instead: with no room for it next to the start's «…» the whole
+   end wraps out of sight, and the title is cut at its end like any other. */
+.ut-mid > .ut-mid-end[data-leave] {
+  min-width: min-content;
+}
+/* On its own line the end is one text: wider than the line, it is cut at its end with «…»
+   (what two plain lines would show), never clipped in silence. */
+.ut-title-lines[data-cut] > .ut-mid-end {
+  display: block;
+  order: 2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tsk-prefix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin-inline-end: 6px;
+  padding: 0 4px;
+  border-radius: var(--ut-r-md);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  font: 700 12px/20px var(--font-ui);
+  vertical-align: 1px;
+}
+.tsk-status {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 4px;
+  min-width: 0;
+}
+.tsk-pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--ut-r-pill);
+  font: 600 12px/22px var(--font-ui);
+  white-space: nowrap;
+  --tsk-tone: var(--color-text-dim);
+  --tsk-ink: var(--color-text-muted);
+  background: color-mix(in srgb, var(--tsk-tone) 16%, transparent);
+  color: var(--tsk-ink);
+}
+.tsk-pill--working {
+  --tsk-tone: var(--color-primary);
+  --tsk-ink: var(--color-primary-text);
+}
+.tsk-pill--needs {
+  --tsk-tone: var(--color-attention);
+  --tsk-ink: var(--color-attention-text);
+}
+.tsk-pill--ready {
+  --tsk-tone: var(--color-status-success);
+  --tsk-ink: var(--color-status-success-text);
+}
+.tsk-pill--failed {
+  --tsk-tone: var(--color-status-error);
+  --tsk-ink: var(--color-status-error-text);
+}
+.tsk-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ut-r-circle);
+  background: var(--tsk-tone);
+  animation: tsk-pulse 1.6s ease-in-out infinite;
+}
+@keyframes tsk-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.tsk-reason {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  font: 500 13px/18px var(--font-ui);
+}
+.tsk[data-bucket='needs'] .tsk-reason {
+  color: var(--color-attention-text);
+}
+.tsk[data-bucket='failed'] .tsk-reason {
+  color: var(--color-status-error-text);
+}

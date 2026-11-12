@@ -1,0 +1,11 @@
+⏺ Read(src/server/services/task-scheduler.ts)
+  ⎿  Read 4579 lines
+
+  ⎿  You've hit your session limit · resets 4:25am (Europe/Madrid)
+     /upgrade to increase your usage limit.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Opus 5.5  ·  semana 100% (reinicia vie 11:00)  ·  contexto 22%
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

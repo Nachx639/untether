@@ -1,0 +1,155 @@
+@layer components {
+  /* Menus and popovers. Position with utils/popover-position.ts (fixed, flips, clamps). */
+  .ut-menu {
+    min-width: 200px;
+    max-width: 320px;
+    max-height: min(60vh, 420px);
+    overflow: auto;
+    padding: 4px;
+    border-radius: var(--radius-card);
+    background: var(--color-float);
+    backdrop-filter: var(--ut-blur-surface);
+    -webkit-backdrop-filter: var(--ut-blur-surface);
+    box-shadow: var(--shadow-e2);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 18px;
+    z-index: 1100;
+  }
+  .ut-menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .ut-menu-item > svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--color-text-muted);
+  }
+  .ut-menu-item:hover:not(:disabled),
+  .ut-menu-item[data-active] {
+    background: var(--color-surface-hover);
+  }
+  .ut-menu-item:disabled {
+    opacity: var(--ut-disabled-opacity, 0.4);
+    cursor: default;
+  }
+  .ut-menu-item .ut-menu-trail,
+  .ut-menu-item > .ut-kbd {
+    margin-inline-start: auto;
+    color: var(--color-text-dim);
+  }
+  .ut-menu-item--danger,
+  .ut-menu-item--danger > svg {
+    color: var(--color-status-error-text);
+  }
+  .ut-menu-label {
+    padding: 8px 8px 4px;
+    color: var(--color-text-dim);
+    font-size: var(--ut-section-size, 11px);
+    line-height: var(--ut-section-line, 14px);
+    font-weight: var(--ut-fw-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .ut-menu-sep {
+    height: 1px;
+    margin: 4px -4px;
+    background: var(--color-border);
+  }
+
+  /* Rich tooltip (plain title="" is fine too). Show after 400 ms. */
+  .ut-tooltip {
+    padding: 4px 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-ctl);
+    background: var(--color-float);
+    backdrop-filter: var(--ut-blur-surface);
+    -webkit-backdrop-filter: var(--ut-blur-surface);
+    box-shadow: var(--shadow-e2);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    line-height: 16px;
+    z-index: 1200;
+  }
+
+  /* Eyebrow over a section ("UNTETHER 3"). Uppercase from CSS, never toUpperCase(). */
+  .ut-section-label {
+    color: var(--color-text-dim);
+    font-size: var(--ut-section-size, 11px);
+    line-height: var(--ut-section-line, 14px);
+    font-weight: var(--ut-fw-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Settings-style inset list: <div class="ut-group"><div class="ut-row">…</div></div>. */
+  .ut-group {
+    border: var(--ut-outline-width) solid var(--ut-group-outline);
+    box-shadow: var(--ut-group-edge);
+    border-radius: var(--radius-card);
+    background: var(--ut-group-bg);
+    overflow: var(--ut-group-overflow);
+  }
+  /* A row is a loose card only when a style asks for it (--ut-group-gap); by default its first
+     corners follow the group, because the group clips them. */
+  :where(.ut-group > *) {
+    border: var(--ut-group-row-border);
+    border-radius: var(--ut-group-row-radius);
+    background: var(--ut-group-row-bg);
+    box-shadow: var(--ut-group-row-shadow);
+  }
+  :where(.ut-group > * + *) {
+    margin-top: var(--ut-group-gap);
+  }
+  .ut-group > * + * {
+    border-top: var(--ut-group-divider);
+  }
+  .ut-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 24px;
+    min-height: var(--ut-settings-row-h, 52px);
+    padding: var(--ut-settings-row-pad, 12px 16px);
+  }
+  .ut-row-label {
+    color: var(--color-text);
+    font-size: var(--ut-control-size, 13px);
+    line-height: var(--ut-control-line, 18px);
+    font-weight: var(--ut-fw-medium);
+  }
+  .ut-row-desc {
+    margin-top: 2px;
+    color: var(--color-text-muted);
+    font-size: var(--ut-description-size, 12px);
+    line-height: var(--ut-description-line, 16px);
+  }
+
+  /* Loading placeholder (show after 150 ms, never bare text). */
+  .ut-skeleton {
+    border-radius: var(--radius-ctl);
+    background: linear-gradient(
+      90deg,
+      var(--color-bg-tertiary),
+      var(--color-surface-hover),
+      var(--color-bg-tertiary)
+    );
+    background-size: 200% 100%;
+    animation: ut-shimmer 1.2s linear infinite;
+  }
+}

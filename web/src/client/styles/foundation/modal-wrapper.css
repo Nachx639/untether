@@ -1,0 +1,90 @@
+/*
+ * modal-wrapper (components/modal-wrapper.ts). While visible the host itself is the frame: a
+ * fixed full-screen grid that centers the caller's single root element (the dialog) over an
+ * absolutely positioned backdrop. Unlayered: callers put Tailwind classes (block, w-full,
+ * max-w-*) on <modal-wrapper>, and the frame must win over them.
+ */
+.ut-modal-host {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px
+    calc(16px + env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+}
+.ut-modal-host[placement='top'] {
+  place-items: start center;
+  padding-top: max(18vh, calc(16px + env(safe-area-inset-top, 0px)));
+}
+.ut-modal-host > .modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 0;
+}
+.ut-modal-host > [data-modal-content] {
+  position: relative;
+  z-index: 1;
+  /* Both safe areas: the host pads by them, so the box must not overflow past them. */
+  max-height: calc(
+    100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.in-session-view) .ut-modal-host > [data-modal-content] {
+    animation: ut-dialog-in var(--dur-3) var(--ease-out);
+  }
+}
+/*
+ * placement="sheet" (opt-in, phone-spec §3.2, 2026-10-12): on phones the dialog becomes a
+ * bottom content sheet: full width, 14 px top corners, the bottom safe area inside its own
+ * background, a grabber drawn by ::before, swipe-down wired by modal-wrapper. Elsewhere it is
+ * the usual centred dialog.
+ */
+@media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+  .ut-modal-host[placement='sheet'] {
+    place-items: end stretch;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 0 0;
+  }
+  .ut-modal-host[placement='sheet'] > [data-modal-content] {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 8px - env(safe-area-inset-top, 0px));
+    margin: 0;
+    border-radius: var(--radius-dialog, 14px) var(--radius-dialog, 14px) 0 0;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    box-shadow: var(--shadow-e3);
+  }
+  .ut-modal-host[placement='sheet'] > [data-modal-content]::before {
+    content: '';
+    display: block;
+    flex: none;
+    width: 36px;
+    height: 5px;
+    margin: 7px auto 2px;
+    border-radius: var(--ut-r-pill);
+    background: var(--color-border-strong, var(--color-border-light));
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (pointer: coarse) and (max-width: 599px),
+  (prefers-reduced-motion: no-preference) and (pointer: coarse) and (max-height: 599px) {
+  body:not(.in-session-view) .ut-modal-host[placement='sheet'] > [data-modal-content] {
+    animation: ut-sheet-in var(--dur-3) var(--ease-out);
+  }
+}
+@keyframes ut-sheet-in {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}

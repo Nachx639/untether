@@ -1,0 +1,52 @@
+/*
+ * Keyboard focus (a hardware keyboard on the iPad or iPhone, Full Keyboard Access, a Mac).
+ * Controls focused from the keyboard get a 2 px ring in the accent's text shade (≥ 3:1 on
+ * every surface, both themes) with a 2 px gap in the page color, so it shows on
+ * accent-filled buttons too. A box-shadow (--focus-ring) since 2026-10-12, not an outline:
+ * the same ring everywhere, rounded with the control. Text fields (not checkboxes, radios,
+ * ranges or file pickers) keep their own focus look: border and halo, in @layer base.
+ * Unlayered on purpose: it wins over Tailwind's focus:outline-none and shadow utilities;
+ * :where() keeps its specificity at zero so an unlayered component rule that draws its own
+ * ring can still replace it. Shadow-DOM components get the same rule from
+ * utils/a11y-base-styles.ts.
+ */
+:where(:focus-visible):where(:not([tabindex='-1'], input:not([type='checkbox'], [type='radio'], [type='range'], [type='file']), textarea, select, [contenteditable])) {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+/* Forced colors (Windows High Contrast) drop box-shadows: an outline there. */
+@media (forced-colors: active) {
+  :where(:focus-visible) {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Reduced motion (iOS: Settings → Accessibility → Motion → Reduce Motion): sheets slide,
+ * swiped rows snap, views fade and lists stagger instantly. Indicators that something is
+ * in progress keep moving, slower; purely decorative loops (breathing hints) stop.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  .animate-spin,
+  .animate-pulse,
+  .reconnecting-dot {
+    animation-duration: 2.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+}

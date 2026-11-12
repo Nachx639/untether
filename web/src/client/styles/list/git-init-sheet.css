@@ -1,0 +1,220 @@
+/* Turning version control on for a folder without git (git-init-sheet.ts). */
+.gis-intro {
+  margin: 0;
+  color: var(--color-text);
+  font: 400 15px/1.4 var(--font-ui);
+}
+.gis-summary {
+  margin: 0;
+  color: var(--color-text);
+  font: 600 15px/20px var(--font-ui);
+}
+.gis-patterns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gis-pattern {
+  padding: 2px 8px;
+  border-radius: var(--ut-r-md);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  font: 400 13px/18px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.gis-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gis-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.gis-check {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border-radius: var(--ut-r-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-on-fill);
+  touch-action: manipulation;
+}
+.gis-check.on {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+.gis-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.gis-path {
+  color: var(--color-text);
+  font: 400 14px/20px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.gis-size {
+  color: var(--color-text-dim);
+  font-family: var(--font-ui);
+}
+.gis-reason {
+  color: var(--color-text-dim);
+  font: 400 13px/1.385 var(--font-ui);
+}
+.gis-ai {
+  color: var(--color-text-muted);
+}
+.gis-review {
+  margin: 0;
+}
+.gis-foot {
+  display: flex;
+  gap: 8px;
+}
+.gis-foot .gis-cancel {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: var(--ut-r-12);
+}
+.gis-foot .tks-primary {
+  flex: 1;
+}
+.tks-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tks-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--ut-r-pill);
+  border: 1px solid var(--color-border-light);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+  font: 500 15px/20px var(--font-ui);
+  touch-action: manipulation;
+}
+.tks-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tks-chip.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-muted);
+  color: var(--color-text-bright);
+  font-weight: var(--ut-fw-semibold);
+}
+.tks-chip--more {
+  background: none;
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+.tks-chip--more[aria-busy='true'] {
+  opacity: 0.6;
+}
+.tks-seg {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--ut-r-12);
+  background: var(--color-bg-tertiary);
+}
+.tks-seg > button {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: var(--ut-r-9);
+  color: var(--color-text-muted);
+  font: 500 15px/20px var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+.tks-seg > button.selected {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-weight: var(--ut-fw-semibold);
+  box-shadow: var(--ut-drop-3-20);
+}
+.tks-prompt {
+  position: relative;
+}
+.tks-prompt textarea.tks-input {
+  padding-right: 56px;
+  min-height: 112px;
+}
+.tks-mic {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--ut-r-pill);
+  color: var(--color-text-muted);
+  background: var(--color-bg-tertiary);
+  touch-action: manipulation;
+}
+.tks-mic.listening {
+  color: var(--color-on-fill);
+  background: var(--color-status-error);
+}
+[dir='rtl'] .tks-prompt textarea.tks-input {
+  padding-right: 12px;
+  padding-left: 56px;
+}
+[dir='rtl'] .tks-mic {
+  right: auto;
+  left: 6px;
+}
+.tks-stepper-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tks-stepper {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  border-radius: var(--ut-r-pill);
+  background: var(--color-bg-tertiary);
+}
+.tks-stepper > button {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--ut-r-pill);
+  color: var(--color-text);
+  font: 500 22px/1 var(--font-ui);
+  touch-action: manipulation;
+}
+.tks-stepper > button:disabled {
+  opacity: 0.35;
+}
+.tks-stepper-value {
+  min-width: 32px;
+  text-align: center;
+  font: 600 16px/1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}

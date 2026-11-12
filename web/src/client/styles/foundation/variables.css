@@ -1,0 +1,144 @@
+/* Keyframes */
+@keyframes pulsePrimary {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .7;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* CSS Custom Properties for Untether constants */
+:root {
+  /* Breakpoints */
+  --ut-breakpoint-mobile: 768px;
+  --ut-breakpoint-tablet: 1024px;
+  --ut-breakpoint-desktop: 1280px;
+
+  /* Sidebar dimensions */
+  --ut-sidebar-default-width: 300px;
+  --ut-sidebar-min-width: 240px;
+  --ut-sidebar-max-width: 480px;
+  --ut-sidebar-mobile-right-margin: 80px;
+
+  /* Transitions */
+  --ut-transition-sidebar: 200ms;
+  --ut-transition-mobile-slide: 200ms;
+  --ut-transition-resize-handle: 200ms;
+
+  /* Z-index layers */
+  --ut-z-mobile-overlay: 20;
+  --ut-z-sidebar-mobile: 30;
+  --ut-z-session-exited-overlay: 25;
+
+  /* Terminal */
+  --ut-terminal-min-height: 200px;
+  --ut-terminal-default-visible-rows: 24;
+  --ut-terminal-resize-debounce: 100ms;
+
+  /* Spacing (design spec 2.4): 4 px grid. */
+  --space-row: var(--ut-space-row);
+  --space-group: var(--ut-space-group);
+  --space-section: var(--ut-space-section);
+  --page-pad: var(--ut-page-pad);
+  --content-max: 1600px;
+
+  /* Keyboard focus: one ring for every control, drawn as a box-shadow (design spec 2.8). */
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus-ring);
+}
+
+@media (min-width: 1600px) {
+  :root {
+    --ut-page-pad: 32px;
+  }
+}
+
+/* Phone type scale and sizes (phone-spec §2, 2026-10-12): read at arm's length outdoors, so
+   chrome is bigger than the desktop 13 px. Defined once here, consumed by the area CSS inside
+   the same phone gate (touch and a short side under 600 px, portrait or landscape). */
+@media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+  :root {
+    --p-text-micro: 12px;
+    --p-text-micro--line-height: 16px;
+    --p-text-caption: 13px;
+    --p-text-caption--line-height: 18px;
+    --p-text-body: 15px;
+    --p-text-body--line-height: 20px;
+    --p-text-row: 16px;
+    --p-text-row--line-height: 21px;
+    --p-text-title: 17px;
+    --p-text-title--line-height: 22px;
+    --p-text-display: 28px;
+    --p-text-display--line-height: 34px;
+    --p-gutter: max(16px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    --p-row-h: 72px;
+    --p-row-h-tall: 88px;
+    --p-ctl-h: 44px;
+    --p-bar-h: calc(49px + env(safe-area-inset-bottom, 0px));
+    --p-header-h: 52px;
+    --p-radius-sheet: var(--radius-dialog, 14px);
+    --p-hit: 44px;
+  }
+}
+/* Landscape phones (short side is the height): the compact header. Keyboard-up headers use
+   the same 36 px through html[data-keyboard-visible] / .kbd-open in their owners' CSS. */
+@media (pointer: coarse) and (max-height: 599px) and (orientation: landscape) {
+  :root {
+    --p-header-h: 36px;
+  }
+}
+
+/*
+ * "Use the system text size" (Settings → Appearance, utils/system-text-size.ts): the root
+ * font follows iOS Dynamic Type, read by a probe and clamped to 16–22 px (--ut-root-text),
+ * so every rem text size scales. Spacing stays at 4 px steps: iOS grows text, not margins,
+ * and Tailwind's p-*, h-*, w-* in rem would double the header buttons and push the title out.
+ * Chrome (headers, the list's bottom bar, the Settings header and footer) grows at most
+ * 1.15× (--ut-chrome-scale): unclamped at AX5 the bottom bar took half the screen and the
+ * header read "V…" (2026-10-04). Only on touch WebKit: on a Mac the keyword is 13 px.
+ */
+@supports (-webkit-touch-callout: none) {
+  html[data-text-size='system'] {
+    font-size: var(--ut-root-text, 16px);
+    --spacing: 4px;
+  }
+  /* Phones and small windows; an iPad's sm: header sizes are left alone. Menus that open
+     from the chrome (.ut-content) are content: they scale up to the cap. */
+  @media (max-width: 639px) {
+    html[data-text-size='system'] :is(.ut-chrome .text-xs, .ut-chrome.text-xs):not(.ut-content *) {
+      font-size: calc(12px * var(--ut-chrome-scale, 1));
+    }
+    html[data-text-size='system'] :is(.ut-chrome .text-sm, .ut-chrome.text-sm):not(.ut-content *) {
+      font-size: calc(14px * var(--ut-chrome-scale, 1));
+    }
+    html[data-text-size='system'] :is(.ut-chrome .text-base, .ut-chrome.text-base):not(.ut-content *) {
+      font-size: calc(16px * var(--ut-chrome-scale, 1));
+    }
+    html[data-text-size='system'] :is(.ut-chrome .text-lg, .ut-chrome.text-lg):not(.ut-content *) {
+      font-size: calc(18px * var(--ut-chrome-scale, 1));
+    }
+    html[data-text-size='system'] :is(.ut-chrome .text-xl, .ut-chrome.text-xl):not(.ut-content *) {
+      font-size: calc(20px * var(--ut-chrome-scale, 1));
+    }
+  }
+}

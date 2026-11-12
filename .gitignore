@@ -1,0 +1,179 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Xcode
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcscmblueprint
+*.xcscheme
+!**/xcshareddata/xcschemes/*.xcscheme
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/
+
+# Swift
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+.build/
+DerivedData/
+*.playground
+
+# Other
+*.log
+*.bak
+*~
+.*.swp
+
+# Node.js
+node_modules/
+mac/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+.yarn
+.pnpm-store
+
+# Local Development Settings
+Local.xcconfig
+
+# Web build outputs - these are generated from TypeScript
+web/dist/**/*.js
+web/dist/**/*.js.map
+web/public/**/*.js
+web/public/**/*.js.map
+
+# LLVM Profiling data
+*.profraw
+*.profdata
+default.profraw
+default.profdata
+
+# Tuist generated files
+Derived/
+Workspace.xcworkspace/
+
+# Private signing material - NEVER commit these
+private/
+
+# Built binaries (should be built during build process)
+web/untether
+/.build-tools
+*.o
+
+# Forwarder build artifacts
+native/ut-fwd/target/
+web/bin/untether-fwd
+web/bin/untether-fwd.source-hash
+web/native/untether-fwd
+__pycache__/
+
+
+
+/ios/TestResults.xcresult
+/ios/TestResults-iOS.xcresult
+
+# Playwright test results
+web/playwright-report/
+web/test-results/
+test-results/
+test-results-*.json
+playwright-report/
+web/playwright-videos/
+playwright-videos/
+*.png
+!web/src/**/*.png
+# Tracked pictures of the project and its docs (2026-11-10: 24 tracked PNGs were ignored, so a new
+# one next to them was silently left out of `git add -A`).
+!assets/**/*.png
+!docs/**/*.png
+# Asset catalogs are source: on 2026-11-10 the AppIcon @2x files were found untracked
+# (ignored by *.png), so worktrees and clean clones built an icon without Retina sizes.
+!**/*.xcassets/**/*.png
+*.webm
+*.trace.zip
+trace.zip
+error-context.md
+
+# Coverage reports
+coverage/
+web/coverage/
+*.lcov
+coverage-*.json
+coverage-final.json
+.nyc_output/
+.claude/settings.local.json
+buildServer.json
+/temp
+/web/release-check/
+
+# OpenCode local development state
+.opencode/
+mac/build-test/
+.env
+.aider*
+/.crush
+/.grok
+/mac/info
+/info
+*.crt
+*.key
+.tmp/
+# The /review-pr command's temporary diff, in the project root
+.pr_review_*.tmp
+
+# Playwright MCP (browser automation artifacts)
+.playwright-mcp/

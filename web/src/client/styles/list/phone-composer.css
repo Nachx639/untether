@@ -1,0 +1,68 @@
+@media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+  /* ---- Ask box (ask-claude-box.ts) ---- */
+  .ask-claude {
+    margin: 0 0 var(--ut-composer-gap, 4px);
+    padding: var(--ut-composer-pad, 8px 8px 4px 12px);
+  }
+  .ask-claude-bar {
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .ask-claude-start {
+    gap: 6px;
+  }
+  .ask-claude-actions {
+    gap: 0;
+  }
+  .ask-claude-agent button {
+    min-height: 32px;
+    padding: 2px 9px;
+  }
+  .ask-claude-agent button.selected {
+    background: var(--ut-segment-selected-bg, var(--color-bg-elevated));
+    color: var(--ut-segment-selected-ink, var(--color-text));
+    box-shadow: var(--ut-segment-selected-shadow, var(--shadow-e1));
+  }
+  .ask-claude-mic,
+  .ask-claude-send,
+  .ask-claude-tasks {
+    width: 44px;
+    height: 44px;
+  }
+  .ask-claude-mic,
+  .ask-claude-tasks {
+    background: transparent;
+    color: var(--color-text-muted);
+  }
+  /* Tareas sits in the box's top corner, beside the question: the row below keeps the
+     agent's name and about eight letters of the folder even on a 320 pt screen or in the
+     left column of a phone on its side. */
+  .ask-claude {
+    position: relative;
+  }
+  .ask-claude textarea {
+    padding-right: 40px;
+  }
+  .ask-claude-tasks {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  .ask-claude-send {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    margin: 4px;
+  }
+  .ask-claude-send::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+  .ask-claude-folder {
+    flex-shrink: 1;
+    min-width: 34px;
+    min-height: 32px;
+    max-width: calc(8ch + 44px);
+  }
+}

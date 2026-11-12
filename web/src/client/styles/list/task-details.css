@@ -1,0 +1,174 @@
+/* The model's line about what the agent does now: plain text, not a warning. */
+.tsk .tsk-reason--explain {
+  color: var(--color-text-muted);
+  font-weight: var(--ut-fw-normal);
+}
+/* «Más»: the task's details, out of the card until asked for (2026-11-08). */
+.tsk-more-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tsk-detail {
+  margin-top: 4px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: var(--color-text-muted);
+  font: 400 14px/1.35 var(--font-ui);
+  word-break: break-word;
+}
+/* The agent's summary keeps its lines (what it did, how it checked it, how to undo it). */
+.tsk-detail--summary {
+  white-space: pre-line;
+}
+.tsk-detail--open {
+  display: block;
+  -webkit-line-clamp: unset;
+}
+.tsk-more {
+  flex: none;
+  margin-inline-start: auto;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary-text);
+  font: 600 13px/18px var(--font-ui);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Where a task's time went: each phase's total, then its rounds. */
+.tsk-timings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  margin-top: 4px;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font: 400 12px/1.35 var(--font-ui);
+}
+.tsk-timings > svg {
+  flex: none;
+}
+.tsk-timings-phases {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tsk-timings-rounds {
+  flex: none;
+  opacity: 0.8;
+}
+/* Its budget, spent / limit (2026-11-01); past its warning level it stands out. */
+.tsk-budget {
+  margin-top: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font: 400 12px/1.35 var(--font-ui);
+}
+.tsk-budget--near {
+  color: var(--color-status-warning);
+}
+.tsk-sheet-timings {
+  margin: 8px 0;
+  color: var(--color-text-muted);
+  font: 400 13px/1.45 var(--font-ui);
+}
+.tsk-sheet-timings-title {
+  font-weight: var(--ut-fw-semibold);
+}
+/* The AI review of a task: a line, and what it found. */
+.tsk-review,
+.tsk-guard {
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font: 400 13px/1.35 var(--font-ui);
+}
+/* What the command guard blocked: its codes may be long commands. */
+.tsk-guard code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tsk-review-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.tsk-review-line > svg {
+  flex: none;
+}
+.tsk-review-label {
+  flex: none;
+  font-weight: var(--ut-fw-semibold);
+}
+.tsk-review--concerns .tsk-review-label {
+  color: var(--color-attention-text);
+}
+.tsk-review-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tsk-review-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tsk-review-issue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 6px;
+  word-break: break-word;
+}
+.tsk-review-issue code {
+  font: 400 12px/16px var(--font-mono);
+  color: var(--color-text-dim);
+}
+.tsk-review-sev {
+  flex: none;
+  padding: 0 6px;
+  border-radius: var(--ut-r-md);
+  background: var(--color-bg-tertiary);
+  font: 600 11px/16px var(--font-ui);
+}
+.tsk-review-sev--high {
+  background: var(--color-status-error);
+  color: var(--color-on-fill);
+}
+.tsk-review-sev--medium {
+  background: var(--color-attention);
+  color: var(--color-on-fill);
+}
+/* Who runs it: its model level and each change of agent (2026-11-01). */
+.tsk-agent {
+  margin-top: 4px;
+  color: var(--color-text-dim);
+  font: 400 12px/16px var(--font-ui);
+  overflow-wrap: anywhere;
+}
+.tsk-caption {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin-top: 4px;
+  color: var(--color-text-dim);
+  font: 400 12px/16px var(--font-mono);
+}
+.tsk-caption > svg {
+  flex: none;
+}
+.tsk-caption > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

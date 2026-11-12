@@ -1,0 +1,159 @@
+/*
+ * Shared primitives (design spec 3, 2026-10-12). Desktop-sized by default; with a finger
+ * (pointer: coarse) an invisible ::before grows the hit area to 44 px without changing the
+ * look. Every area builds with these instead of one-off classes:
+ *   .ut-icon-btn(--sm) + .ut-badge-dot   .ut-btn --primary/--secondary/--ghost/--danger/
+ *   --danger-ghost/--sm/--lg   .ut-kbd   .ut-chip(--mono)   .ut-status[data-status] + .ut-dot
+ *   .ut-field(--mono) .ut-select .ut-label   .ut-switch   .ut-segmented   .ut-menu /
+ *   .ut-menu-item(--danger) / .ut-menu-label / .ut-menu-sep   .ut-tooltip   .ut-section-label
+ *   .ut-group / .ut-row   .ut-skeleton   .ut-elevated   .ut-dialog(--sm/--md/--lg/--palette)
+ *   + .ut-dialog-header / -body / -footer   .ut-toast-stack / .ut-toast
+ *   .ut-surface[data-level]   .ut-divider   .ut-badge(--accent/--success/--warning/--danger/--info)
+ */
+@layer components {
+  /* A panel of a given level: 0 page, 1–3 the ladder of surfaces, raised for floating ones. */
+  .ut-surface {
+    --ut-surface-bg: var(--ut-surface-1);
+    border-radius: var(--ut-r-lg);
+    background: color-mix(in srgb, var(--ut-surface-bg) var(--ut-surface-alpha), transparent);
+    color: var(--ut-text);
+    backdrop-filter: var(--ut-blur-surface);
+    -webkit-backdrop-filter: var(--ut-blur-surface);
+  }
+  .ut-surface[data-level='0'] {
+    --ut-surface-bg: var(--ut-bg-app);
+  }
+  .ut-surface[data-level='2'] {
+    --ut-surface-bg: var(--ut-surface-2);
+  }
+  .ut-surface[data-level='3'] {
+    --ut-surface-bg: var(--ut-surface-3);
+  }
+  .ut-surface[data-level='raised'] {
+    --ut-surface-bg: var(--ut-surface-raised);
+    box-shadow: var(--ut-elev-2);
+  }
+
+  /* A hairline between sections. */
+  .ut-divider {
+    height: var(--ut-outline-width);
+    border: 0;
+    background: var(--ut-border);
+  }
+
+  /* Short count or state label on a tinted pill. */
+  .ut-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 var(--ut-space-row);
+    border-radius: var(--ut-r-pill);
+    background: var(--ut-surface-2);
+    color: var(--ut-text-muted);
+    font-size: var(--ut-fs-micro);
+    line-height: var(--ut-lh-micro);
+    font-weight: var(--ut-fw-medium);
+  }
+  .ut-badge--accent {
+    background: var(--ut-accent-soft);
+    color: var(--ut-accent-text);
+  }
+  .ut-badge--success {
+    background: var(--ut-success-soft);
+    color: var(--ut-success-text);
+  }
+  .ut-badge--warning {
+    background: var(--ut-warning-soft);
+    color: var(--ut-warning-text);
+  }
+  .ut-badge--danger {
+    background: var(--ut-danger-soft);
+    color: var(--ut-danger-text);
+  }
+  .ut-badge--info {
+    background: var(--ut-info-soft);
+    color: var(--ut-info-text);
+  }
+
+  /* Borderless icon button (header toolbars, row actions). 16 px icon inside. */
+  .ut-icon-btn {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition-property: background-color, color, opacity;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+  .ut-icon-btn:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+  .ut-icon-btn[aria-pressed='true'],
+  .ut-icon-btn.is-active {
+    background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+    color: var(--color-primary-text);
+  }
+  .ut-icon-btn:disabled {
+    opacity: var(--ut-disabled-opacity, 0.4);
+    cursor: default;
+  }
+  .ut-icon-btn > svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+  .ut-icon-btn--sm {
+    width: 24px;
+    height: 24px;
+  }
+  .ut-icon-btn--sm > svg {
+    width: 14px;
+    height: 14px;
+  }
+  /* A small dot on an icon button (settings: disconnected). */
+  .ut-badge-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--ut-r-pill);
+    background: var(--color-status-warning);
+    box-shadow: 0 0 0 2px var(--color-bg-secondary);
+    pointer-events: none;
+  }
+  .ut-badge-dot--pulse {
+    animation: ut-pulse 1.6s ease-in-out infinite;
+  }
+
+  /* Agent glyphs (components/icons.ts agentGlyph): Claude's mark, a "Cx" tile, a prompt. */
+  .ut-agent-glyph {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+  }
+  .ut-agent-glyph > svg {
+    width: 100%;
+    height: 100%;
+  }
+  .ut-agent-glyph--codex {
+    border-radius: var(--radius-chip);
+    box-shadow: inset 0 0 0 1px var(--color-border-strong);
+    font-family: var(--font-ui);
+    font-size: 9px;
+    line-height: 1;
+    font-weight: var(--ut-fw-bold);
+    letter-spacing: -0.02em;
+  }
+}

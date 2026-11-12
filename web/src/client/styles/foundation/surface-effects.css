@@ -1,0 +1,57 @@
+/* Dark surfaces catch a hairline of light on their top edge. */
+[data-theme='dark'] .ut-elevated {
+  box-shadow: var(--shadow-e2), inset 0 1px 0 var(--ut-edge-light);
+}
+[data-theme='dark'] .ut-dialog {
+  box-shadow: var(--shadow-e3), inset 0 1px 0 var(--ut-edge-light);
+}
+[data-theme='dark'] .ut-menu,
+[data-theme='dark'] .ut-toast {
+  box-shadow: var(--shadow-e2), inset 0 1px 0 var(--ut-edge-light);
+}
+
+@keyframes ut-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes ut-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@keyframes ut-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ut-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Status pulses and shimmers hold still with Reduce Motion (the global rule above would
+   otherwise run them at 2.4 s like spinners). */
+@media (prefers-reduced-motion: reduce) {
+  .ut-dot,
+  .ut-card-dot,
+  .ut-badge-dot--pulse,
+  .ut-skeleton {
+    animation: none !important;
+  }
+}

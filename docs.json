@@ -1,0 +1,144 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Untether",
+  "theme": "maple",
+  "logo": {
+    "dark": "/docs/images/untether-logo-dark.svg",
+    "light": "/docs/images/untether-logo-light.svg"
+  },
+  "favicon": "/docs/images/favicon.svg",
+  "colors": {
+    "primary": "#0066FF",
+    "light": "#3B82F6",
+    "dark": "#1E40AF"
+  },
+  "topbarCtaButton": {
+    "name": "GitHub",
+    "url": "https://github.com/Nachx639/untether"
+  },
+  "anchors": [
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/Nachx639/untether"
+    }
+  ],
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "docs/introduction",
+              "docs/INDEX",
+              "docs/project-overview",
+              "docs/keyboard-shortcuts",
+              "docs/CONTRIBUTING",
+              "CHANGELOG"
+            ]
+          },
+          {
+            "group": "Installation",
+            "pages": [
+              "mac/README",
+              "ios/README",
+              "web/docs/UT_INSTALLATION",
+              "docs/custom-node"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "docs/spec",
+              "mac/docs/BuildArchitectures",
+              "web/docs/socket-protocol",
+              "docs/security"
+            ]
+          },
+          {
+            "group": "Advanced Features",
+            "pages": [
+              "docs/hq",
+              "docs/connector",
+              "docs/push-notification",
+              "web/docs/terminal-titles",
+              "docs/TESTING_EXTERNAL_DEVICES"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "docs/build-system",
+              "docs/testing"
+            ]
+          },
+          {
+            "group": "macOS Development",
+            "pages": [
+              "mac/docs/BuildRequirements",
+              "mac/docs/code-signing"
+            ]
+          },
+          {
+            "group": "iOS Development",
+            "pages": [
+              "ios/conversion",
+              "apple/docs/modern-swift",
+              "apple/docs/swift-concurrency",
+              "apple/docs/swiftui",
+              "apple/docs/swift-testing-playbook",
+              "apple/docs/logging-private-fix"
+            ]
+          },
+          {
+            "group": "iOS Testing",
+            "pages": [
+              "ios/UntetherTests/README"
+            ]
+          },
+          {
+            "group": "Web Development",
+            "pages": [
+              "web/README",
+              "web/docs/performance",
+              "web/docs/playwright-testing"
+            ]
+          },
+          {
+            "group": "Release & Deployment",
+            "pages": [
+              "docs/deployment",
+              "docs/RELEASE"
+            ]
+          },
+          {
+            "group": "Tools & Integration",
+            "pages": [
+              "CLAUDE",
+              "docs/auggie",
+              "docs/gemini",
+              "GEMINI"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "footerSocials": {
+    "github": "https://github.com/Nachx639/untether"
+  },
+  "metadata": {
+    "og:title": "Untether Documentation",
+    "og:description": "Access your terminal sessions through any web browser",
+    "og:image": "/docs/images/untether-logo-light.svg"
+  },
+  "seo": {
+    "indexing": "all"
+  },
+  "search": {
+    "prompt": "Search Untether docs...",
+    "placeholder": "Search documentation"
+  }
+}

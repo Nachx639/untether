@@ -1,0 +1,10 @@
+⏺ Bash(grep -rn "API Error" src)
+  ⎿  src/agent-halt.ts:12:  "  ⎿  API Error: 529 {…overloaded_error…}"
+
+⏺ Done. The detector now recognises "API Error: 529" and "You've hit your session limit · resets 4am" lines;
+  all 412 tests pass.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Opus 5.5  ·  contexto 22%

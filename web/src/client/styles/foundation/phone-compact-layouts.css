@@ -1,0 +1,178 @@
+/* "⏱ Tareas" under the Ask box (session-list.ts); in the compact list it is an icon in the
+   box's own row instead (.ask-claude-tasks). */
+.task-entry {
+  display: block;
+  margin: -6px 0 12px auto;
+  padding: 6px 4px;
+  min-height: 32px;
+  font-size: 0.875rem;
+  color: var(--color-primary-text);
+}
+.ask-claude-tasks {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ut-r-circle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* Phone list on a small screen (utils/phone-list-layout.ts), 2026-10-04: an iPhone SE showed
+   no session on its first screen. `phone-list-tight` only tightens vertical spacing;
+   `phone-list-compact` (the "Compact list" setting) also changes shapes: Tareas in the Ask
+   row, a one-line notifications banner, folded previews. */
+.phone-list-tight .vtm-tabs {
+  margin-bottom: 8px;
+}
+.phone-list-tight .ask-claude {
+  margin-bottom: 8px;
+  padding: var(--ut-composer-tight-pad, 8px 10px 6px 12px);
+}
+.phone-list-tight .ask-claude-bar {
+  margin-top: 4px;
+}
+.phone-list-tight .task-entry {
+  margin: -4px 0 6px auto;
+  padding: 4px;
+}
+.phone-list-tight .nb-banner {
+  margin-bottom: 8px;
+  padding: 8px 8px 8px 12px;
+}
+.phone-list-tight .ut-shield-banner {
+  margin-bottom: 8px;
+}
+.phone-list-tight .phone-search {
+  margin-bottom: 8px;
+  padding: 7px 12px;
+}
+.phone-list-tight .pvr-header {
+  margin: 0 0 4px;
+}
+.phone-list-tight .pvr-list {
+  margin-bottom: 10px;
+}
+.phone-list-tight .psr {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* A phone on its side (utils/short-landscape.ts), 2026-10-04: a Pro Max in landscape, about
+   300 pt tall under Safari's bars, showed no session at all. Two columns, each scrolling on
+   its own: on the left the header, tabs, Ask box, Tareas, banners and search; on the right the
+   previews and sessions, the bottom bar under them only. The left column is 46% of the width,
+   300-440 pt: on a Pro Max (956 pt, ~62 pt safe area at the side) that is 440, which leaves
+   the Ask row ~248 px left of mic/send, enough for the agents' names (ask-claude-box.ts
+   AGENT_MARKS_BELOW_PX, 236); at 40% it fell short and the picker showed its marks.
+   Every level between the page's scroller and the two columns (session-list.ts
+   renderPhoneColumns) steps aside with `display: contents`; in portrait so do the columns. */
+.pl-side,
+.pl-main {
+  display: contents;
+}
+.main-list-scroll:has(.phone-landscape) {
+  display: grid;
+  grid-template-columns: minmax(0, clamp(300px, 46%, 440px)) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  background: var(--color-bg-secondary);
+}
+.main-list-scroll:has(.phone-landscape) > app-header {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+.main-list-scroll:has(.phone-landscape) > .flex-1,
+.main-list-scroll:has(.phone-landscape) session-list,
+.main-list-scroll:has(.phone-landscape) [data-testid='session-list-container'],
+.main-list-scroll .phone-landscape {
+  display: contents;
+}
+.phone-landscape .pl-side,
+.phone-landscape .pl-main {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.phone-landscape .pl-side {
+  grid-column: 1;
+  grid-row: 2 / 4;
+  padding: 12px 1rem calc(16px + env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+  border-right: 1px solid var(--color-border);
+}
+.phone-landscape .pl-main {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  padding: 12px max(1rem, env(safe-area-inset-right, 0px)) 16px 1rem;
+}
+.main-list-scroll:has(.phone-landscape) [data-testid='session-list-footer'] {
+  grid-column: 2;
+  grid-row: 3;
+  min-width: 0;
+}
+/* The banner in one line: the text gives way (ellipsis) to its button and ✕. */
+.nb-banner.nb-one-line {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.nb-one-line .nb-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Folded previews: "PREVIEWS (2) · names ›" on one line, a disclosure button. */
+.pvr-heading-toggle {
+  flex: 1;
+  min-width: 0;
+}
+.pvr-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  text-align: start;
+  touch-action: manipulation;
+}
+.pvr-toggle-label {
+  flex: none;
+}
+.pvr-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: var(--ut-fw-normal);
+  color: var(--color-text-dim);
+}
+.pvr-chevron {
+  flex: none;
+  transition: transform 150ms ease;
+}
+.pvr-toggle[aria-expanded="true"] .pvr-chevron {
+  transform: rotate(90deg);
+}
+[dir="rtl"] .pvr-chevron {
+  transform: scaleX(-1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pvr-chevron {
+    transition: none;
+  }
+}

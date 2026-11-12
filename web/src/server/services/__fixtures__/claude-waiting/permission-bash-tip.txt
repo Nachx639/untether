@@ -1,0 +1,21 @@
+✻ Sautéed for 12s · done 3:31 PM
+❯ Ejecuta el comando touch nuevo.txt
+  Creating empty file nuevo.txt
+  ⎿  $ touch nuevo.txt && ls -l nuevo.txt
+─────────────────────────────────────────────
+ Bash command
+ Tip: auto mode handles these prompts for
+ you — choose "switch to auto mode" below
+ Create empty file nuevo.txt
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ touch nuevo.txt && ls -l nuevo.txt
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Do you want to proceed?
+ ❯ 1. Yes
+   2. Yes, and always allow access to
+      /Users/alexandrapublicdemouser/.untethe
+      r-qa/qa-git from this project
+   3. Yes, and switch to auto mode · auto
+      mode handles these prompts for you
+   4. No
+ Esc to cancel · Tab to amend

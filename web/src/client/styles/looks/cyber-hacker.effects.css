@@ -1,0 +1,162 @@
+/* Astra’s console: all paint is on shared pieces; no overlay over content or images. */
+html[data-look="cyber-hacker"] .ut-surface--material,
+html[data-look="cyber-hacker"] .ut-card,
+html[data-look="cyber-hacker"] .ut-surface--panel,
+html[data-look="cyber-hacker"] .ut-surface--well,
+html[data-look="cyber-hacker"] .ut-surface--notice {
+  background-image: var(--ut-console-frame-images);
+  background-size: 20px 1px, 1px 12px, 20px 1px, 1px 12px;
+  background-position: left 1px top 1px, left 1px top 1px, right 1px bottom 1px, right 1px bottom 1px;
+  background-repeat: no-repeat;
+}
+html[data-look="cyber-hacker"] .ut-surface--bar {
+  background: var(--ut-session-bar);
+  box-shadow: inset 0 -1px var(--ut-accent), var(--ut-effect-glow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="cyber-hacker"] .ut-card,
+html[data-look="cyber-hacker"] .ut-surface--panel,
+html[data-look="cyber-hacker"] .ut-surface--well,
+html[data-look="cyber-hacker"] .ut-surface--notice {
+  box-shadow: var(--ut-piece-raised);
+}
+html[data-look="cyber-hacker"] .ut-surface--floating,
+html[data-look="cyber-hacker"] .ut-dialog,
+html[data-look="cyber-hacker"] .ut-menu,
+html[data-look="cyber-hacker"] .ut-toast,
+html[data-look="cyber-hacker"] .ut-tooltip {
+  background: var(--ut-console-frame), var(--ut-surface-raised);
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="cyber-hacker"] .ut-surface--detail {
+  background: var(--ut-console-frame), var(--ut-surface-1);
+  box-shadow: var(--ut-piece-raised);
+}
+html[data-look="cyber-hacker"] .ut-surface--record {
+  background: var(--ut-console-frame), var(--ut-console-scanlines), var(--ut-bg-app);
+  color: var(--ut-text);
+  box-shadow: var(--ut-piece-inset);
+}
+html[data-look="cyber-hacker"] .ut-surface--control,
+html[data-look="cyber-hacker"] .ut-icon-btn,
+html[data-look="cyber-hacker"] .ut-chip,
+html[data-look="cyber-hacker"] .ut-surface--badge,
+html[data-look="cyber-hacker"] .ut-badge,
+html[data-look="cyber-hacker"] .ut-kbd {
+  border-radius: var(--ut-r-sm);
+  box-shadow: var(--ut-piece-control);
+}
+html[data-look="cyber-hacker"] .ut-surface--inset,
+html[data-look="cyber-hacker"] .ut-field,
+html[data-look="cyber-hacker"] .ut-select {
+  background-color: var(--ut-surface-1);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-piece-inset);
+}
+html[data-look="cyber-hacker"] .ut-btn,
+html[data-look="cyber-hacker"] .ut-surface--action {
+  background: var(--ut-console-brackets), var(--ut-surface-1);
+  border-color: var(--ut-border-strong);
+  color: var(--ut-accent);
+  box-shadow: var(--ut-piece-control);
+}
+html[data-look="cyber-hacker"] .ut-btn--danger,
+html[data-look="cyber-hacker"] .ut-btn--danger-ghost {
+  color: var(--ut-danger-text);
+}
+html[data-look="cyber-hacker"] .ut-btn--primary,
+html[data-look="cyber-hacker"] .ut-surface--primary {
+  background: var(--ut-console-brackets), var(--ut-accent);
+  color: var(--ut-text-on-accent);
+  border-color: var(--ut-accent);
+  box-shadow: var(--ut-effect-glow);
+}
+html[data-look="cyber-hacker"] .ut-btn:hover:not(:disabled),
+html[data-look="cyber-hacker"] .ut-surface--action:hover:not(:disabled),
+html[data-look="cyber-hacker"] .ut-menu-item:hover {
+  background-color: var(--ut-surface-hover);
+  color: var(--ut-text);
+  box-shadow: var(--ut-effect-glow);
+}
+html[data-look="cyber-hacker"] .ut-btn:active:not(:disabled),
+html[data-look="cyber-hacker"] .ut-surface--action:active:not(:disabled) {
+  background-color: var(--ut-control-pressed-bg);
+  color: var(--ut-text);
+  box-shadow: inset 0 0 0 2px var(--ut-accent);
+}
+html[data-look="cyber-hacker"] .ut-btn:disabled,
+html[data-look="cyber-hacker"] .ut-surface--action:disabled {
+  background-color: var(--ut-surface-1);
+  color: var(--ut-text-muted);
+  border-color: var(--ut-border-strong);
+  border-style: dashed;
+  box-shadow: none;
+}
+html[data-look="cyber-hacker"] .ut-btn:focus-visible,
+html[data-look="cyber-hacker"] .ut-icon-btn:focus-visible,
+html[data-look="cyber-hacker"] .ut-chip:focus-visible,
+html[data-look="cyber-hacker"] .ut-menu-item:focus-visible,
+html[data-look="cyber-hacker"] .ut-field:focus-visible,
+html[data-look="cyber-hacker"] .ut-select:focus-visible,
+html[data-look="cyber-hacker"] .ut-switch:focus-visible,
+html[data-look="cyber-hacker"] .ut-surface--control:focus-visible,
+html[data-look="cyber-hacker"] .ut-surface--action:focus-visible,
+html[data-look="cyber-hacker"] .ut-surface--inset:focus-visible,
+html[data-look="cyber-hacker"] .ut-surface--well:focus-within {
+  outline: 2px solid var(--ut-focus-ring);
+  outline-offset: 4px;
+}
+html[data-look="cyber-hacker"] .ut-section-label {
+  color: var(--ut-accent);
+  text-shadow: none;
+}
+
+/* Inbox actions are outlined in Astra’s recipe, even when they are the row’s main action. */
+html[data-look="cyber-hacker"] .ut-surface--request-action {
+  background: var(--ut-console-brackets), var(--ut-surface-1);
+  color: var(--ut-accent);
+  border-color: var(--ut-border-strong);
+  box-shadow: none;
+}
+html[data-look="cyber-hacker"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+/* A notice shares the detail hook but is not a task failure. */
+html[data-look="cyber-hacker"] .ut-surface--notice {
+  box-shadow: var(--ut-piece-raised);
+}
+
+/* Preserve the switch’s checked fill; neutral field paint must not erase its state. */
+html[data-look="cyber-hacker"] .ut-switch {
+  border-radius: var(--ut-r-sm);
+  box-shadow: var(--ut-piece-inset);
+}
+
+html[data-look="cyber-hacker"] .ut-surface--failed {
+  box-shadow: inset 3px 0 var(--ut-danger-text), var(--ut-piece-raised);
+}
+
+html[data-look="cyber-hacker"] .ut-surface--segment {
+  background-image: var(--ut-console-bracket-images);
+  background-size: 1px 14px, 4px 1px, 4px 1px, 1px 14px, 4px 1px, 4px 1px;
+  background-position: left 3px center, left 3px top calc(50% - 7px), left 3px bottom calc(50% - 7px), right 3px center, right 3px top calc(50% - 7px), right 3px bottom calc(50% - 7px);
+  background-repeat: no-repeat;
+}
+
+/* A floating button is an action, not a large sheet with an off-screen drop shadow. */
+html[data-look="cyber-hacker"] .ut-surface--floating:where(button) {
+  background: var(--ut-console-brackets), var(--ut-surface-1);
+  color: var(--ut-accent);
+  box-shadow: var(--ut-piece-control);
+}
+
+/* The selected row’s cursor and gradient replace its neutral corner paint. */
+html[data-look="cyber-hacker"] .ut-surface--selected-row {
+  background: var(--ut-selected-row-background);
+  box-shadow: var(--ut-selected-row-shadow);
+}

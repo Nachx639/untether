@@ -1,0 +1,27 @@
+{
+  "preferences": {
+    "notifications": {
+      "bell": false,
+      "commandCompletion": true,
+      "commandError": true,
+      "enabled": true,
+      "sessionExit": true,
+      "sessionStart": false,
+      "soundEnabled": true,
+      "vibrationEnabled": true
+    }
+  },
+  "quickStartCommands": [
+    {
+      "command": "claude",
+      "id": "contract-1",
+      "name": "✨ claude"
+    },
+    {
+      "command": "zsh",
+      "id": "contract-2"
+    }
+  ],
+  "repositoryBasePath": "~/Projects",
+  "version": 2
+}

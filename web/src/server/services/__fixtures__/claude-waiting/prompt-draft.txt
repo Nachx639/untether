@@ -1,0 +1,7 @@
+⏺ Listo: el test pasa.
+
+─────────────────────────────────────────────
+❯ crea otro test para el caso vacío
+  y otro para las mayúsculas
+─────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

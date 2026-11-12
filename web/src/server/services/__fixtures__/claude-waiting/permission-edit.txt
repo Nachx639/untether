@@ -1,0 +1,16 @@
+─────────────────────────────────────────────
+ Edit file
+ diez.txt
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ 3  FIN
+ 4  extra
+ 5  cinco
+ 6 +seis
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Do you want to make this edit to diez.txt?
+ ❯ 1. Yes
+   2. Yes, and switch to accept edits
+      (auto-approve file edits and common
+      file commands) for this session
+   3. Nohift+tab)
+ Esc to cancel · Tab to amend

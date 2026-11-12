@@ -1,0 +1,118 @@
+/**
+ * TypeScript interfaces and types for PTY management
+ *
+ * These types match the tty-fwd format to ensure compatibility
+ */
+
+import type * as net from 'net';
+import type { IPty } from 'node-pty';
+import type { SessionInfo, TitleMode } from '../../shared/types.js';
+import type { TitleSequenceFilter } from '../utils/ansi-title-filter.js';
+import type { WriteQueue } from '../utils/write-queue.js';
+import type { AsciinemaWriter } from './asciinema-writer.js';
+
+export interface AsciinemaHeader {
+  version: number;
+  width: number;
+  height: number;
+  timestamp?: number;
+  duration?: number;
+  command?: string;
+  title?: string;
+  env?: Record<string, string>;
+  theme?: AsciinemaTheme;
+}
+
+export interface AsciinemaTheme {
+  fg?: string;
+  bg?: string;
+  palette?: string;
+}
+
+export interface ControlMessage {
+  cmd: string;
+  [key: string]: unknown;
+}
+
+export interface ResizeControlMessage extends ControlMessage {
+  cmd: 'resize';
+  cols: number;
+  rows: number;
+}
+
+export interface KillControlMessage extends ControlMessage {
+  cmd: 'kill';
+  signal?: string | number;
+  /** A line ut-fwd writes into its window once the program ended (Llevar a Untether). */
+  notice?: string;
+}
+
+export interface ResetSizeControlMessage extends ControlMessage {
+  cmd: 'reset-size';
+}
+
+export type AsciinemaEvent = {
+  time: number;
+  type: 'o' | 'i' | 'r' | 'm';
+  data: string;
+};
+
+// Internal session state for PtyManager
+export interface PtySession {
+  id: string;
+  sessionInfo: SessionInfo;
+  ptyProcess?: IPty;
+  asciinemaWriter?: AsciinemaWriter;
+  controlDir: string;
+  stdoutPath: string;
+  sessionJsonPath: string;
+  startTime: Date;
+  // Optional fields for resource cleanup
+  inputSocketServer?: net.Server;
+  inputQueue?: WriteQueue;
+  // Terminal title mode
+  titleMode?: TitleMode;
+  // Title sequence filter for removing terminal title sequences
+  titleFilter?: TitleSequenceFilter;
+  // Output activity tracking (for active/idle)
+  lastOutputTimestamp?: number;
+  lastInputTimestamp?: number;
+  /** When the foreground process poll last looked at this session. */
+  lastForegroundPollAt?: number;
+  // Connected socket clients for broadcasting
+  connectedClients?: Set<net.Socket>;
+  // Foreground process tracking
+  shellPgid?: number; // Process group ID of the shell
+  currentForegroundPgid?: number; // Current foreground process group
+  currentCommand?: string; // Command line of current foreground process
+  commandStartTime?: number; // When current command started (timestamp)
+  // Tmux attachment tracking
+  isTmuxAttachment?: boolean; // True if this session is attached to tmux
+  // Shielded sessions: killSession is ending the tmux session (the client exit is final)
+  shieldKilling?: boolean;
+  // When the tmux client of this shielded session was re-attached (loop guard)
+  shieldReattachTimes?: number[];
+  /** Last output of a shielded session's tmux client: tells a program exit from a lost tmux. */
+  shieldOutputTail?: string;
+  /** End of the previous output chunk, re-scanned for split terminal mode sequences. */
+  modeScanTail?: string;
+  /** The terminal modes last known on disk (session.json), to skip writes that change nothing. */
+  savedTerminalModes?: Record<string, boolean>;
+}
+
+export class PtyError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: string,
+    public readonly sessionId?: string
+  ) {
+    super(message);
+    this.name = 'PtyError';
+  }
+}
+
+// Utility type for session creation result
+export interface SessionCreationResult {
+  sessionId: string;
+  sessionInfo: SessionInfo;
+}

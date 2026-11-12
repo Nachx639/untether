@@ -1,0 +1,316 @@
+/* ---- Task board (2026-10-18): projects, task rows, "Hechas", task sheets ----------------
+   task-row.ts / project-group.ts / done-section.ts / project-settings-sheet.ts. Rows share the
+   session rows' anatomy (avatar, title, time); the pill carries the state colour:
+   trabajando accent, te necesita amber, lista green, falló red, fusionada/descartada grey. */
+/* One project ends and the next begins at a fine line of the style's own (2026-11-10: a
+   project's header followed the last row of the one before like one more row). The line is
+   the group's ::before, painted by --ut-project-divider with the air it needs and no more;
+   each style draws its own (docs/ui-tokens.md). scripts/ui-layout-audit.mjs checks it. */
+project-group + project-group > .prj::before,
+.ut-side-group + .ut-side-group::before {
+  content: "";
+  display: block;
+  height: var(--ut-project-divider-size);
+  margin: var(--ut-project-divider-air) var(--ut-project-divider-inset) 0;
+  border-radius: var(--ut-project-divider-radius);
+  background: var(--ut-project-divider);
+  pointer-events: none;
+}
+.ut-side-group + .ut-side-group::before {
+  margin-bottom: var(--ut-project-divider-air);
+}
+/* One line where a project ends, never two: its last row leaves its own divider to the
+   project's line (Original drew both, 10px apart). */
+project-group:has(+ project-group) .psr-list > :last-child :is(.psr, .tsk) {
+  border-bottom-color: transparent;
+}
+/* Folded projects (2026-11-10, user request: fold the projects so they do not all show open). One
+   shared piece for the phone list and the sidebar: .ut-fold-toggle
+   is the header's button (a chevron that turns; aria-expanded says which way), .ut-fold-summary
+   the one line a folded project shows instead of its rows, .ut-fold-needs what waits for the
+   user in it, .ut-fold-in the rows coming back. Their inks are optional tokens (--ut-fold-chevron, -summary, -needs):
+   unset, they are the style's own dim text and attention text, so every style has them. */
+.ut-fold-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: start;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.ut-fold-toggle:disabled {
+  cursor: default;
+}
+.ut-fold-toggle > svg:first-child {
+  flex: none;
+  color: var(--ut-fold-chevron, var(--color-text-dim));
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.ut-fold-toggle[aria-expanded="true"] > svg:first-child {
+  transform: rotate(90deg);
+}
+.ut-fold-summary {
+  overflow: hidden;
+  color: var(--ut-fold-summary, var(--color-text-dim));
+  font: 400 var(--p-text-micro, 12px) / 16px var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ut-fold-needs {
+  color: var(--ut-fold-needs, var(--color-attention-text));
+  font-weight: var(--ut-fw-semibold);
+}
+.ut-fold-in {
+  animation: ut-fold-in var(--dur-2) var(--ease-out);
+}
+@keyframes ut-fold-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ut-fold-toggle > svg:first-child {
+    transition: none;
+  }
+  .ut-fold-in {
+    animation: none;
+  }
+}
+/* On the phone the chevron stands where the folder icon was, so the name keeps its room; its
+   target is the row's height and, as a halo, reaches into the gutter. */
+.prj-fold {
+  position: relative;
+  min-height: 44px;
+  margin: -12px 0;
+}
+.prj-fold::before {
+  content: "";
+  position: absolute;
+  inset: 0 -3px 0 -16px;
+}
+.prj-fold-summary {
+  margin-top: -8px;
+  padding: 0 var(--ut-head-pad) 8px calc(var(--ut-head-pad) + 20px);
+}
+/* In the sidebar the name is the button: chevron, icon and name. */
+.ut-repo-fold {
+  flex: 0 1 auto;
+  gap: 4px;
+  min-width: 0;
+  height: 100%;
+}
+.ut-repo-fold > .ut-section-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ut-repo-fold:hover > .ut-section-label {
+  color: var(--color-text);
+}
+.ut-side-fold-summary {
+  padding: 0 8px 4px 28px;
+}
+/* The header's room goes to the project's name first (2026-11-10: a real iPhone read "UNT…"
+   beside "Orquestador" and "+ Tarea" in full). project-group.ts measures the row and says in
+   data-squeeze what has given way: 0 nothing (the branch chip shrinks on its own), 1 the
+   branch, 2 "Orquestador" to its icon, 3 "+ Tarea" to its "+"; only then is the name cut, in
+   the middle. No widths here: every style and type size gets it as it is. */
+.prj-head {
+  justify-content: flex-start;
+  gap: 4px;
+  margin-bottom: var(--ut-head-gap);
+  padding-inline: var(--ut-head-pad);
+  border: var(--ut-head-border);
+  border-radius: var(--ut-head-radius);
+  background: var(--ut-head-bg);
+  box-shadow: var(--ut-head-shadow);
+}
+.prj-title {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-dim);
+  font: 600 var(--p-text-micro, 12px) / 16px var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/* Measured: the name keeps its whole width until everything else has given way. */
+.prj-head:is([data-squeeze="0"], [data-squeeze="1"], [data-squeeze="2"]) > .prj-title {
+  flex: none;
+}
+.prj-title > svg {
+  flex: none;
+}
+/* The project's name: opens its menu (pin on top). A pinned one shows a pin for the folder. */
+.prj-name-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  margin: -12px 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+/* A pinned project's pin, before its name; the first thing to give way (data-squeeze 1), so
+   the name is never cut for it. */
+.prj-pin {
+  display: inline-flex;
+  flex: none;
+}
+.prj-head:is([data-squeeze="1"], [data-squeeze="2"], [data-squeeze="3"]) .prj-pin {
+  display: none;
+}
+.prj-name {
+  display: flex;
+  min-width: 0;
+  color: var(--color-text-muted);
+  white-space: pre;
+}
+.prj-name-start {
+  flex: 0 1 auto;
+  min-width: 3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prj-name-end {
+  flex: none;
+}
+.prj-branch {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 3px;
+  /* Room for its icon and a few letters; with less, the row drops it (data-squeeze 1). */
+  min-width: calc(27px + 4ch);
+  max-width: 40vw;
+  margin-left: 2px;
+  padding: 0 6px;
+  height: 20px;
+  border-radius: var(--ut-r-pill);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-dim);
+  font: 500 11px/20px var(--font-mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.prj-branch > svg {
+  flex: none;
+}
+.prj-branch > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prj-head:is([data-squeeze="1"], [data-squeeze="2"], [data-squeeze="3"]) > :is(.prj-branch, .prj-moved) {
+  display: none;
+}
+/* «antes «skylark»»: the folder a moved project came from, for a few days. */
+.prj-moved {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-dim);
+  font: 500 12px/20px var(--font-ui);
+  letter-spacing: 0;
+  text-transform: none;
+}
+/* «Carpeta no encontrada»: its folder is gone; only «Olvidar» is offered. On a 320 px phone
+   (and in longer languages) the words wrap instead of squeezing the name to nothing, with
+   room before «Olvidar» (2026-10-20 verify). */
+.prj-missing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-attention-text);
+  font: 600 12px/16px var(--font-ui);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.prj-missing > svg {
+  flex: none;
+}
+.prj-tools--missing {
+  flex: 0 1 auto;
+  gap: 8px;
+  min-width: 0;
+  max-width: 60%;
+  margin-right: 0;
+}
+.prj-tools--missing > .tsk-btn {
+  flex: none;
+}
+/* The name keeps a readable width beside the notice. */
+.prj-head--missing .prj-title {
+  flex: 1 1 auto;
+  min-width: 6em;
+}
+/* Automatic merges paused by the server: a calm line under the header, with «Reactivar». */
+.prj-pause {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 var(--p-gutter, 16px) 8px;
+  padding: 8px 12px;
+  border-radius: var(--ut-r-12);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  font: 400 13px/1.35 var(--font-ui);
+}
+.pss-pause {
+  margin: 0 0 12px;
+}
+.prj-pause-text {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.prj-tools {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  margin-left: auto;
+  margin-right: var(--ut-section-actions-end, -12px);
+}
+.prj-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 8px;
+  border-radius: var(--ut-r-lg);
+  color: var(--color-primary-text);
+  font: 600 var(--p-text-body, 15px) var(--font-ui);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.prj-new:active {
+  background: var(--color-surface-hover);
+}
+.prj-gear.ut-icon-btn {
+  width: 44px;
+  height: 44px;
+  color: var(--color-text-muted);
+}

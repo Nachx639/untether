@@ -1,0 +1,265 @@
+/* Japandi: oak bars, paper cards, unglazed ceramic controls, a stone record and clay errors, on the
+ * shared paint hooks only. Values live in japandi.css. Textures stay behind the content. */
+
+/* Secondary bars are linen with a fine line; only the top rails are oak. */
+html[data-look="japandi"] .ut-surface--bar {
+  background-color: var(--ut-surface-1);
+  background-image: var(--ut-paper);
+  box-shadow: inset 0 -1px 0 var(--ut-border);
+  border-color: var(--ut-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* The oak rail: horizontal grain and a double joint below. */
+html[data-look="japandi"] .ut-surface--bar:where(.ut-home-header),
+html[data-look="japandi"] .ut-surface--bar:where(.ut-phone-header),
+html[data-look="japandi"] .ut-surface--bar:where(.ut-sidebar-header),
+html[data-look="japandi"] .ut-surface--bar:where(.ut-session-header),
+html[data-look="japandi"] .ut-surface--bar:where(.ut-ph-header) {
+  background-color: var(--ut-session-bar);
+  background-image: var(--ut-bar-fill);
+  box-shadow: var(--ut-bar-relief);
+  border-color: var(--ut-oak-joint);
+}
+
+/* Paper: cards, groups and panels are sheets with a fine edge, never puffed. */
+html[data-look="japandi"] .ut-card,
+html[data-look="japandi"] .ut-group,
+html[data-look="japandi"] .ut-surface--panel {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-paper);
+  border-color: var(--ut-border);
+  box-shadow: none;
+}
+
+/* A request: sand paper with an oak rule on its left. */
+html[data-look="japandi"] .ut-surface--request {
+  background-color: var(--ut-needs-fill-1);
+  box-shadow: var(--ut-needs-item-shadow);
+}
+
+/* The failure notice: paper with a dark clay rule. */
+html[data-look="japandi"] .ut-surface--detail {
+  background-color: var(--ut-surface-3);
+  background-image: none;
+  border-color: var(--ut-border);
+  box-shadow: inset 4px 0 0 var(--ut-danger);
+}
+
+html[data-look="japandi"] .ut-surface--notice {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+/* The record: matte stone with a wooden edge; no texture under its letters. */
+html[data-look="japandi"] .ut-surface--record {
+  background-color: var(--ut-stone);
+  background-image: none;
+  box-shadow: inset 5px 0 0 var(--ut-oak-edge), inset 0 0 0 1px var(--ut-border);
+}
+
+html[data-look="japandi"] .ut-surface--floating,
+html[data-look="japandi"] .ut-dialog,
+html[data-look="japandi"] .ut-menu,
+html[data-look="japandi"] .ut-toast,
+html[data-look="japandi"] .ut-tooltip {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-paper);
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="japandi"] .ut-menu,
+html[data-look="japandi"] .ut-tooltip {
+  box-shadow: var(--ut-elev-2);
+}
+
+/* Ceramic: matte, a solid edge, no gloss and no shadow. */
+html[data-look="japandi"] .ut-surface--action,
+html[data-look="japandi"] .ut-surface--request-action,
+html[data-look="japandi"] .ut-btn--secondary,
+html[data-look="japandi"] .ut-btn--danger,
+html[data-look="japandi"] .ut-chip {
+  background-color: var(--ut-surface-raised);
+  background-image: none;
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+  box-shadow: none;
+}
+
+html[data-look="japandi"] .ut-surface--request-action,
+html[data-look="japandi"] .ut-surface--action {
+  border: 1px solid var(--ut-border-strong);
+}
+
+html[data-look="japandi"] .ut-btn--danger,
+html[data-look="japandi"] .ut-btn--danger-ghost,
+html[data-look="japandi"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+html[data-look="japandi"] .ut-surface--badge,
+html[data-look="japandi"] .ut-badge,
+html[data-look="japandi"] .ut-kbd {
+  background-color: var(--ut-surface-3);
+  color: var(--ut-text-muted);
+  box-shadow: inset 0 0 0 1px var(--ut-border);
+}
+
+/* A paper bowl: fields sit a hair below the sheet. */
+html[data-look="japandi"] .ut-surface--inset,
+html[data-look="japandi"] .ut-surface--well,
+html[data-look="japandi"] .ut-field,
+html[data-look="japandi"] .ut-select {
+  background-color: var(--ut-surface-3);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-field-relief);
+}
+
+html[data-look="japandi"] .ut-segmented {
+  background-color: transparent;
+  box-shadow: inset 0 -1px 0 var(--ut-border);
+}
+
+/* Small ancillary controls stay flat inside their owner: lettering, not slabs. */
+html[data-look="japandi"] .ut-surface--control,
+html[data-look="japandi"] .ut-surface--compact,
+html[data-look="japandi"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-look="japandi"] .ut-switch {
+  box-shadow: inset 0 0 0 1px var(--ut-border-strong);
+}
+
+/* Selection: sand and a walnut rule, never color alone. */
+html[data-look="japandi"] .ut-surface--selected-row,
+html[data-look="japandi"] .ut-surface--selected {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: inset 2px 0 0 var(--ut-accent);
+}
+html[data-look="japandi"] .ut-surface--control:where([aria-selected="true"]),
+html[data-look="japandi"] .ut-surface--control:where([aria-current="page"]),
+html[data-look="japandi"] .ut-surface--control:where([aria-pressed="true"]),
+html[data-look="japandi"] .ut-surface--panel:where([aria-pressed="true"]),
+html[data-look="japandi"] .ut-surface--badge:where([aria-pressed="true"]),
+html[data-look="japandi"] .ut-icon-btn:where([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: inset 0 -2px 0 var(--ut-accent);
+}
+html[data-look="japandi"] .ut-surface--segment:where(.selected) {
+  background-color: transparent;
+  color: var(--ut-text);
+  box-shadow: var(--ut-segment-selected-shadow);
+}
+
+/* Walnut with ivory ink: the main action. It follows the neutral paint so it is never erased. */
+html[data-look="japandi"] .ut-surface--primary,
+html[data-look="japandi"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: none;
+  color: var(--ut-text-on-accent);
+  border-color: var(--ut-accent);
+  box-shadow: none;
+}
+
+/* Requests and the shield notice keep ceramic actions; walnut is for the one main action. */
+html[data-look="japandi"] .ut-surface--request-action {
+  background-color: var(--ut-surface-raised);
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+}
+
+@media (hover: hover) {
+  html[data-look="japandi"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="japandi"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="japandi"] .ut-surface--action:hover:not(:disabled),
+  html[data-look="japandi"] .ut-surface--request-action:hover:not(:disabled) {
+    background-color: var(--ut-surface-2);
+    border-color: var(--ut-text);
+  }
+  html[data-look="japandi"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="japandi"] .ut-surface--control:hover:not(:disabled),
+  html[data-look="japandi"] .ut-menu-item:hover:not(:disabled) {
+    background-color: var(--ut-surface-2);
+  }
+  html[data-look="japandi"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="japandi"] .ut-surface--primary:hover:not(:disabled) {
+    background-color: var(--ut-accent-hover);
+    border-color: var(--ut-accent-hover);
+    color: var(--ut-text-on-accent);
+  }
+}
+
+html[data-look="japandi"] .ut-btn:active:not(:disabled),
+html[data-look="japandi"] .ut-surface--action:active:not(:disabled),
+html[data-look="japandi"] .ut-surface--request-action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+html[data-look="japandi"] .ut-btn--primary:active:not(:disabled),
+html[data-look="japandi"] .ut-surface--primary:active:not(:disabled) {
+  background-color: var(--ut-accent-strong);
+  border-color: var(--ut-accent-strong);
+}
+
+/* Disabled: sand fill and a dashed edge; the text stays opaque and legible. */
+html[data-look="japandi"] .ut-btn:disabled,
+html[data-look="japandi"] .ut-icon-btn:disabled,
+html[data-look="japandi"] .ut-menu-item:disabled,
+html[data-look="japandi"] .ut-field:disabled,
+html[data-look="japandi"] .ut-surface--control:disabled,
+html[data-look="japandi"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+html[data-look="japandi"] .ut-btn:disabled,
+html[data-look="japandi"] .ut-icon-btn:disabled,
+html[data-look="japandi"] .ut-menu-item:disabled,
+html[data-look="japandi"] .ut-switch:disabled,
+html[data-look="japandi"] .ut-surface--action:disabled {
+  outline: 1px dashed var(--ut-border-strong);
+  outline-offset: -1px;
+}
+html[data-look="japandi"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  box-shadow: none;
+}
+
+html[data-look="japandi"] .ut-btn:focus-visible,
+html[data-look="japandi"] .ut-icon-btn:focus-visible,
+html[data-look="japandi"] .ut-chip:focus-visible,
+html[data-look="japandi"] .ut-menu-item:focus-visible,
+html[data-look="japandi"] .ut-switch:focus-visible,
+html[data-look="japandi"] .ut-field:focus-visible,
+html[data-look="japandi"] .ut-select:focus-visible,
+html[data-look="japandi"] .ut-surface--control:focus-visible,
+html[data-look="japandi"] .ut-surface--inset:focus-visible,
+html[data-look="japandi"] .ut-surface--action:focus-visible,
+html[data-look="japandi"] .ut-surface--request-action:focus-visible,
+html[data-look="japandi"] .ut-surface--well:focus-within {
+  outline: 2px solid var(--ut-focus-ring);
+  outline-offset: 4px;
+}
+
+/* A ceramic request stays ceramic under the pointer and the finger, after the walnut states. */
+html[data-look="japandi"] .ut-surface--request-action:hover:not(:disabled) {
+  background-color: var(--ut-surface-2);
+  border-color: var(--ut-text);
+  color: var(--ut-text);
+}
+html[data-look="japandi"] .ut-surface--request-action:active:not(:disabled) {
+  background-color: var(--ut-surface-2);
+  border-color: var(--ut-text);
+  color: var(--ut-text);
+}

@@ -1,0 +1,207 @@
+@layer components {
+  /* Text buttons. One --primary per surface. */
+  .ut-btn {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--ut-ctl-h);
+    padding: 0 var(--ut-btn-pad, 12px);
+    border: var(--ut-outline-width) solid transparent;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--ut-control-size, 13px);
+    line-height: var(--ut-control-line, 18px);
+    font-weight: var(--ut-fw-medium);
+    white-space: nowrap;
+    cursor: pointer;
+    transition-property: background-color, border-color, color, opacity;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+  .ut-btn:active:not(:disabled) {
+    filter: var(--ut-press-filter, brightness(0.95));
+    transform: translateY(var(--ut-press-offset));
+  }
+  .ut-btn:disabled {
+    cursor: default;
+  }
+  .ut-btn > svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+  .ut-btn--primary {
+    background: var(--color-primary);
+    color: var(--color-on-fill);
+  }
+  .ut-btn--primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-primary) 88%, var(--ut-mix-lighten));
+  }
+  .ut-btn--primary:disabled {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-dim);
+  }
+  .ut-btn--secondary {
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-border);
+    color: var(--color-text);
+  }
+  .ut-btn--secondary:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+  }
+  .ut-btn--ghost {
+    color: var(--color-text-muted);
+  }
+  .ut-btn--ghost:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+  .ut-btn--danger {
+    background: var(--color-status-error);
+    color: var(--ut-text-on-solid);
+  }
+  .ut-btn--danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-status-error) 92%, var(--ut-mix-darken));
+  }
+  .ut-btn--danger-ghost {
+    color: var(--color-status-error-text);
+  }
+  .ut-btn--danger-ghost:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-status-error) 10%, transparent);
+  }
+  .ut-btn--secondary:disabled,
+  .ut-btn--ghost:disabled,
+  .ut-btn--danger:disabled,
+  .ut-btn--danger-ghost:disabled {
+    opacity: var(--ut-disabled-opacity, 0.4);
+  }
+  .ut-btn--sm {
+    height: var(--ut-action-h, 28px);
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .ut-btn--lg {
+    height: var(--ut-action-h, 36px);
+    padding: 0 16px;
+  }
+
+  /* Keyboard hint: ⌘K, ⎋, ↵ (labels from utils/shortcut-label.ts). */
+  .ut-kbd {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    height: 18px;
+    min-width: 18px;
+    padding: 0 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-chip);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* Branch, worktree and repo chips. */
+  .ut-chip {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    height: 20px;
+    max-width: 100%;
+    padding: 0 6px;
+    border-radius: var(--radius-chip);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-muted);
+    font-size: 11px;
+    line-height: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ut-chip > svg {
+    width: 12px;
+    height: 12px;
+    flex: none;
+  }
+  .ut-chip--mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Session status (utils/session-status.ts: deriveSessionStatus + statusLabel). */
+  .ut-status {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    line-height: 16px;
+    white-space: nowrap;
+  }
+  .ut-dot {
+    display: inline-block;
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--ut-r-pill);
+    background: var(--color-text-dim);
+  }
+  .ut-status > svg {
+    width: 12px;
+    height: 12px;
+    flex: none;
+  }
+  [data-status='working'] > .ut-dot,
+  .ut-dot[data-status='working'] {
+    background: var(--ut-status-working-dot);
+    animation: ut-pulse 1.6s ease-in-out infinite;
+  }
+  .ut-status[data-status='needs-input'] {
+    height: 20px;
+    padding: 0 8px;
+    border-radius: var(--ut-r-pill);
+    background: var(--color-attention-muted);
+    color: var(--color-attention-text);
+    font-weight: var(--ut-fw-semibold);
+  }
+  [data-status='needs-input'] > .ut-dot,
+  .ut-dot[data-status='needs-input'] {
+    background: var(--color-attention);
+  }
+  .ut-status[data-status='idle'],
+  .ut-status[data-status='exited-ok'] {
+    color: var(--color-text-dim);
+  }
+  /* Alive and resting is green, finished is grey (2026-10-12): every session list reads the
+     same way (cards, rows, sidebar, command palette). */
+  [data-status='idle'] > .ut-dot,
+  .ut-dot[data-status='idle'] {
+    background: var(--color-alive);
+  }
+  .ut-dot[data-status='exited-ok'] {
+    background: var(--color-text-dim);
+  }
+  .ut-status[data-status='exited-error'] {
+    color: var(--color-status-error-text);
+  }
+  [data-status='exited-error'] > .ut-dot,
+  .ut-dot[data-status='exited-error'] {
+    background: var(--color-status-error);
+  }
+  [data-status='disconnected'] > .ut-dot,
+  .ut-dot[data-status='disconnected'] {
+    background: var(--color-status-warning);
+    animation: ut-pulse 1.6s ease-in-out infinite;
+  }
+}

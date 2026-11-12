@@ -1,0 +1,908 @@
+/*
+ * The design tokens: the only place with hand-written colors, radii and shadows (docs/ui-tokens.md).
+ * Everything the interface looks like comes from the --ut-* variables below. A style is a small
+ * file that gives them other values (styles/looks/<id>.css); light/dark and the accents are the
+ * same mechanism. Keep the default values equal to the current look.
+ *
+ * Solid hex where theme-contrast.test.ts has to compute the color.
+ */
+
+/* .ut-look-scope: a miniature of a style in the picker, a small root of its own (data-look,
+   data-theme and data-accent on it) with every token and alias starting from here. */
+.ut-look-scope,
+:root {
+  /* Light mode colors (default). "Calm control" palette (design spec 2.1, 2026-10-12): a
+     warm-neutral surface ladder with solid hairline borders. Solid hex so theme-contrast.test.ts
+     can read them. */
+  --ut-bg-app: #FAF9F7;
+  --ut-surface-1: #F3F2EF;
+  --ut-surface-2: #EBE9E5;
+  --ut-surface-raised: #FFFFFF;
+  --ut-surface-3: #FFFFFF;
+  --ut-surface-hover: #EFEDEA;
+  --ut-border: #E4E1DC;
+  /* "Strong" border: inputs, hovered cards (alias below). */
+  --ut-border-strong: #D6D2CC;
+  --ut-border-focus: #C2BDB6;
+  --ut-text: #1C1B1A;
+  --ut-text-bright: #000000;
+  --ut-text-muted: #4F4C48;
+  --ut-text-dim: #67635E;
+  /* "Needs you" (a waiting agent): the brand gradient's amber end, never the accent. */
+  --ut-attention: #FFB000;
+  --ut-attention-soft: color-mix(in srgb, #FFB000 18%, transparent);
+  --ut-attention-text: #8A5A00;
+  /* Selected row background. srgb (not oklab) so theme-contrast.test.ts can compute it; at
+     12% the two spaces differ by less than one 8-bit step. */
+  --ut-surface-selected: color-mix(in srgb, var(--ut-accent) 12%, var(--ut-surface-1));
+  /* Live vs finished at a glance (2026-10-12, user request: a live session should signal it
+     with colour): a live session's avatar is tinted with the accent and its glyph drawn in the
+     accent's text shade; "needs you" tints amber; finished stays grey. --ut-alive is the
+     idle/alive dot (#10B981 is only 2.4:1 on the light page, #059669 reaches 3:1). srgb mixes
+     so theme-contrast.test.ts can compute them. */
+  --ut-alive: #059669;
+  --ut-avatar-live-bg: color-mix(in srgb, var(--ut-accent) 14%, var(--ut-surface-2));
+  --ut-avatar-live-fg: var(--ut-accent-text);
+  --ut-avatar-attn-bg: color-mix(in srgb, var(--ut-attention) 18%, var(--ut-surface-2));
+  --ut-avatar-attn-fg: var(--ut-attention-text);
+  --ut-avatar-off-bg: var(--ut-surface-2);
+  --ut-avatar-off-fg: var(--ut-text-dim);
+  /* A pale image (a pearl "Cx") would melt into a light surface with no tile behind it. */
+  --ut-logo-image-filter: drop-shadow(0 0.5px 1px rgb(0 0 0 / 0.32));
+  /* The same image on a finished row: grey, one filter on the image itself (styles.css). */
+  --ut-logo-image-filter-done: grayscale(1) drop-shadow(0 0.5px 1px rgb(0 0 0 / 0.32));
+  /* Terminal preview wells on cards: always dark, in both themes (spec 5.2). */
+  --ut-surface-preview: #141312;
+  /* The active terminal theme's background; the session area sets it at runtime. */
+  --ut-terminal-bg: var(--ut-bg-app);
+  /* The session's top bar: Original keeps it as one surface with the terminal; any other style
+     gives it the style's own solid bar (`:root[data-look]` below). Resolved on <html>, the element
+     terminal-settings-manager.ts writes --ut-terminal-bg on, so it follows the terminal theme; a
+     subtree that redefines --ut-terminal-bg sets this one too (ui-tokens-guard.test.ts). */
+  --ut-session-bar: var(--ut-terminal-bg);
+  /* Brand marks only: the logo tile and the empty-state hero glyph. */
+  --brand-gradient: linear-gradient(135deg, #FF6A00, #FFB000);
+  /* The brand orange ("Untether" accent, the default); other accents below override it. */
+  --ut-accent: #FF6A00;
+  --ut-accent-hover: #E65F00;
+  --ut-accent-strong: #C24E00;
+  --ut-accent-light: #FF8F3F;
+  /* From the accent, so every [data-accent] gets them (srgb with transparent = the accent at
+     20% / 40% alpha, the same as the old #RRGGBB33 / 66 hex values). */
+  --ut-accent-soft: color-mix(in srgb, var(--ut-accent) 20%, transparent);
+  --ut-accent-glow: color-mix(in srgb, var(--ut-accent) 40%, transparent);
+  /* #DF3337 (was #EF4444, 3.8:1): white on it reaches 4.5:1 (toasts, swipe "Terminar"). */
+  --ut-danger: #DF3337;
+  --ut-warning: #F59E0B;
+  --ut-success: #10B981;
+  --ut-info: #3B82F6;
+  /*
+   * The accent and status colors as TEXT. The brand fills are too light for small text on
+   * light surfaces (emerald 2.4:1, gold 1.8:1, amber 2.1:1); text uses a shade that reaches
+   * 4.5:1 in every accent theme, on every surface and the accent tints (banner, selected
+   * row, preview chip). Fills (bg-primary, dots, badges) keep the brand color. Tailwind's
+   * text-primary / text-status-* read these through @theme's --text-color-* entries.
+   * Each is the brand color with only its OKLab lightness moved, the least that reaches
+   * 4.5:1; theme-contrast.test.ts checks every pair (2026-10-04).
+   */
+  /* 2026-10-12: the warmer, darker "Calm control" surfaces took the light text shades just under
+     4.5:1 on bg-secondary + tint and bg-tertiary; each moved only in OKLab lightness, the least
+     that passes again (primary-ink #B03A00, warning #B04F01, error #C3051E, success #006F3D). */
+  --ut-accent-ink: #AF3900;
+  --ut-accent-icon: var(--ut-accent); /* an icon over the accent's own tint; a style with a pale accent points it at --ut-accent-text */
+  --ut-accent-text: var(--ut-accent-ink);
+  --ut-warning-text: #AD4D00;
+  --ut-danger-text: #C1001C;
+  --ut-success-text: #006D3B;
+  --ut-info-text: #1D4ED8;
+  /* Labels and icons on the light fills (accent, success, warning): white was 1.8–4.2:1 on
+     them; black is ≥ 4.96:1 on every accent, in both themes. */
+  --ut-text-on-accent: rgb(0 0 0);
+  /* Placeholders (Tailwind's default was text at 50%, 3.3:1) and keyboard focus rings. */
+  --ut-text-placeholder: var(--ut-text-dim);
+  --ut-focus-ring: var(--ut-accent-text);
+
+  /* Tints of the state colors. */
+  --ut-success-soft: color-mix(in srgb, var(--ut-success) 20%, transparent);
+  --ut-warning-soft: color-mix(in srgb, var(--ut-warning) 20%, transparent);
+  --ut-danger-soft: color-mix(in srgb, var(--ut-danger) 20%, transparent);
+  --ut-info-soft: color-mix(in srgb, var(--ut-info) 20%, transparent);
+
+  /* White labels on saturated fills (danger button, tool badge), against --ut-text-on-accent. */
+  --ut-text-on-solid: #fff;
+  /* The light knob of switches and radios, on any theme. */
+  --ut-knob: white;
+  /* The hover step of a filled button: the fill moves towards this. */
+  --ut-mix-lighten: white;
+  --ut-mix-darken: black;
+  /* Masks: only the alpha counts. */
+  --ut-mask-opaque: #000;
+
+  /* Scrims behind sheets and dialogs. */
+  --ut-overlay: rgb(0 0 0 / 0.45);
+  --ut-overlay-soft: rgb(0 0 0 / 0.25);
+  --ut-overlay-35: rgb(0 0 0 / 0.35);
+  --ut-overlay-medium: rgb(0 0 0 / 0.4);
+  --ut-overlay-strong: rgb(0 0 0 / 0.5);
+  /* Floating panels over a terminal: always dark. */
+  --ut-float-bg: rgba(26, 26, 26, 0.9);
+  --ut-float-bg-solid: rgba(26, 26, 26, 1);
+  --ut-float-border: #2a2a2a;
+  --ut-float-text: rgb(228 228 228);
+  /* The dark bubble of the terminal's selection menu, with hairlines of light between items. */
+  --ut-bubble-bg: #2c2c2e;
+  --ut-bubble-frost: rgba(255, 255, 255, 0.18);
+  /* The system blue of iOS selection handles. */
+  --ut-selection-handle: #0a84ff;
+  /* Hairlines over images and toggles. */
+  --ut-hairline-dark: rgb(0 0 0 / 0.15);
+  --ut-hairline-darker: rgb(0 0 0 / 0.12);
+  --ut-hairline-neutral: rgb(127 127 127 / 0.2);
+  --ut-hairline-light: rgb(255 255 255 / 0.15);
+  /* Dark surfaces catch a hairline of light on their top edge. */
+  --ut-edge-light: rgb(255 255 255 / 0.04);
+  /* The blue pulse of a working session's dot. */
+  --ut-pulse-info: rgb(59 130 246 / 0.55);
+  --ut-pulse-info-end: rgb(59 130 246 / 0);
+
+  /* Radii: move these four and everything follows; the numbered ones keep their offset. */
+  --ut-r-sm: 4px;
+  --ut-r-md: 6px;
+  --ut-r-lg: 10px;
+  --ut-r-xl: 14px;
+  --ut-r-pill: 999px;
+  --ut-r-full: calc(infinity * 1px);
+  --ut-r-circle: 50%;
+  /* Multiplies the offsets below: a style with square corners sets it to 0. */
+  --ut-r-offset: 1;
+  --ut-r-1: calc(var(--ut-r-sm) - 3px * var(--ut-r-offset));
+  --ut-r-2: calc(var(--ut-r-sm) - 2px * var(--ut-r-offset));
+  --ut-r-3: calc(var(--ut-r-sm) - 1px * var(--ut-r-offset));
+  --ut-r-5: calc(var(--ut-r-md) - 1px * var(--ut-r-offset));
+  --ut-r-7: calc(var(--ut-r-md) + 1px * var(--ut-r-offset));
+  --ut-r-8: calc(var(--ut-r-md) + 2px * var(--ut-r-offset));
+  --ut-r-9: calc(var(--ut-r-lg) - 1px * var(--ut-r-offset));
+  --ut-r-12: calc(var(--ut-r-lg) + 2px * var(--ut-r-offset));
+  --ut-r-13: calc(var(--ut-r-xl) - 1px * var(--ut-r-offset));
+  --ut-r-16: calc(var(--ut-r-xl) + 2px * var(--ut-r-offset));
+  --ut-r-18: calc(var(--ut-r-xl) + 4px * var(--ut-r-offset));
+  --ut-r-20: calc(var(--ut-r-xl) + 6px * var(--ut-r-offset));
+  --ut-r-22: calc(var(--ut-r-xl) + 8px * var(--ut-r-offset));
+  --ut-r-26: calc(var(--ut-r-xl) + 12px * var(--ut-r-offset));
+  /* The rounded tile of avatars and project logos: 40 px rows, and 24–28 px rows. Fixed: the
+     style never reshapes a logo or a 3D icon. */
+  --ut-r-avatar: 12px;
+  --ut-r-avatar-sm: 8px;
+  --ut-r-logo-xs: 4px;
+  --ut-r-logo: 6px;
+  --ut-r-logo-lg: 10px;
+  /* In rem, so they grow with the system text size. */
+  --ut-r-rem-1: 0.25rem;
+  --ut-r-rem-md: 0.375rem;
+  --ut-r-rem-lg: 0.5rem;
+  --ut-r-rem-xl: 0.75rem;
+  --ut-r-rem-2xl: 1rem;
+  --ut-r-rem-18: 1.125rem;
+  --ut-r-rem-20: 1.25rem;
+  --ut-r-rem-24: 1.5rem;
+  /* In em, half the height of a count badge: a pill that grows with its number's size. */
+  --ut-r-badge-em: 0.91em;
+
+  /* Elevation: 0 flat, 1 resting cards, 2 popovers and menus, 3 dialogs. */
+  --ut-elev-0: none;
+  --ut-elev-1: 0 1px 2px rgb(0 0 0 / 0.06);
+  --ut-elev-2: 0 4px 12px rgb(0 0 0 / 0.14), 0 0 0 1px var(--ut-border);
+  --ut-elev-3: 0 24px 48px -12px rgb(0 0 0 / 0.4), 0 0 0 1px var(--ut-border);
+  /* Drop shadows off that scale: number = default blur, then opacity. */
+  --ut-drop-3-15: 0 1px 3px rgb(0 0 0 / 0.15);
+  --ut-drop-3-20: 0 1px 3px rgb(0 0 0 / 0.2);
+  --ut-drop-8-30: 0 2px 8px rgb(0 0 0 / 0.3);
+  --ut-drop-16-25: 0 4px 16px rgb(0 0 0 / 0.25);
+  --ut-drop-16-30: 0 4px 16px rgb(0 0 0 / 0.3);
+  --ut-drop-16-35: 0 4px 16px rgb(0 0 0 / 0.35);
+  --ut-drop-20-18: 0 6px 20px rgb(0 0 0 / 0.18);
+  --ut-drop-20-25: 0 6px 20px rgb(0 0 0 / 0.25);
+  --ut-drop-24-20: 0 8px 24px rgb(0 0 0 / 0.2);
+  --ut-drop-32-25: 0 12px 32px rgb(0 0 0 / 0.25);
+  --ut-drop-up-16-18: 0 -6px 16px rgb(0 0 0 / 0.18);
+  --ut-drop-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --ut-drop-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --ut-drop-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --ut-drop-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  /* Shape of a colored glow, `<y>-<blur>` by default: the caller adds the color (var(--ut-glow-0-8) color-mix(…)). */
+  --ut-glow-0-20: 0 0 20px;
+  --ut-glow-0-10: 0 0 10px;
+  --ut-glow-8-22: 0 8px 22px;
+  --ut-glow-0-8: 0 0 8px;
+  --ut-glow-0-12: 0 0 12px;
+  --ut-glow-2-8: 0 2px 8px;
+  --ut-glow-0-30: 0 0 30px;
+  --ut-glow-0-15: 0 0 15px;
+  --ut-glow-8-24: 0 8px 24px;
+  --ut-glow-4-8: 0 4px 8px;
+  --ut-glow-6-12: 0 6px 12px;
+  --ut-glow-2-4: 0 2px 4px;
+  --ut-glow-6-24: 0 6px 24px;
+  --ut-glow-2-6: 0 2px 6px;
+  --ut-glow-3-10: 0 3px 10px;
+  --ut-glow-1-3: 0 1px 3px;
+  /* The black part of the floating buttons' shadows; their glow reads the accent. */
+  --ut-drop-float-12: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --ut-drop-float-16: 0 6px 16px rgba(0, 0, 0, 0.5);
+  --ut-drop-float-16b: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --ut-drop-float-20: 0 4px 20px rgba(0, 0, 0, 0.6);
+  --ut-drop-float-24: 0 6px 24px rgba(0, 0, 0, 0.7);
+
+  /* Typography. */
+  --ut-font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* Titles and wordmarks only: a style with a display face changes this, not the UI text. */
+  --ut-font-title: var(--ut-font-ui);
+  --ut-font-mono: 'Hack Nerd Font Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+  /* Fixed-width and sans for the few sheets drawn with the system's own fonts. */
+  --ut-font-ui-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --ut-font-mono-system: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --ut-fs-micro: 11px;
+  --ut-fs-caption: 12px;
+  --ut-fs-ui: 13px;
+  --ut-fs-title: 15px;
+  --ut-fs-display: 22px;
+  --ut-lh-micro: 14px;
+  --ut-lh-caption: 16px;
+  --ut-lh-ui: 18px;
+  --ut-lh-title: 20px;
+  --ut-lh-display: 28px;
+  --ut-fw-normal: 400;
+  --ut-fw-medium: 500;
+  --ut-fw-semibold: 600;
+  --ut-fw-bold: 700;
+
+  /* Density: 4 px grid. */
+  --ut-space-row: 8px;
+  --ut-space-group: 16px;
+  --ut-space-section: 24px;
+  --ut-page-pad: 24px;
+  --ut-ctl-h: 32px;
+  --ut-tab-min-width: 64px; /* phone tab bar: a style with wider type lowers it */
+
+  /* The desktop chat's column (conversation and composer) takes the whole chat area less a side
+     margin, whatever the window (2026-11-11: no ceiling, a user's ultrawide). Below -from (floor
+     / 4 steeper ramp) and on phones it is the 720 px floor of before, so nothing jumps. "Chat
+     width: comfortable" (data-chat-width) keeps the floor. */
+  --ut-chat-column-floor: 720px;
+  --ut-chat-column-from: 1000px;
+  --ut-chat-margin: 32px;
+  --ut-chat-column: max(var(--ut-chat-column-floor), min(calc(100% - 2 * var(--ut-chat-margin)), calc(var(--ut-chat-column-floor) + (100% - var(--ut-chat-column-from)) * 4)));
+  /* A bubble's widest share of the column: 82 % at the floor, 90 % in a wider one, so the side
+     it does not sit on keeps a breather that tells who speaks. Running text has no measure. */
+  --ut-chat-bubble-max: max(82%, min(90%, calc(82% + (100% - var(--ut-chat-column-floor)) * 4)));
+
+  /* Motion. */
+  --ut-dur-1: 120ms;
+  --ut-dur-2: 180ms;
+  --ut-dur-3: 240ms;
+  --ut-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Effects, neutral by default: a style turns them on. */
+  --ut-backdrop: none; /* the app's fixed background: CSS gradients only, behind everything */
+  --ut-backdrop-size: auto; /* background-size of its layers, comma separated like them */
+  --ut-backdrop-position: 0 0; /* background-position of its layers */
+  --ut-backdrop-repeat: repeat; /* background-repeat of its layers */
+  --ut-page-alpha: 100%; /* how much of --ut-bg-app covers the backdrop on the page itself */
+  --ut-surface-alpha: 100%; /* rows, cards and panels (surface-1/2/3) over the page */
+  --ut-toolbar-blur: blur(10px);
+  --ut-header-blur: blur(12px); /* opaque looks can disable chrome blur at its source */
+  --ut-chrome-alpha: 90%; /* the phone header, with the list scrolling under it */
+  --ut-panel-alpha: 100%; /* sheets, dialogs, menus and toasts over what is behind them */
+  --ut-blur-surface: none; /* backdrop-filter of those floating pieces and .ut-surface */
+  --ut-outline-width: 1px; /* borders of the shared pieces and hairlines */
+  --ut-surface-edge: none; /* box-shadow of cards and groups: light edge, bevel, relief */
+  /* Paint-only material, inherited into shadow roots. No geometry or content filtering. */
+  --ut-select-arrow: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  --ut-look-row-fill: var(--ut-surface-1);
+  --ut-look-row-shadow: none;
+  --ut-look-row-grain: none;
+  --ut-look-row-ink: var(--ut-text); /* the two lines of a miniature's row, and its edge */
+  --ut-look-row-ink-muted: var(--ut-text-muted);
+  --ut-look-row-border: var(--ut-border);
+  --ut-look-button-shadow: var(--ut-effect-glow);
+  --ut-piece-grain: none;
+  --ut-piece-text-shadow: 0 0 transparent;
+  --ut-piece-grain-size: auto;
+  --ut-piece-grain-blend: normal;
+  --ut-piece-raised: 0 0 transparent;
+  --ut-piece-inset: 0 0 transparent;
+  --ut-piece-control: 0 0 transparent;
+  --ut-piece-edge: 0 0 transparent;
+  --ut-piece-track: 0 0 transparent;
+  --ut-piece-thumb: 0 0 transparent;
+  --ut-control-relief: none; /* box-shadow of raised controls (effects layer) */
+  --ut-control-sheen: none; /* background-image over a control's fill (effects layer) */
+  --ut-field-relief: none; /* box-shadow of sunken fields (effects layer) */
+  --ut-effect-glow: none; /* a style's glow on buttons and focus (effects layer, miniatures) */
+  --ut-status-working-dot: var(--color-primary); /* the "working" dot, also on a colored top bar */
+  --ut-grain: none; /* background-image over rows, bars and pieces: a style's material */
+  --ut-bar-fill: none; /* background-image of the app's top bars, a solid color or none */
+  --ut-bar-relief: none; /* box-shadow of the top bars */
+  --ut-composer-relief: none; /* box-shadow of the "what to do" box */
+  --ut-action-relief: none; /* box-shadow of the main actions outside .ut-btn */
+  --ut-banner-relief: none; /* box-shadow of a banner in the list ("N sin blindar") */
+  --ut-press-offset: 0px; /* how far a .ut-btn sinks while pressed */
+  --ut-tab-selected-bg: transparent; /* phone tab bar, the current tab */
+  --ut-tab-selected-shadow: none;
+  /* Rows as loose cards (docs/ui-tokens.md): phone session and task rows, sidebar rows, desktop
+     list rows and the rows of .ut-group. Neutral: the plain list with its hairlines. */
+  --ut-row-gap: 0px; /* space above each row */
+  --ut-row-inset: 0px; /* side margin of a phone row, whose list is full width */
+  --ut-row-radius: 0px; /* phone rows */
+  --ut-row-side-radius: var(--ut-r-md); /* sidebar and desktop list rows */
+  --ut-row-bg: var(--color-page); /* background of a phone row */
+  --ut-row-side-bg: transparent; /* background of sidebar and desktop list rows */
+  --ut-row-border: 0 solid transparent; /* top and sides of a phone row, all around the others */
+  --ut-row-divider: 1px solid var(--color-border-light); /* bottom of a phone row */
+  --ut-row-list-edge: 1px solid var(--color-border-light); /* top of a phone list */
+  --ut-row-side-divider: 0 -1px 0 var(--color-border); /* between desktop list rows */
+  --ut-row-shadow: none;
+  --ut-row-selected-mark: var(--color-primary); /* the stripe on a selected sidebar row */
+  --ut-row-selected-shadow: inset 3px 0 0 var(--color-primary); /* a selected phone row */
+  /* «Te necesita» band: neutral is one tinted box with hairlines; a style can make loose cards. */
+  --ut-needs-bg: var(--color-attention-muted);
+  --ut-needs-edge: color-mix(in srgb, var(--color-attention) 40%, transparent);
+  --ut-needs-gap: 0px; /* between its rows */
+  --ut-needs-item-radius: var(--ut-r-8);
+  --ut-needs-item-shadow: none;
+  --ut-needs-divider: inset 0 1px 0 color-mix(in srgb, var(--color-attention) 22%, transparent);
+  --ut-needs-fill-1: transparent; /* rows cycle through three fills */
+  --ut-needs-fill-2: transparent;
+  --ut-needs-fill-3: transparent;
+  --ut-needs-act-bg: var(--color-bg-elevated); /* the row's button */
+  --ut-needs-act-fg: var(--color-text);
+  --ut-needs-act-border: var(--color-border);
+  --ut-group-gap: 0px; /* between the rows of a .ut-group: above 0, each row is a card */
+  --ut-group-bg: var(--color-surface);
+  --ut-group-outline: var(--color-border);
+  --ut-group-edge: var(--ut-surface-edge);
+  --ut-group-overflow: hidden; /* visible, so the shadow of a loose row is not cut */
+  --ut-group-divider: 1px solid var(--color-border);
+  --ut-group-row-bg: transparent;
+  --ut-group-row-border: 0 solid transparent;
+  --ut-group-row-radius: 0px;
+  --ut-group-row-shadow: none;
+  /* A project's header on the phone, as a strip of its own. */
+  --ut-head-bg: transparent;
+  --ut-head-border: 0 solid transparent;
+  --ut-head-radius: 0px;
+  --ut-head-shadow: none;
+  --ut-head-pad: 0px;
+  --ut-head-gap: 0px; /* space below it */
+  /* The line between one project and the next, on the phone list and in the sidebar: a
+     `background` (a color or a gradient), its thickness, the air above it (and below it in the
+     sidebar), how far it stays from the sides and the roundness of its ends. Fine and quiet:
+     projects are told apart by this line, not by a gap or a band. */
+  --ut-project-divider: var(--color-border);
+  --ut-project-divider-size: 1px;
+  --ut-project-divider-air: 10px;
+  --ut-project-divider-inset: 0px;
+  --ut-project-divider-radius: 0px;
+  /* HUD corners: clip-path of controls and cards (docs/ui-tokens.md). The focus states take it
+     off, because a clip would cut the ring, and floating pieces never carry it. */
+  --ut-clip-control: none;
+  --ut-clip-card: none;
+
+  /* What Tailwind's classes (bg-bg-secondary, text-text-muted…) and existing CSS read. */
+  --color-bg: var(--ut-bg-app);
+  --color-page: color-mix(in srgb, var(--ut-bg-app) var(--ut-page-alpha), transparent);
+  --color-bg-secondary: color-mix(in srgb, var(--ut-surface-1) var(--ut-surface-alpha), transparent);
+  --color-bg-tertiary: color-mix(in srgb, var(--ut-surface-2) var(--ut-surface-alpha), transparent);
+  --color-surface: color-mix(in srgb, var(--ut-surface-3) var(--ut-surface-alpha), transparent);
+  --color-bg-elevated: var(--ut-surface-raised);
+  --color-card: color-mix(in srgb, var(--ut-surface-raised) var(--ut-surface-alpha), transparent);
+  --color-float: color-mix(in srgb, var(--ut-surface-raised) var(--ut-panel-alpha), transparent);
+  --color-surface-hover: var(--ut-surface-hover);
+  --color-selected: var(--ut-surface-selected);
+  --color-preview-bg: var(--ut-surface-preview);
+  --color-border: var(--ut-border);
+  --color-border-light: var(--ut-border-strong);
+  --color-border-focus: var(--ut-border-focus);
+  --color-text: var(--ut-text);
+  --color-text-bright: var(--ut-text-bright);
+  --color-text-muted: var(--ut-text-muted);
+  --color-text-dim: var(--ut-text-dim);
+  --color-placeholder: var(--ut-text-placeholder);
+  --color-on-fill: var(--ut-text-on-accent);
+  --color-focus-ring: var(--ut-focus-ring);
+  --color-primary: var(--ut-accent);
+  --color-primary-hover: var(--ut-accent-hover);
+  --color-primary-dark: var(--ut-accent-strong);
+  --color-primary-light: var(--ut-accent-light);
+  --color-primary-muted: var(--ut-accent-soft);
+  --color-primary-glow: var(--ut-accent-glow);
+  --color-primary-text: var(--ut-accent-text);
+  --color-primary-ink: var(--ut-accent-ink);
+  --color-status-error: var(--ut-danger);
+  --color-status-warning: var(--ut-warning);
+  --color-status-success: var(--ut-success);
+  --color-status-info: var(--ut-info);
+  --color-status-error-text: var(--ut-danger-text);
+  --color-status-warning-text: var(--ut-warning-text);
+  --color-status-success-text: var(--ut-success-text);
+  --color-status-info-text: var(--ut-info-text);
+  --color-attention: var(--ut-attention);
+  --color-attention-muted: var(--ut-attention-soft);
+  --color-attention-text: var(--ut-attention-text);
+  --color-alive: var(--ut-alive);
+  --color-avatar-live-bg: var(--ut-avatar-live-bg);
+  --color-avatar-live-fg: var(--ut-avatar-live-fg);
+  --color-avatar-attn-bg: var(--ut-avatar-attn-bg);
+  --color-avatar-attn-fg: var(--ut-avatar-attn-fg);
+  --color-avatar-off-bg: var(--ut-avatar-off-bg);
+  --color-avatar-off-fg: var(--ut-avatar-off-fg);
+  --color-border-strong: var(--ut-border-strong);
+}
+
+/* "Chat width" (utils/chat-width.ts): the default is the whole area; comfortable keeps the
+   720 px reading column. */
+:root[data-chat-width="comfortable"] {
+  --ut-chat-column: var(--ut-chat-column-floor);
+  --ut-chat-bubble-max: 82%;
+}
+
+/* Any style but Original (no data-look there): the session's top bar is the style's own solid
+   surface, not the terminal theme's color (2026-11-09, docs/ui-tokens.md). */
+:root[data-look] {
+  --ut-session-bar: var(--ut-surface-1);
+}
+
+/* Dark mode theme colors */
+[data-theme="dark"] {
+  --ut-logo-image-filter: none;
+  --ut-logo-image-filter-done: grayscale(1);
+  /* Dark palette (design spec 2.1, 2026-10-12). Keep the system-dark block below identical.
+     text-dim #97938E (spec #96928D, 4.47:1 on the ocean theme's hovered row): lightness only. */
+  --ut-bg-app: #131211;
+  --ut-surface-1: #191817;
+  --ut-surface-2: #232120;
+  --ut-surface-raised: #1E1D1B;
+  --ut-surface-3: #1E1D1B;
+  --ut-surface-hover: #2A2826;
+  --ut-border: #2B2927;
+  --ut-border-strong: #3A3734;
+  --ut-border-focus: #4A4743;
+  --ut-text: #ECEAE8;
+  --ut-text-bright: #FFFFFF;
+  --ut-text-muted: #B3AFAA;
+  --ut-text-dim: #97938E;
+  --ut-attention-soft: color-mix(in srgb, #FFB000 14%, transparent);
+  --ut-attention-text: #FFC24D;
+  --ut-accent-text: var(--ut-accent-light);
+  --ut-warning-text: var(--ut-warning);
+  --ut-danger-text: #FF7972;
+  --ut-success-text: #34D399;
+  --ut-info-text: #60A5FA;
+  --ut-alive: #10B981;
+  --ut-avatar-live-bg: color-mix(in srgb, var(--ut-accent) 20%, var(--ut-surface-2));
+  --ut-avatar-attn-bg: color-mix(in srgb, var(--ut-attention) 16%, var(--ut-surface-2));
+}
+
+/* System preference detection */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ut-logo-image-filter: none;
+    --ut-logo-image-filter-done: grayscale(1);
+    --ut-bg-app: #131211;
+    --ut-surface-1: #191817;
+    --ut-surface-2: #232120;
+    --ut-surface-raised: #1E1D1B;
+    --ut-surface-3: #1E1D1B;
+    --ut-surface-hover: #2A2826;
+    --ut-border: #2B2927;
+    --ut-border-strong: #3A3734;
+    --ut-border-focus: #4A4743;
+    --ut-text: #ECEAE8;
+    --ut-text-bright: #FFFFFF;
+    --ut-text-muted: #B3AFAA;
+    --ut-text-dim: #97938E;
+    --ut-attention-soft: color-mix(in srgb, #FFB000 14%, transparent);
+    --ut-attention-text: #FFC24D;
+    --ut-accent-text: var(--ut-accent-light);
+    --ut-warning-text: var(--ut-warning);
+    --ut-danger-text: #FF7972;
+    --ut-success-text: #34D399;
+    --ut-info-text: #60A5FA;
+    --ut-alive: #10B981;
+    --ut-avatar-live-bg: color-mix(in srgb, var(--ut-accent) 20%, var(--ut-surface-2));
+    --ut-avatar-attn-bg: color-mix(in srgb, var(--ut-attention) 16%, var(--ut-surface-2));
+  }
+}
+
+/* Color themes (utils/accent-themes.ts): accent everywhere, tinted backgrounds in dark mode */
+/* --ut-accent-ink: the accent as text on the light theme (4.5:1, theme-contrast.test.ts). */
+[data-accent="emerald"] {
+  --ut-accent: #10B981;
+  --ut-accent-hover: #059669;
+  --ut-accent-strong: #047857;
+  --ut-accent-light: #34D399;
+  --ut-accent-ink: #007151; /* was #007353 (2026-10-12, lighter surfaces) */
+}
+[data-accent="ocean"] {
+  --ut-accent: #3B82F6;
+  --ut-accent-hover: #2563EB;
+  --ut-accent-strong: #1D4ED8;
+  --ut-accent-light: #60A5FA;
+  --ut-accent-ink: #1D4ED8;
+}
+[data-theme="dark"][data-accent="ocean"] {
+  --ut-bg-app: #0f1520;
+  --ut-surface-1: #151c2a;
+  --ut-surface-2: #1b2333;
+  --ut-surface-raised: #222b3d;
+  --ut-surface-3: #18202e;
+  --ut-surface-hover: #232d40;
+  --ut-border: #2c3850;
+  --ut-border-strong: #34425c;
+}
+[data-accent="violet"] {
+  --ut-accent: #8B5CF6;
+  --ut-accent-hover: #7C3AED;
+  --ut-accent-strong: #6D28D9;
+  --ut-accent-light: #A78BFA;
+  --ut-accent-ink: #6D28D9;
+}
+[data-theme="dark"][data-accent="violet"] {
+  --ut-bg-app: #15111f;
+  --ut-surface-1: #1c1729;
+  --ut-surface-2: #231d33;
+  --ut-surface-raised: #2a233d;
+  --ut-surface-3: #1f1a2d;
+  --ut-surface-hover: #2b2440;
+  --ut-border: #3a3052;
+  --ut-border-strong: #433a5e;
+}
+/* Sunset is coral since 2026-10-12 (was orange #F97316, too close to the brand orange). */
+[data-accent="sunset"] {
+  --ut-accent: #FF5A5F;
+  --ut-accent-hover: #ED4850;
+  --ut-accent-strong: #D32E3C;
+  --ut-accent-light: #FF7E82;
+  --ut-accent-ink: #C0122C;
+}
+[data-theme="dark"][data-accent="sunset"] {
+  --ut-bg-app: #1a120d;
+  --ut-surface-1: #221812;
+  --ut-surface-2: #2a1e17;
+  --ut-surface-raised: #33251c;
+  --ut-surface-3: #261b14;
+  --ut-surface-hover: #34261d;
+  --ut-border: #47332a;
+  --ut-border-strong: #513b30;
+}
+[data-accent="rose"] {
+  --ut-accent: #EC4899;
+  --ut-accent-hover: #DB2777;
+  --ut-accent-strong: #BE185D;
+  --ut-accent-light: #F472B6;
+  --ut-accent-ink: #B90F5A; /* was #BB135B (2026-10-12, lighter surfaces) */
+}
+[data-theme="dark"][data-accent="rose"] {
+  --ut-bg-app: #1a0f15;
+  --ut-surface-1: #22141c;
+  --ut-surface-2: #2a1923;
+  --ut-surface-raised: #331f2b;
+  --ut-surface-3: #26161f;
+  --ut-surface-hover: #35202d;
+  --ut-border: #48293b;
+  --ut-border-strong: #533044;
+}
+[data-accent="cyber"] {
+  --ut-accent: #22D3EE;
+  --ut-accent-hover: #06B6D4;
+  --ut-accent-strong: #0E7490;
+  --ut-accent-light: #67E8F9;
+  --ut-accent-ink: #05708C; /* was #07718D (2026-10-12, lighter surfaces) */
+}
+[data-theme="dark"][data-accent="cyber"] {
+  --ut-bg-app: #071016;
+  --ut-surface-1: #0b1820;
+  --ut-surface-2: #10202a;
+  --ut-surface-raised: #152834;
+  --ut-surface-3: #0d1c25;
+  --ut-surface-hover: #172c38;
+  --ut-border: #1f3a48;
+  --ut-border-strong: #264453;
+}
+[data-accent="gold"] {
+  --ut-accent: #EAB308;
+  --ut-accent-hover: #CA8A04;
+  --ut-accent-strong: #A16207;
+  --ut-accent-light: #FACC15;
+  --ut-accent-ink: #965900; /* was #985A00 (2026-10-12, lighter surfaces) */
+}
+[data-theme="dark"][data-accent="gold"] {
+  --ut-bg-app: #16130a;
+  --ut-surface-1: #1d190e;
+  --ut-surface-2: #241f12;
+  --ut-surface-raised: #2c2617;
+  --ut-surface-3: #201b10;
+  --ut-surface-hover: #2e2818;
+  --ut-border: #3e3520;
+  --ut-border-strong: #483d25;
+}
+[data-accent="clay"] {
+  --ut-accent: #D97757;
+  --ut-accent-hover: #C2603F;
+  --ut-accent-strong: #A54E31;
+  --ut-accent-light: #E8977B;
+  --ut-accent-ink: #9E492C; /* was #A04A2D (2026-10-12, lighter surfaces) */
+}
+[data-theme="dark"][data-accent="clay"] {
+  --ut-bg-app: #1b1512;
+  --ut-surface-1: #231b17;
+  --ut-surface-2: #2b221d;
+  --ut-surface-raised: #342923;
+  --ut-surface-3: #261e19;
+  --ut-surface-hover: #352a24;
+  --ut-border: #4a3a31;
+  --ut-border-strong: #554339;
+}
+
+/*
+ * The paper scope (Editorial, 2026-11-10): a style with a dark ground whose cards, sheets and
+ * floating pieces are paper with dark ink. Those pieces take the style's --ut-paper-* palette as
+ * the generic one, so everything inside them (text, borders, fields, tints) reads paper values
+ * without knowing. Every token and alias of the first block that depends on a remapped token is
+ * evaluated again here, because a var() is resolved where it is declared (on <html>, with the
+ * dark palette). Not the terminal, the logos or the session bar. A piece that is not listed keeps
+ * the dark palette and stays legible. theme-contrast.test.ts measures this palette too, and
+ * fails if a dependent token of the first block is missing here.
+ */
+[data-look="editorial"] :where(.ut-surface--floating, .ut-dialog, .ut-menu, .ut-toast, .ut-tooltip, .ut-card, .ut-group, .ut-surface--panel, .ut-surface--request, .ut-surface--well, .ut-surface--notice, .ut-surface--detail, .ut-surface--record, .sidebar-scroll-area, .psr-list, .pvr-list, .ask-claude, .tsk--card) {
+  --ut-accent-icon: var(--ut-paper-accent-icon);
+  --ut-accent-ink: var(--ut-paper-accent-ink);
+  --ut-accent-strong: var(--ut-paper-accent-strong);
+  --ut-accent-text: var(--ut-paper-accent-text);
+  --ut-alive: var(--ut-paper-alive);
+  --ut-attention: var(--ut-paper-attention);
+  --ut-attention-soft: var(--ut-paper-attention-soft);
+  --ut-attention-text: var(--ut-paper-attention-text);
+  --ut-bg-app: var(--ut-paper-bg-app);
+  --ut-border: var(--ut-paper-border);
+  --ut-border-focus: var(--ut-paper-border-focus);
+  --ut-border-strong: var(--ut-paper-border-strong);
+  --ut-danger-text: var(--ut-paper-danger-text);
+  --ut-elev-1: var(--ut-paper-elev-1);
+  --ut-elev-2: var(--ut-paper-elev-2);
+  --ut-elev-3: var(--ut-paper-elev-3);
+  --ut-focus-ring: var(--ut-paper-focus-ring);
+  --ut-info-text: var(--ut-paper-info-text);
+  --ut-success-text: var(--ut-paper-success-text);
+  --ut-surface-1: var(--ut-paper-surface-1);
+  --ut-surface-2: var(--ut-paper-surface-2);
+  --ut-surface-3: var(--ut-paper-surface-3);
+  --ut-surface-hover: var(--ut-paper-surface-hover);
+  --ut-surface-raised: var(--ut-paper-surface-raised);
+  --ut-surface-selected: var(--ut-paper-surface-selected);
+  --ut-text: var(--ut-paper-text);
+  --ut-text-bright: var(--ut-paper-text-bright);
+  --ut-text-dim: var(--ut-paper-text-dim);
+  --ut-text-muted: var(--ut-paper-text-muted);
+  --ut-text-placeholder: var(--ut-paper-text-placeholder);
+  --ut-warning-text: var(--ut-paper-warning-text);
+  --ut-avatar-live-bg: color-mix(in srgb, var(--ut-accent) 14%, var(--ut-surface-2));
+  --ut-avatar-live-fg: var(--ut-accent-text);
+  --ut-avatar-attn-bg: color-mix(in srgb, var(--ut-attention) 18%, var(--ut-surface-2));
+  --ut-avatar-attn-fg: var(--ut-attention-text);
+  --ut-avatar-off-bg: var(--ut-surface-2);
+  --ut-avatar-off-fg: var(--ut-text-dim);
+  --ut-group-bg: var(--color-surface);
+  --ut-group-outline: var(--color-border);
+  --ut-group-divider: 1px solid var(--color-border);
+  --color-bg: var(--ut-bg-app);
+  --color-page: color-mix(in srgb, var(--ut-bg-app) var(--ut-page-alpha), transparent);
+  --color-bg-secondary: color-mix(in srgb, var(--ut-surface-1) var(--ut-surface-alpha), transparent);
+  --color-bg-tertiary: color-mix(in srgb, var(--ut-surface-2) var(--ut-surface-alpha), transparent);
+  --color-surface: color-mix(in srgb, var(--ut-surface-3) var(--ut-surface-alpha), transparent);
+  --color-bg-elevated: var(--ut-surface-raised);
+  --color-card: color-mix(in srgb, var(--ut-surface-raised) var(--ut-surface-alpha), transparent);
+  --color-float: color-mix(in srgb, var(--ut-surface-raised) var(--ut-panel-alpha), transparent);
+  --color-surface-hover: var(--ut-surface-hover);
+  --color-selected: var(--ut-surface-selected);
+  --color-border: var(--ut-border);
+  --color-border-light: var(--ut-border-strong);
+  --color-border-focus: var(--ut-border-focus);
+  --color-text: var(--ut-text);
+  --color-text-bright: var(--ut-text-bright);
+  --color-text-muted: var(--ut-text-muted);
+  --color-text-dim: var(--ut-text-dim);
+  --color-placeholder: var(--ut-text-placeholder);
+  --color-focus-ring: var(--ut-focus-ring);
+  --color-primary-dark: var(--ut-accent-strong);
+  --color-primary-text: var(--ut-accent-text);
+  --color-primary-ink: var(--ut-accent-ink);
+  --color-status-error-text: var(--ut-danger-text);
+  --color-status-warning-text: var(--ut-warning-text);
+  --color-status-success-text: var(--ut-success-text);
+  --color-status-info-text: var(--ut-info-text);
+  --color-attention: var(--ut-attention);
+  --color-attention-muted: var(--ut-attention-soft);
+  --color-attention-text: var(--ut-attention-text);
+  --color-alive: var(--ut-alive);
+  --color-avatar-live-bg: var(--ut-avatar-live-bg);
+  --color-avatar-live-fg: var(--ut-avatar-live-fg);
+  --color-avatar-attn-bg: var(--ut-avatar-attn-bg);
+  --color-avatar-attn-fg: var(--ut-avatar-attn-fg);
+  --color-avatar-off-bg: var(--ut-avatar-off-bg);
+  --color-avatar-off-fg: var(--ut-avatar-off-fg);
+  --color-border-strong: var(--ut-border-strong);
+  --text-color-primary: var(--color-primary-text);
+  --text-color-accent-primary: var(--color-primary-text);
+  --text-color-status-warning: var(--color-status-warning-text);
+  --text-color-status-error: var(--color-status-error-text);
+  --text-color-accent-red: var(--color-status-error-text);
+  --text-color-status-success: var(--color-status-success-text);
+  --text-color-accent-green: var(--color-status-success-text);
+  --text-color-status-info: var(--color-status-info-text);
+  --text-color-muted: var(--color-text-muted);
+  --text-color-dim: var(--color-text-dim);
+  --shadow-e1: var(--ut-elev-1);
+  --shadow-e2: var(--ut-elev-2);
+  --shadow-e3: var(--ut-elev-3);
+  --shadow-card: var(--ut-elev-1);
+  --shadow-card-hover: var(--ut-elev-1);
+  --shadow-elevated: var(--ut-elev-3);
+}
+@layer components {
+  [data-look="editorial"] :where(.ut-surface--floating, .ut-dialog, .ut-menu, .ut-toast, .ut-tooltip, .ut-card, .ut-group, .ut-surface--panel, .ut-surface--request, .ut-surface--well, .ut-surface--notice, .ut-surface--detail, .ut-surface--record, .sidebar-scroll-area, .psr-list, .pvr-list, .ask-claude, .tsk--card) {
+    color: var(--color-text);
+  }
+}
+
+/* Tailwind v4 Theme Configuration */
+@theme {
+  /* Register custom colors using CSS variables */
+  --color-bg: var(--color-bg);
+  --color-page: var(--color-page);
+  --color-bg-secondary: var(--color-bg-secondary);
+  --color-bg-tertiary: var(--color-bg-tertiary);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-surface: var(--color-surface);
+  --color-surface-hover: var(--color-surface-hover);
+  --color-border: var(--color-border);
+  --color-border-light: var(--color-border-light);
+  --color-border-focus: var(--color-border-focus);
+  --color-text: var(--color-text);
+  --color-text-bright: var(--color-text-bright);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-dim: var(--color-text-dim);
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-primary-light: var(--color-primary-light);
+  --color-primary-muted: var(--color-primary-muted);
+  --color-primary-glow: var(--color-primary-glow);
+  --color-primary-text: var(--color-primary-text);
+  --color-status-warning-text: var(--color-status-warning-text);
+  --color-status-info-text: var(--color-status-info-text);
+  --color-status-error-text: var(--color-status-error-text);
+  --color-status-success-text: var(--color-status-success-text);
+  --color-on-fill: var(--color-on-fill);
+  --color-on-solid: var(--ut-text-on-solid);
+  --color-focus-ring: var(--color-focus-ring);
+  --color-border-strong: var(--color-border-strong);
+  --color-attention: var(--color-attention);
+  --color-attention-muted: var(--color-attention-muted);
+  --color-attention-text: var(--color-attention-text);
+  --color-selected: var(--color-selected);
+  --color-preview-bg: var(--color-preview-bg);
+  /* text-primary, text-status-* and friends as TEXT read the text shades, not the fills
+     (Tailwind's text-* checks --text-color-* before --color-*): 172 text-primary labels
+     were 2.2:1 emerald on white, "Borrar todas" 2.0:1 amber. */
+  --text-color-primary: var(--color-primary-text);
+  --text-color-accent-primary: var(--color-primary-text);
+  --text-color-status-warning: var(--color-status-warning-text);
+  --text-color-status-error: var(--color-status-error-text);
+  --text-color-accent-red: var(--color-status-error-text);
+  --text-color-status-success: var(--color-status-success-text);
+  --text-color-accent-green: var(--color-status-success-text);
+  --text-color-status-info: var(--color-status-info-text);
+  /* Bare text-muted / text-dim (28 uses) were no-ops at body color (2026-10-12). */
+  --text-color-muted: var(--color-text-muted);
+  --text-color-dim: var(--color-text-dim);
+  --color-accent-primary: var(--color-primary);
+  --color-accent-green: var(--color-status-success);
+  --color-accent-red: var(--color-status-error);
+  --color-status-error: var(--color-status-error);
+  --color-status-warning: var(--color-status-warning);
+  --color-status-success: var(--color-status-success);
+  --color-status-info: var(--color-status-info);
+  
+  /* Typography (design spec 2.2, 2026-10-12): sans for chrome, mono only for data (terminal
+     output, paths, branches, commands, kbd). Generates font-ui / font-mono and the
+     text-micro / caption / ui / title / display sizes. */
+  --font-ui: var(--ut-font-ui);
+  --font-mono: var(--ut-font-mono);
+  --text-micro: var(--ut-fs-micro);
+  --text-micro--line-height: var(--ut-lh-micro);
+  --text-caption: var(--ut-fs-caption);
+  --text-caption--line-height: var(--ut-lh-caption);
+  --text-ui: var(--ut-fs-ui);
+  --text-ui--line-height: var(--ut-lh-ui);
+  --text-title: var(--ut-fs-title);
+  --text-title--line-height: var(--ut-lh-title);
+  --text-display: var(--ut-fs-display);
+  --text-display--line-height: var(--ut-lh-display);
+
+  /* Radii (design spec 2.5): rounded-chip (kbd, chips), rounded-ctl (buttons, inputs, icon
+     buttons, rows), rounded-card (cards, popovers, menus, setting groups), rounded-dialog.
+     New names: Tailwind's own rounded / -md / -lg stay as they were (the phone UI uses them). */
+  --radius-chip: var(--ut-r-sm);
+  --radius-ctl: var(--ut-r-md);
+  --radius-card: var(--ut-r-lg);
+  --radius-dialog: var(--ut-r-xl);
+  /* Tailwind's own names, on tokens: bare `rounded` and `rounded-full` are rounded-rem and
+     rounded-pill. */
+  --radius-md: var(--ut-r-rem-md);
+  --radius-lg: var(--ut-r-rem-lg);
+  --radius-xl: var(--ut-r-rem-xl);
+  --radius-2xl: var(--ut-r-rem-2xl);
+  --radius-rem: var(--ut-r-rem-1);
+  --radius-pill: var(--ut-r-full);
+
+  /* Elevation (design spec 2.7): e1 resting cards, e2 popovers / menus / toasts, e3 dialogs. */
+  --shadow-e1: var(--ut-elev-1);
+  --shadow-e2: var(--ut-elev-2);
+  --shadow-e3: var(--ut-elev-3);
+  --shadow-drop-2xl: var(--ut-drop-2xl);
+  --shadow-drop-sm: var(--ut-drop-sm);
+  --shadow-drop-md: var(--ut-drop-md);
+  --shadow-drop-lg: var(--ut-drop-lg);
+  /* The glow family draws nothing since 2026-10-12 (calm by default): kept so existing
+     shadow-glow-* classes and @apply still compile. */
+  --shadow-glow: 0 0 #0000;
+  --shadow-glow-sm: 0 0 #0000;
+  --shadow-glow-lg: 0 0 #0000;
+  --shadow-glow-intense: 0 0 #0000;
+  --shadow-glow-error: 0 0 #0000;
+  --shadow-glow-error-sm: 0 0 #0000;
+  --shadow-glow-error-lg: 0 0 #0000;
+  --shadow-glow-warning: 0 0 #0000;
+  --shadow-glow-warning-sm: 0 0 #0000;
+  --shadow-glow-warning-lg: 0 0 #0000;
+  /* card / card-hover = e1, elevated = e3. */
+  --shadow-card: var(--ut-elev-1);
+  --shadow-card-hover: var(--ut-elev-1);
+  --shadow-elevated: var(--ut-elev-3);
+
+  /* Motion (design spec 2.9): hover/press dur-1, popovers dur-2, dialogs dur-3. */
+  --ease-out: var(--ut-ease-out);
+  --dur-1: var(--ut-dur-1);
+  --dur-2: var(--ut-dur-2);
+  --dur-3: var(--ut-dur-3);
+
+  /* Animations */
+  --animate-pulse-primary: pulsePrimary 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-fade-in: fadeIn 0.2s ease-out;
+  --animate-scale-in: scaleIn 0.2s ease-out;
+}
+
+/*
+ * The safe alternative of the translucent styles (docs/ui-tokens.md). !important because a style
+ * sets these tokens on [data-look="…"], more specific than :root and loaded later.
+ * Asking for less transparency: solid page and surfaces, no backdrop, no blur.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --ut-backdrop: none !important;
+    --ut-page-alpha: 100% !important;
+    --ut-surface-alpha: 100% !important;
+    --ut-panel-alpha: 100% !important;
+    --ut-chrome-alpha: 100% !important;
+    --ut-blur-surface: none !important;
+  }
+}
+/* No backdrop-filter: a translucent sheet over text would be unreadable, so floats go solid. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --ut-panel-alpha: 100% !important;
+    --ut-chrome-alpha: 100% !important;
+    --ut-blur-surface: none !important;
+  }
+}

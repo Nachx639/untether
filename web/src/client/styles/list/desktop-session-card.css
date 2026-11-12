@@ -1,0 +1,335 @@
+@layer components {
+  /* ---- Session card ---- */
+  .ut-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    box-sizing: border-box;
+    border: var(--ut-outline-width) solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-card);
+    box-shadow: var(--ut-surface-edge);
+    overflow: hidden;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    outline: none;
+    transition-property: border-color, background-color, opacity;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+  .ut-card:hover {
+    border-color: var(--color-border-strong);
+  }
+  .ut-card.is-selected {
+    box-shadow: 0 0 0 1.5px var(--color-primary);
+  }
+  .ut-card.is-attention {
+    border-color: var(--color-attention);
+    box-shadow: inset 3px 0 0 var(--color-attention);
+  }
+  .ut-card:focus-visible,
+  .ut-srow:focus-visible {
+    box-shadow: var(--focus-ring);
+  }
+  .ut-card.is-attention:focus-visible {
+    box-shadow: var(--focus-ring), inset 3px 0 0 var(--color-attention);
+  }
+  .ut-card.is-exited {
+    border-style: dashed;
+  }
+  .ut-card.is-exited .ut-card-preview ut-terminal-buffer {
+    filter: saturate(0) opacity(0.55);
+  }
+  .ut-card.is-killing {
+    opacity: 0.6;
+  }
+  .ut-card-head {
+    position: relative;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 12px;
+  }
+  .ut-card-glyph {
+    display: inline-flex;
+    flex: none;
+  }
+  /* Live in colour, finished in grey (2026-10-12): the card's 24 px agent tile takes the
+     accent tint and accent glyph while the session runs, amber when it needs you, grey once
+     exited, with an 8 px state dot in its corner (the colour stays in the tile, never the card). */
+  .ut-card-avatar {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--ut-r-avatar-sm);
+    background: var(--color-avatar-live-bg);
+  }
+  .ut-card-avatar > .ut-agent-glyph,
+  .ut-srow:not(.is-exited) .ut-card-glyph > .ut-agent-glyph {
+    color: var(--color-avatar-live-fg);
+  }
+  .ut-card-dot {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    width: 8px;
+    height: 8px;
+    box-sizing: content-box;
+    border: 2px solid var(--color-surface);
+    border-radius: var(--ut-r-pill);
+    background: var(--color-alive);
+  }
+  .ut-card[data-status='working'] .ut-card-dot {
+    background: var(--color-primary);
+    animation: ut-pulse 1.6s ease-in-out infinite;
+  }
+  .ut-card[data-status='needs-input'] .ut-card-avatar {
+    background: var(--color-avatar-attn-bg);
+  }
+  .ut-card[data-status='needs-input'] .ut-card-avatar > .ut-agent-glyph,
+  .ut-srow[data-status='needs-input'] .ut-card-glyph > .ut-agent-glyph {
+    color: var(--color-avatar-attn-fg);
+  }
+  .ut-card[data-status='needs-input'] .ut-card-dot {
+    background: var(--color-attention);
+  }
+  .ut-card.is-exited .ut-card-avatar {
+    background: var(--color-avatar-off-bg);
+  }
+  .ut-card.is-exited .ut-card-avatar > .ut-agent-glyph,
+  .ut-srow.is-exited .ut-card-glyph > .ut-agent-glyph {
+    color: var(--color-avatar-off-fg);
+  }
+  /* One dot per card (QA 2026-10-12): the avatar's corner dot is the card's status dot, so the
+     status chips in the head ("Te necesita") and meta ("Trabajando", "Inactiva") keep only
+     their label; otherwise a working card showed two pulsing dots and needs-you two amber ones. */
+  .ut-card .ut-status > .ut-dot,
+  .ut-srow .ut-status > .ut-dot {
+    display: none;
+  }
+  .ut-card.is-exited .ut-card-dot {
+    background: var(--color-text-dim);
+  }
+  .ut-card[data-status='exited-error'] .ut-card-dot {
+    background: var(--color-status-error);
+  }
+  .ut-card-title {
+    flex: 1;
+    min-width: 0;
+  }
+  .ut-card-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text);
+    font-size: var(--ut-card-title-size, 13px);
+    line-height: var(--ut-card-title-line, 18px);
+    font-family: var(--ut-card-title-font, inherit);
+    font-weight: var(--ut-card-title-weight, var(--ut-fw-semibold));
+  }
+  .ut-card-rename {
+    height: 26px;
+    padding: 0 6px;
+    font-weight: var(--ut-fw-semibold);
+  }
+  .ut-card-time {
+    flex: none;
+    color: var(--color-text-dim);
+    font-size: 12px;
+    line-height: 16px;
+    white-space: nowrap;
+    transition: opacity var(--dur-1) var(--ease-out);
+  }
+  /* On hover the actions take the time's place in the head's flow, never over the title
+     (2026-11-07: no session row may have text under its actions); the title gives way. */
+  .ut-card-actions {
+    display: none;
+    flex: none;
+    gap: 2px;
+  }
+  .ut-card:hover .ut-card-actions,
+  .ut-card:focus-within .ut-card-actions,
+  .ut-srow:hover .ut-card-actions,
+  .ut-srow:focus-within .ut-card-actions {
+    display: flex;
+  }
+  .ut-card:hover .ut-card-time,
+  .ut-card:focus-within .ut-card-time {
+    display: none;
+  }
+  @media (hover: none) {
+    .ut-card-actions {
+      display: flex;
+    }
+  }
+  .ut-card-kill:hover:not(:disabled) {
+    color: var(--color-status-error-text);
+    background: color-mix(in srgb, var(--color-status-error) 12%, transparent);
+  }
+  .ut-card-killing {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .ut-card-command {
+    flex: none;
+    margin: -8px 12px 6px 36px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 14px;
+  }
+  /* Behind «Más» (2026-11-08): the terminal's last lines, a fixed well. */
+  .ut-card-preview {
+    position: relative;
+    width: auto;
+    flex: none;
+    height: 160px;
+    margin: 0 8px;
+    padding: 6px 8px;
+    border-radius: var(--radius-ctl);
+    background: var(--color-preview-bg);
+    overflow: hidden;
+  }
+  .ut-card-meta {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 12px;
+    min-width: 0;
+    color: var(--color-text-dim);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .ut-card-branch {
+    max-width: 40%;
+  }
+  /* The card's one line (2026-11-08): the state and what the agent does, «Más» at the end. */
+  .ut-card-meta > .ut-status,
+  .ut-card-line {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .ut-card-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-muted);
+  }
+  .ut-card-more {
+    flex: none;
+    margin-left: auto;
+    padding: 2px 6px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: none;
+    color: var(--color-text-dim);
+    font: 500 12px/16px var(--font-ui);
+    cursor: pointer;
+  }
+  .ut-card-more:hover,
+  .ut-card-more[aria-expanded='true'] {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+  /* «Más»: the command, branch, folder and diff, under the preview. */
+  .ut-card-details {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 8px 8px 0;
+    padding: 10px 8px;
+    border-radius: var(--radius-ctl);
+    background: var(--color-bg-tertiary);
+    overflow: hidden;
+  }
+  .ut-card-details > .ut-card-command {
+    margin: 0;
+    max-width: 100%;
+  }
+  .ut-card-details > clickable-path {
+    display: block;
+    max-width: 100%;
+  }
+  .ut-card-details > .ut-card-branch {
+    max-width: 100%;
+  }
+  .ut-card-details > .ut-card-diff {
+    margin-left: 0;
+  }
+  .ut-card-diff {
+    flex: none;
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  /* Middle-ellipsis path (clickable-path variant="middle"). */
+  .ut-path-middle {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+    color: var(--color-text-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 16px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .ut-path-head {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ut-path-tail {
+    flex: none;
+    max-width: 70%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-text-muted);
+  }
+  .ut-path-copy {
+    flex: none;
+    margin-left: 4px;
+    opacity: 0;
+    transition: opacity var(--dur-1) var(--ease-out);
+  }
+  .ut-path-middle:hover {
+    color: var(--color-text-muted);
+  }
+  .ut-path-middle:hover .ut-path-copy {
+    opacity: 1;
+  }
+
+  /* fit="tail" previews: last lines, bottom-anchored, faded on the right. */
+  .vtb-tail {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    -webkit-mask-image: linear-gradient(to right, var(--ut-mask-opaque) 85%, transparent);
+    mask-image: linear-gradient(to right, var(--ut-mask-opaque) 85%, transparent);
+  }
+  .vtb-tail > .terminal-line {
+    flex: none;
+    overflow: hidden;
+    white-space: pre;
+  }
+}

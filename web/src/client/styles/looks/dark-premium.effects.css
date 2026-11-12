@@ -1,0 +1,252 @@
+/* Dark Premium: satin panels, brass edges, gold main actions and a bronze selection, on the
+ * shared paint hooks only. Values live in dark-premium.css. */
+
+html[data-look="dark-premium"] .ut-surface--bar {
+  background-color: var(--ut-session-bar);
+  background-image: var(--ut-bar-fill);
+  box-shadow: var(--ut-bar-relief);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* The arc of light of the recipe's top bar: one static SVG at the top right of the app's headers. */
+html[data-look="dark-premium"] .ut-surface--bar:where(.ut-home-header),
+html[data-look="dark-premium"] .ut-surface--bar:where(.ut-phone-header) {
+  background-image: var(--ut-arc), radial-gradient(60% 120% at 100% 0%, var(--ut-arc-halo), transparent 70%), var(--ut-bar-fill);
+  background-position: right top, right top, 0 0;
+  background-size: auto 100%, 100% 100%, auto;
+  background-repeat: no-repeat, no-repeat, repeat;
+}
+
+html[data-look="dark-premium"] .ut-card,
+html[data-look="dark-premium"] .ut-group,
+html[data-look="dark-premium"] .ut-surface--panel,
+html[data-look="dark-premium"] .ut-surface--detail,
+html[data-look="dark-premium"] .ut-surface--request {
+  background-color: var(--ut-surface-2);
+  background-image: var(--ut-satin);
+  border-color: var(--ut-border);
+  box-shadow: var(--ut-elev-2);
+}
+
+html[data-look="dark-premium"] .ut-surface--request {
+  box-shadow: var(--ut-needs-item-shadow);
+}
+
+html[data-look="dark-premium"] .ut-surface--detail {
+  border-color: var(--ut-detail-edge);
+  border-left: 3px solid var(--ut-danger-text);
+}
+
+html[data-look="dark-premium"] .ut-surface--notice {
+  background-color: var(--ut-banner-bg);
+  background-image: none;
+  border: var(--ut-banner-border);
+  box-shadow: var(--ut-banner-relief);
+}
+
+html[data-look="dark-premium"] .ut-surface--floating,
+html[data-look="dark-premium"] .ut-dialog,
+html[data-look="dark-premium"] .ut-menu,
+html[data-look="dark-premium"] .ut-toast,
+html[data-look="dark-premium"] .ut-tooltip {
+  background-color: var(--ut-surface-2);
+  background-image: var(--ut-satin);
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-look="dark-premium"] .ut-surface--control,
+html[data-look="dark-premium"] .ut-surface--action,
+html[data-look="dark-premium"] .ut-surface--request-action,
+html[data-look="dark-premium"] .ut-btn--secondary,
+html[data-look="dark-premium"] .ut-btn--danger,
+html[data-look="dark-premium"] .ut-chip {
+  background-color: var(--ut-surface-2);
+  background-image: var(--ut-control-sheen);
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-control-relief);
+}
+
+html[data-look="dark-premium"] .ut-surface--request-action,
+html[data-look="dark-premium"] .ut-surface--action {
+  border: 1px solid var(--ut-border-strong);
+  border-radius: var(--ut-action-radius);
+}
+
+/* Embedded controls keep their relief inside their fixed toolbar. */
+html[data-look="dark-premium"] .ut-surface--control {
+  box-shadow: var(--ut-piece-control);
+}
+
+html[data-look="dark-premium"] .ut-btn--danger,
+html[data-look="dark-premium"] .ut-btn--danger-ghost,
+html[data-look="dark-premium"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+html[data-look="dark-premium"] .ut-surface--badge,
+html[data-look="dark-premium"] .ut-badge,
+html[data-look="dark-premium"] .ut-kbd {
+  background-color: var(--ut-surface-2);
+  color: var(--ut-text-muted);
+  box-shadow: inset 0 0 0 1px var(--ut-border), var(--ut-piece-edge);
+}
+
+html[data-look="dark-premium"] .ut-surface--inset,
+html[data-look="dark-premium"] .ut-field,
+html[data-look="dark-premium"] .ut-segmented {
+  background-color: var(--ut-bg-app);
+  background-image: var(--ut-inset-fill);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-field-relief);
+}
+
+/* The «what to do» box is a satin card with an identifiable outline, not a sunken well. */
+html[data-look="dark-premium"] .ut-surface--well {
+  background-color: var(--ut-surface-2);
+  background-image: var(--ut-satin);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-composer-relief);
+}
+
+/* Small ancillary controls stay flat inside their owner: no slab over a card's corner. */
+html[data-look="dark-premium"] .ut-surface--compact,
+html[data-look="dark-premium"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+/* Keep the native select's arrow. */
+html[data-look="dark-premium"] .ut-select {
+  background-color: var(--ut-surface-1);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-field-relief);
+}
+
+html[data-look="dark-premium"] .ut-switch {
+  box-shadow: inset 0 0 0 1px var(--ut-border-strong), var(--ut-field-relief);
+}
+
+/* The record: plain black, no texture over its lines. */
+html[data-look="dark-premium"] .ut-surface--record {
+  background-color: var(--ut-record-bg);
+  background-image: none;
+  box-shadow: inset 0 0 0 1px var(--ut-record-edge), var(--ut-field-relief);
+}
+
+html[data-look="dark-premium"] .ut-surface--selected-row,
+html[data-look="dark-premium"] .ut-surface--selected,
+html[data-look="dark-premium"] .ut-surface--control:where([aria-selected="true"]),
+html[data-look="dark-premium"] .ut-surface--control:where([aria-current="page"]),
+html[data-look="dark-premium"] .ut-surface--control:where([aria-pressed="true"]),
+html[data-look="dark-premium"] .ut-surface--panel:where([aria-pressed="true"]),
+html[data-look="dark-premium"] .ut-surface--badge:where([aria-pressed="true"]),
+html[data-look="dark-premium"] .ut-icon-btn:where([aria-pressed="true"]),
+html[data-look="dark-premium"] .ut-surface--segment:where(.selected) {
+  background-color: var(--ut-surface-selected);
+  background-image: var(--ut-bronze);
+  color: var(--ut-accent-light);
+  box-shadow: inset 0 0 0 1px var(--ut-rim-edge), var(--ut-piece-edge);
+}
+
+html[data-look="dark-premium"] .ut-surface--selected-row {
+  color: var(--ut-text-bright);
+  box-shadow: var(--ut-row-selected-shadow);
+}
+
+/* Gold with dark ink: the main action. It follows the neutral paint so it is never erased. */
+html[data-look="dark-premium"] .ut-surface--primary,
+html[data-look="dark-premium"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: var(--ut-gold);
+  color: var(--ut-text-on-accent);
+  border-color: var(--ut-accent-light);
+  box-shadow: var(--ut-gold-relief);
+}
+
+/* Requests are satin in Astra's recipe; the composer, Nueva and the task's main action own the gold. */
+html[data-look="dark-premium"] .ut-surface--request-action {
+  background-color: var(--ut-surface-2);
+  background-image: var(--ut-control-sheen);
+  color: var(--ut-needs-act-fg);
+  border-color: var(--ut-needs-act-border);
+  box-shadow: var(--ut-control-relief);
+}
+
+@media (hover: hover) {
+  html[data-look="dark-premium"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="dark-premium"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="dark-premium"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="dark-premium"] .ut-surface--control:hover:not(:disabled),
+  html[data-look="dark-premium"] .ut-surface--action:hover:not(:disabled),
+  html[data-look="dark-premium"] .ut-surface--request-action:hover:not(:disabled),
+  html[data-look="dark-premium"] .ut-menu-item:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+    border-color: var(--ut-border-focus);
+    box-shadow: var(--ut-control-hover);
+  }
+  html[data-look="dark-premium"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="dark-premium"] .ut-surface--primary:hover:not(:disabled) {
+    background-color: var(--ut-accent-hover);
+    background-image: var(--ut-gold);
+    color: var(--ut-text-on-accent);
+    box-shadow: var(--ut-gold-relief), var(--ut-effect-glow);
+  }
+}
+
+html[data-look="dark-premium"] .ut-btn:active:not(:disabled),
+html[data-look="dark-premium"] .ut-surface--action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+
+/* Disabled: muted fill and a dashed boundary; the text stays opaque and legible. */
+html[data-look="dark-premium"] .ut-btn:disabled,
+html[data-look="dark-premium"] .ut-icon-btn:disabled,
+html[data-look="dark-premium"] .ut-menu-item:disabled,
+html[data-look="dark-premium"] .ut-field:disabled,
+html[data-look="dark-premium"] .ut-surface--control:disabled,
+html[data-look="dark-premium"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+
+html[data-look="dark-premium"] .ut-btn:disabled,
+html[data-look="dark-premium"] .ut-icon-btn:disabled,
+html[data-look="dark-premium"] .ut-menu-item:disabled,
+html[data-look="dark-premium"] .ut-switch:disabled,
+html[data-look="dark-premium"] .ut-surface--action:disabled {
+  outline: 1px dashed var(--ut-border-strong);
+  outline-offset: -1px;
+}
+
+html[data-look="dark-premium"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  box-shadow: none;
+}
+
+html[data-look="dark-premium"] .ut-switch:disabled::after {
+  background-color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+
+html[data-look="dark-premium"] .ut-btn:focus-visible,
+html[data-look="dark-premium"] .ut-icon-btn:focus-visible,
+html[data-look="dark-premium"] .ut-chip:focus-visible,
+html[data-look="dark-premium"] .ut-menu-item:focus-visible,
+html[data-look="dark-premium"] .ut-switch:focus-visible,
+html[data-look="dark-premium"] .ut-field:focus-visible,
+html[data-look="dark-premium"] .ut-select:focus-visible,
+html[data-look="dark-premium"] .ut-surface--control:focus-visible,
+html[data-look="dark-premium"] .ut-surface--inset:focus-visible,
+html[data-look="dark-premium"] .ut-surface--action:focus-visible,
+html[data-look="dark-premium"] .ut-surface--well:focus-within {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: 3px;
+}

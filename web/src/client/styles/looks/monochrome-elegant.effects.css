@@ -1,0 +1,179 @@
+/* Satin surfaces and silver controls, on shared paint hooks only. Values live in the look. */
+html[data-look="monochrome-elegant"] .ut-surface--bar {
+  background-color: var(--ut-session-bar);
+  background-image: var(--ut-bar-fill);
+  box-shadow: var(--ut-bar-relief);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="monochrome-elegant"] .ut-card,
+html[data-look="monochrome-elegant"] .ut-group,
+html[data-look="monochrome-elegant"] .ut-surface--panel,
+html[data-look="monochrome-elegant"] .ut-surface--detail {
+  background: var(--ut-graphite);
+  border-color: var(--ut-border);
+  box-shadow: var(--ut-elev-2);
+}
+html[data-look="monochrome-elegant"] .ut-surface--detail {
+  border-left: 3px solid var(--ut-accent);
+}
+html[data-look="monochrome-elegant"] .ut-surface--floating,
+html[data-look="monochrome-elegant"] .ut-dialog,
+html[data-look="monochrome-elegant"] .ut-menu,
+html[data-look="monochrome-elegant"] .ut-toast,
+html[data-look="monochrome-elegant"] .ut-tooltip {
+  background: var(--ut-graphite);
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="monochrome-elegant"] .ut-surface--control,
+html[data-look="monochrome-elegant"] .ut-surface--action,
+html[data-look="monochrome-elegant"] .ut-btn--secondary,
+html[data-look="monochrome-elegant"] .ut-btn--danger,
+html[data-look="monochrome-elegant"] .ut-chip {
+  background-color: var(--ut-surface-2);
+  background-image: var(--ut-control-sheen);
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-control-relief);
+}
+/* Embedded controls keep their relief inside their fixed toolbar. */
+html[data-look="monochrome-elegant"] .ut-surface--control {
+  box-shadow: var(--ut-piece-control);
+}
+html[data-look="monochrome-elegant"] .ut-icon-btn,
+html[data-look="monochrome-elegant"] .ut-surface--badge,
+html[data-look="monochrome-elegant"] .ut-badge,
+html[data-look="monochrome-elegant"] .ut-kbd {
+  background: var(--ut-surface-2);
+  color: var(--ut-text-muted);
+  box-shadow: inset 0 0 0 1px var(--ut-border-strong), var(--ut-piece-edge);
+}
+html[data-look="monochrome-elegant"] .ut-surface--inset,
+html[data-look="monochrome-elegant"] .ut-surface--well,
+html[data-look="monochrome-elegant"] .ut-field,
+html[data-look="monochrome-elegant"] .ut-segmented {
+  background: var(--ut-inset-fill);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-field-relief);
+}
+/* Keep the native select's arrow. */
+html[data-look="monochrome-elegant"] .ut-select {
+  background-color: var(--ut-surface-1);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-field-relief);
+}
+html[data-look="monochrome-elegant"] .ut-switch {
+  box-shadow: inset 0 0 0 1px var(--ut-border-strong), var(--ut-field-relief);
+}
+html[data-look="monochrome-elegant"] .ut-surface--record {
+  background: var(--ut-bg-app);
+  box-shadow: inset 0 0 0 1px var(--ut-border-strong), var(--ut-field-relief);
+}
+html[data-look="monochrome-elegant"] .ut-surface--selected-row,
+html[data-look="monochrome-elegant"] .ut-surface--selected,
+html[data-look="monochrome-elegant"] .ut-surface--control:where([aria-selected="true"]),
+html[data-look="monochrome-elegant"] .ut-surface--control:where([aria-current="page"]),
+html[data-look="monochrome-elegant"] .ut-surface--control:where([aria-pressed="true"]),
+html[data-look="monochrome-elegant"] .ut-surface--panel:where([aria-pressed="true"]),
+html[data-look="monochrome-elegant"] .ut-surface--badge:where([aria-pressed="true"]),
+html[data-look="monochrome-elegant"] .ut-icon-btn:where([aria-pressed="true"]) {
+  background: var(--ut-surface-selected);
+  color: var(--ut-text-bright);
+  box-shadow: var(--ut-row-selected-shadow);
+}
+html[data-look="monochrome-elegant"] .ut-surface--primary,
+html[data-look="monochrome-elegant"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: var(--ut-silver);
+  color: var(--ut-text-on-accent);
+  border-color: var(--ut-accent-light);
+  box-shadow: var(--ut-silver-relief);
+}
+@media (hover: hover) {
+  html[data-look="monochrome-elegant"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="monochrome-elegant"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="monochrome-elegant"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="monochrome-elegant"] .ut-surface--control:hover:not(:disabled),
+  html[data-look="monochrome-elegant"] .ut-menu-item:hover:not(:disabled) {
+    background: var(--ut-surface-hover);
+    color: var(--ut-text-bright);
+    border-color: var(--ut-border-strong);
+  }
+  html[data-look="monochrome-elegant"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="monochrome-elegant"] .ut-surface--primary:hover:not(:disabled) {
+    background: var(--ut-accent-hover);
+    color: var(--ut-text-on-accent);
+  }
+}
+html[data-look="monochrome-elegant"] .ut-btn:active:not(:disabled),
+html[data-look="monochrome-elegant"] .ut-surface--action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+html[data-look="monochrome-elegant"] .ut-btn:disabled,
+html[data-look="monochrome-elegant"] .ut-icon-btn:disabled,
+html[data-look="monochrome-elegant"] .ut-menu-item:disabled,
+html[data-look="monochrome-elegant"] .ut-field:disabled,
+html[data-look="monochrome-elegant"] .ut-surface--control:disabled {
+  background: var(--ut-disabled-bg);
+  color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+html[data-look="monochrome-elegant"] .ut-btn:focus-visible,
+html[data-look="monochrome-elegant"] .ut-icon-btn:focus-visible,
+html[data-look="monochrome-elegant"] .ut-chip:focus-visible,
+html[data-look="monochrome-elegant"] .ut-menu-item:focus-visible,
+html[data-look="monochrome-elegant"] .ut-switch:focus-visible,
+html[data-look="monochrome-elegant"] .ut-field:focus-visible,
+html[data-look="monochrome-elegant"] .ut-select:focus-visible,
+html[data-look="monochrome-elegant"] .ut-surface--control:focus-visible,
+html[data-look="monochrome-elegant"] .ut-surface--inset:focus-visible,
+html[data-look="monochrome-elegant"] .ut-surface--action:focus-visible,
+html[data-look="monochrome-elegant"] .ut-surface--well:focus-within {
+  outline: 2px solid var(--ut-focus-ring);
+  outline-offset: 4px;
+}
+
+/* Requests are graphite in Astra's recipe; the compositor/new-task action owns the silver. */
+html[data-look="monochrome-elegant"] .ut-surface--request-action {
+  background-color: var(--ut-surface-2);
+  background-image: var(--ut-control-sheen);
+  color: var(--ut-needs-act-fg);
+  border: 1px solid var(--ut-needs-act-border);
+  border-radius: var(--ut-action-radius);
+  box-shadow: var(--ut-control-relief);
+}
+html[data-look="monochrome-elegant"] .ut-surface--notice {
+  border: var(--ut-banner-border);
+  box-shadow: var(--ut-banner-relief);
+}
+@media (hover: hover) {
+  html[data-look="monochrome-elegant"] .ut-surface--request-action:hover:not(:disabled) {
+    background: var(--ut-surface-hover);
+    color: var(--ut-text);
+  }
+}
+
+html[data-look="monochrome-elegant"] .ut-surface--action {
+  border-radius: var(--ut-action-radius);
+}
+
+/* A patterned boundary distinguishes disabled controls without dimming readable text. */
+html[data-look="monochrome-elegant"] .ut-btn:disabled,
+html[data-look="monochrome-elegant"] .ut-icon-btn:disabled,
+html[data-look="monochrome-elegant"] .ut-menu-item:disabled,
+html[data-look="monochrome-elegant"] .ut-switch:disabled {
+  outline: 1px dashed var(--ut-border-strong);
+  outline-offset: -1px;
+}
+/* Disabled switches retain their on/off position. */
+html[data-look="monochrome-elegant"] .ut-switch:disabled {
+  background: var(--ut-disabled-bg);
+  box-shadow: none;
+}
+html[data-look="monochrome-elegant"] .ut-switch:disabled::after {
+  background: var(--ut-disabled-ink);
+  box-shadow: none;
+}

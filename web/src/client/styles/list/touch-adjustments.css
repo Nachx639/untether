@@ -1,0 +1,156 @@
+/* The Ask box frames its own field: no second focus ring inside it. */
+.ask-claude textarea:focus,
+.ask-claude textarea:focus-visible {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* A phone on its side with little height: the logo alone (its button keeps the name). */
+@media (pointer: coarse) and (max-height: 599px) and (orientation: landscape) {
+  .ut-phone-wordmark {
+    display: none;
+  }
+}
+
+/* "+ Nueva" spelled out where there is room (390 pt and up). */
+@media (pointer: coarse) and (min-width: 390px) and (max-width: 599px) {
+  .ut-tab-new {
+    width: auto;
+    padding: 0 18px 0 14px;
+  }
+  .ut-tab-new-label {
+    display: inline;
+  }
+}
+
+/* Touch: a 44 px hit area for the Claude | Codex segments (36 px track) and the folder chip,
+   without changing how they look. */
+@media (pointer: coarse) {
+  .ask-claude-agent button,
+  .ask-claude-mode,
+  .ask-claude-folder {
+    position: relative;
+  }
+  .ask-claude-mode::before {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+  .ask-claude-agent button::before {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+  .ask-claude-folder::before {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+}
+
+@keyframes psr-pulse-primary {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .psr-dot-working {
+    animation: none;
+  }
+  .phone-search {
+    transition: none;
+  }
+}
+
+/* Touch iPads (list.css cards, 2026-10-12): the card actions sit in the header's flow next to
+   the time instead of covering it, 20 px apart so their 44 px hit areas never overlap. A
+   mouse (pointer: fine) keeps the hover reveal. */
+@media (hover: none) and (pointer: coarse) {
+  .ut-card-actions,
+  .ut-srow .ut-card-actions {
+    gap: 20px;
+    margin-left: 8px;
+    padding: 0 6px;
+  }
+  .ut-card:hover .ut-card-time,
+  .ut-card:focus-within .ut-card-time,
+  .ut-srow:hover .ut-card-time,
+  .ut-srow:focus-within .ut-card-time {
+    display: inline;
+  }
+  .ut-srow .ut-card-time {
+    min-width: 0;
+  }
+}
+
+/* QA 2026-10-12: the folder icon in the Ask box chip is a flex item, and a chip squeezed for
+   room (SE 320, every phone on its side) shrank it to 2-4 px wide. */
+.ask-claude-folder > svg {
+  flex: none;
+}
+
+/* The tool sheet's agent marks ride in the label (session-list.ts showSheet): the same 20 px
+   slot, gap and colour as .psr-sheet-icon, left-aligned like every other sheet. */
+.psr-sheet-group .psr-sheet-item:has(.psr-sheet-glyph) {
+  justify-content: flex-start;
+  text-align: start;
+}
+.psr-sheet-item:has(.psr-sheet-glyph) .psr-sheet-label {
+  flex: 1;
+}
+.psr-sheet-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-inline-end: 14px;
+  vertical-align: -4px;
+  color: var(--color-text-muted);
+}
+.psr-sheet-item:has(.psr-sheet-glyph) .psr-sheet-note {
+  padding-inline-start: 34px;
+}
+
+@media (pointer: coarse) and (max-height: 599px) and (orientation: landscape) {
+  /* A 303 px left column: the folder chip keeps its icon and some letters. */
+  .ask-claude-folder {
+    min-width: calc(14px + 5px + 4ch + 18px);
+  }
+  /* The 36 px header (styles.css --p-header-h): the brand and ⋯ draw at 36 px, not 44, and
+     ::before keeps the 44 pt target (QA 2026-10-12: it measured 45 px). */
+  .ut-phone-brand,
+  .ut-phone-more.ut-icon-btn {
+    position: relative;
+    height: 36px;
+    min-height: 36px;
+  }
+  .ut-phone-brand::before {
+    content: '';
+    position: absolute;
+    inset: -4px 0;
+  }
+  .ut-phone-brand terminal-icon {
+    width: 24px;
+    height: 24px;
+    scale: calc(24 / 28);
+  }
+}
+
+/* An iPhone SE (320): Sí / Siempre / No on one line, not "No" alone on a second one
+   (QA 2026-10-12: the row measured 187 px). Still 44 px tall, 8 px apart. */
+@media (pointer: coarse) and (max-width: 359px) {
+  .psr-choice-row {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .psr-choice {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-inline: 8px;
+  }
+}

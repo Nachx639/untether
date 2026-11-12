@@ -1,0 +1,32 @@
+   Compiling fx v0.1.0 (/tmp/fx/rs)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.51s
+     Running unittests src/lib.rs (target/debug/deps/fx-ca4818941da7a99c)
+
+running 3 tests
+test tests::ok ... ok
+test tests::bad ... FAILED
+test tests::panics ... FAILED
+
+failures:
+
+---- tests::bad stdout ----
+
+thread 'tests::bad' (1234) panicked at src/lib.rs:6:24:
+assertion `left == right` failed: math is off
+  left: 4
+ right: 5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- tests::panics stdout ----
+
+thread 'tests::panics' (1234) panicked at src/lib.rs:7:27:
+boom
+
+
+failures:
+    tests::bad
+    tests::panics
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

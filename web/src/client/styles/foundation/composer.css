@@ -1,0 +1,243 @@
+/* "Ask Claude…" on the phone home screen (ask-claude-box). */
+.ask-claude {
+  position: var(--ut-composer-position, static);
+  margin: 0 0 var(--ut-composer-gap, 12px);
+  padding: var(--ut-composer-pad, 10px 12px 8px);
+  border-radius: var(--ut-composer-radius, var(--ut-r-xl));
+  background: var(--ut-composer-bg, var(--color-bg-tertiary));
+  background-image: var(--ut-grain);
+  box-shadow: var(--ut-composer-relief);
+  border: 1px solid var(--ut-composer-border, var(--color-border));
+  font-family: var(--font-ui);
+}
+/* A speech bubble's tail, for a style that draws the box as one (--ut-composer-tail: ""): a
+   decoration with no hit area, in the box's own paper and ink. No style, no tail. */
+.ask-claude::after {
+  content: var(--ut-composer-tail, none);
+  position: absolute;
+  bottom: -14px;
+  inset-inline-start: 40px;
+  width: 20px;
+  height: 20px;
+  transform: skew(-25deg);
+  background: var(--ut-composer-bg, var(--color-bg-tertiary));
+  border-bottom: 3px solid var(--ut-composer-border, var(--color-border));
+  border-inline-end: 3px solid var(--ut-composer-border, var(--color-border));
+  pointer-events: none;
+}
+.ask-claude:focus-within {
+  border-color: var(--color-primary);
+}
+.ask-claude textarea {
+  display: block;
+  width: 100%;
+  min-height: var(--ut-composer-input-h, 24px);
+  max-height: 140px;
+  resize: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text);
+  font-family: var(--ut-composer-font, inherit);
+  font-size: var(--ut-composer-size, max(16px, 1rem));
+  line-height: 1.4;
+}
+.ask-claude textarea::placeholder {
+  color: var(--color-text-dim);
+}
+.ask-claude-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+.ask-claude-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+/* Claude / Codex picker: a two-option segmented control. */
+.ask-claude-agent {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: var(--ut-r-pill);
+  background: var(--ut-segment-bg, var(--color-bg-secondary));
+}
+.ask-claude-agent button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 2px 10px;
+  border-radius: var(--ut-segment-radius, var(--ut-r-pill));
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: var(--ut-fw-medium);
+}
+.ask-claude-agent button.selected {
+  background: var(--ut-segment-selected-bg, var(--color-primary));
+  color: var(--ut-segment-selected-ink, var(--color-on-fill));
+  /* Desktop had no shadow. The list.css import below supplies the phone's shadow-e1 fallback. */
+  box-shadow: var(--ut-segment-selected-shadow, none);
+}
+/* A style can outline the picker and mark the chosen agent with more than its fill
+   (Material You's check, 2026-11-10). Neutral: no outline, no mark. */
+.ask-claude-agent {
+  box-shadow: var(--ut-segment-outline, none);
+}
+/* ::after, placed first: ::before is the touch hit area (list.css). */
+.ask-claude-agent button.selected::after {
+  content: var(--ut-segment-check, none);
+  order: -1;
+  display: inline-flex;
+  margin-inline-end: 6px;
+}
+.ask-agent-mark {
+  display: inline-flex;
+}
+/* The folder chip comes first when the row is short (2026-10-04, c799c532): below
+   AGENT_MARKS_BELOW_PX (ask-claude-box.ts) of room left of ⏱/mic/send, the picker renders the
+   agents' marks instead of their names (one or the other, never both); the chosen agent is still
+   spelled out in the placeholder and the send button, and VoiceOver reads the names. */
+.ask-claude-agent.marks button {
+  min-width: 34px;
+  padding: 2px 9px;
+}
+/* It names the folder (not its path): the system font fits a name like "qa-trust-3" in
+   the room an iPhone SE leaves it, where the monospace one cut it to "qa-tru…". */
+.ask-claude-folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 4px 9px;
+  border-radius: var(--ut-r-pill);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+  font: 500 0.8125rem var(--font-ui);
+}
+.ask-claude-folder bdi {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Tarea / Sesión (P6): what the text becomes in a repository. Tarea is tinted with the accent.
+   On a phone only its icon shows (a branch for Tarea, a terminal for Sesión; the placeholder and
+   aria-label say which): with the label the folder chip kept no letters at 390 pt. */
+.ask-claude-mode {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 9px;
+  border-radius: var(--ut-r-pill);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+  font: 500 0.8125rem var(--font-ui);
+}
+.ask-claude-mode.task {
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  color: var(--ut-accent-icon);
+}
+.ask-claude-mode > svg {
+  flex: none;
+}
+@media (max-width: 429px) {
+  .ask-claude-mode {
+    min-width: 34px;
+    justify-content: center;
+    padding: 4px 9px;
+  }
+  .ask-claude-mode-label {
+    display: none;
+  }
+}
+/* An iPhone SE leaves the folder chip little room in this row: tighter spacing gives its
+   folder name some 18px (about three letters) back. */
+@media (max-width: 380px) {
+  .ask-claude-bar,
+  .ask-claude-actions {
+    gap: 6px;
+  }
+  .ask-claude-start {
+    gap: 4px;
+  }
+  .ask-claude-agent button {
+    padding: 2px 7px;
+  }
+}
+.ask-claude-send {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ut-action-radius, var(--ut-r-circle));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: var(--color-on-fill);
+}
+.ask-claude-send:disabled {
+  /* A white circle with a dim arrow (5.3:1), not the green one at 40% (1.5:1). */
+  background: var(--color-bg-elevated);
+  color: var(--color-text-dim);
+}
+.ask-claude-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ask-claude-mic {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ut-r-circle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+}
+.ask-claude-note {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: var(--ut-r-lg);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--color-text);
+  background: var(--color-bg-tertiary);
+}
+.ask-claude-note.active {
+  color: var(--color-status-error-text);
+  background: color-mix(in srgb, var(--color-status-error) 10%, transparent);
+}
+.ask-claude-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--ut-r-circle);
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: ask-claude-spin 0.8s linear infinite;
+}
+@keyframes ask-claude-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ask-claude-mic.listening {
+  background: var(--color-status-error);
+  color: var(--ut-text-on-solid);
+}
+.phone-search-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--color-text-dim);
+  font: 0.9375rem var(--font-ui);
+}

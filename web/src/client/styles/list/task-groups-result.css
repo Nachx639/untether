@@ -1,0 +1,122 @@
+/* A parallel group ("N intentos"): its attempts under one header, letters A-D on the rows. */
+.tsk-attempts {
+  border-bottom: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-tertiary) 45%, var(--color-bg));
+}
+.tsk-attempts-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px var(--p-gutter, 16px) 0;
+  color: var(--color-text-dim);
+  font: 600 var(--p-text-micro, 12px) / 16px var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tsk-attempts-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: var(--ut-fw-medium);
+}
+.tsk-attempts .tsk {
+  background: transparent;
+  border-bottom: 0;
+}
+.tsk-attempts .tsk + .tsk {
+  border-top: 1px dashed var(--color-border-light);
+}
+.tsk-grid .tsk-attempts {
+  grid-column: 1 / -1;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card, 12px);
+  display: grid;
+  grid-template-columns: var(--ut-list-columns, repeat(auto-fill, minmax(min(100%, 280px), 1fr)));
+  gap: 0 12px;
+  padding-bottom: 8px;
+}
+.tsk-grid .tsk-attempts-head {
+  grid-column: 1 / -1;
+  padding: 8px 12px 0;
+}
+.tsk-grid .tsk-attempts .tsk--card {
+  border: 0;
+  background: transparent;
+}
+.psr-sheet-desc {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-dim);
+  font: 400 13px/1.35 var(--font-ui);
+  white-space: normal;
+}
+
+/* «Nuevo proyecto» under the project list (new-project-sheet.ts). Its own class: as .prj-new
+   its margins also fell on every header's "+ Tarea", 32 px the project's name never got
+   (2026-11-10). */
+.prj-new-project {
+  align-self: flex-start;
+  margin: 8px 16px 4px;
+}
+/* The agent's structured result (`ut task done --result`): outcome, mismatch, its lists. */
+.tsk-result {
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font: 400 13px/1.35 var(--font-ui);
+}
+.tsk-result-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.tsk-result-label {
+  flex: none;
+  font-weight: var(--ut-fw-semibold);
+}
+.tsk-result-outcome,
+.tsk-result-failed {
+  flex: none;
+  padding: 0 6px;
+  border-radius: var(--ut-r-md);
+  background: var(--color-bg-tertiary);
+  font: 600 11px/16px var(--font-ui);
+}
+.tsk-result-outcome--partial,
+.tsk-result-outcome--blocked,
+.tsk-result-failed {
+  background: var(--color-attention);
+  color: var(--color-on-fill);
+}
+.tsk-result-mismatch {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+  color: var(--color-attention-text);
+  font-weight: var(--ut-fw-semibold);
+}
+.tsk-result-mismatch-detail {
+  color: var(--color-text-dim);
+  font: 400 12px/16px var(--font-ui);
+  word-break: break-word;
+}
+.tsk-result-group {
+  margin-top: 4px;
+}
+.tsk-result-group > summary {
+  cursor: pointer;
+  font-weight: var(--ut-fw-semibold);
+}
+.tsk-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 0;
+  padding: 0 0 0 16px;
+  word-break: break-word;
+}

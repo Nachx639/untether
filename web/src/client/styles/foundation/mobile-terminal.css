@@ -1,0 +1,108 @@
+/* ===== Phase 1: Mobile Terminal Layout ===== */
+
+/* Action bar for special keys - sticks to bottom */
+.mobile-action-bar {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background-color: var(--ut-surface-1);
+  border-top: 1px solid var(--color-border);
+  /* Add safe area support */
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Smooth transitions */
+  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+/* Hide action bar when not needed */
+.mobile-action-bar.hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Terminal viewport adjustments for mobile */
+@media (max-width: 768px) {
+  /* Remove any transforms on terminal area */
+  .terminal-area {
+    transform: none !important;
+    transition: none !important;
+  }
+  
+  /* Disable the quickkeys transform */
+  .terminal-area[data-quickkeys-visible="true"] {
+    transform: none !important;
+  }
+  
+  /* Remove extra height and negative margins */
+  .terminal-area ut-terminal {
+    height: 100% !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+}
+
+/* Action bar special keys */
+
+/* Scrollable action keys container */
+
+/* Mobile terminal text overflow handling */
+@media (max-width: 768px) {
+  /* Force terminal lines to wrap on mobile */
+  .terminal-line {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    overflow-wrap: break-word !important;
+    max-width: 100vw !important;
+  }
+  
+  /* Ensure terminal container respects viewport */
+  .terminal-container {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    word-wrap: break-word !important;
+  }
+  
+  /* Alternative: Scale terminal content to fit */
+  .terminal-container.scale-to-fit {
+    transform-origin: top left;
+    width: max-content;
+  }
+  
+  /* Ensure chars don't overflow their containers */
+  .terminal-char {
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+}
+
+/* Landscape adjustments */
+@media (max-width: 768px) and (orientation: landscape) {
+  .mobile-action-bar {
+    /* Smaller action bar in landscape */
+    padding: 0.25rem;
+  }
+  
+}
+
+/* Prevent scrollable modal/list content from chaining its scroll to the page
+ * background when it hits a boundary (iOS Safari/iPad). `contain` keeps the
+ * inner scroll working but stops the gesture from leaking to parents. */
+.overflow-y-auto,
+.overflow-auto,
+.overflow-y-scroll {
+  overscroll-behavior: contain;
+}
+
+/* iOS (Safari and Chrome) zooms the whole page when a field with text under 16px gets
+ * focus, pushing modals such as New Session off the right edge. Keep form fields at 16px
+ * on every touch screen; pinch zoom stays available. No max-width: an iPad at 820-1024 px
+ * zoomed into the settings and create fields too (2026-10-12, phone-spec §2). */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    /* Never under 16px (iOS zooms in), larger with the system text size. */
+    font-size: max(16px, 1rem) !important;
+  }
+}

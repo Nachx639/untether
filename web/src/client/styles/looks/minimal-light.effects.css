@@ -1,0 +1,83 @@
+/* Shared paint only; density lives in the values file and the owning shared pieces. */
+html[data-look="minimal-light"] .ut-card {
+  background: var(--ut-bg-app);
+  border: 0;
+  border-bottom: 1px solid var(--ut-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-look="minimal-light"] .ut-surface--floating,
+html[data-look="minimal-light"] .ut-dialog,
+html[data-look="minimal-light"] .ut-menu,
+html[data-look="minimal-light"] .ut-toast,
+html[data-look="minimal-light"] .ut-tooltip {
+  background: var(--ut-surface-raised);
+  color: var(--ut-text);
+  outline: 1px solid var(--ut-border);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="minimal-light"] .ut-surface--detail {
+  background: var(--ut-surface-2);
+  outline: 1px solid var(--ut-border);
+}
+html[data-look="minimal-light"] .ut-surface--inset,
+html[data-look="minimal-light"] .ut-field,
+html[data-look="minimal-light"] .ut-select {
+  background-color: var(--ut-surface-2);
+  border-color: var(--ut-border-strong);
+  box-shadow: none;
+}
+html[data-look="minimal-light"] .ut-btn--secondary {
+  background: var(--ut-bg-app);
+  border-color: var(--ut-border-strong);
+}
+html[data-look="minimal-light"] .ut-btn--primary {
+  border-color: var(--ut-accent-strong);
+}
+html[data-look="minimal-light"] .ut-btn--danger {
+  background: var(--ut-bg-app);
+  border-color: var(--ut-border-strong);
+  color: var(--ut-danger-text);
+}
+html[data-look="minimal-light"] .ut-btn--secondary:hover:not(:disabled),
+html[data-look="minimal-light"] .ut-btn--danger:hover:not(:disabled) {
+  background: var(--ut-surface-hover);
+  border-color: var(--ut-text);
+}
+html[data-look="minimal-light"] .ut-btn--primary:hover:not(:disabled) {
+  background: var(--ut-accent-hover);
+}
+html[data-look="minimal-light"] .ut-btn--primary:active:not(:disabled) {
+  background: var(--ut-accent-pressed);
+}
+html[data-look="minimal-light"] .ut-btn:focus-visible,
+html[data-look="minimal-light"] .ut-icon-btn:focus-visible,
+html[data-look="minimal-light"] .ut-chip:focus-visible,
+html[data-look="minimal-light"] .ut-menu-item:focus-visible,
+html[data-look="minimal-light"] .ut-field:focus-visible,
+html[data-look="minimal-light"] .ut-select:focus-visible,
+html[data-look="minimal-light"] .ut-surface--control:focus-visible,
+html[data-look="minimal-light"] .ut-surface--inset:focus-visible {
+  outline: 2px solid var(--ut-focus-ring);
+  outline-offset: 4px;
+  box-shadow: none;
+}
+
+html[data-look="minimal-light"] .ut-btn--secondary:active:not(:disabled),
+html[data-look="minimal-light"] .ut-btn--ghost:active:not(:disabled) {
+  background: var(--ut-control-pressed-bg);
+}
+html[data-look="minimal-light"] .ut-surface--action:focus-visible,
+html[data-look="minimal-light"] .ut-surface--well:focus-within {
+  outline: 2px solid var(--ut-focus-ring);
+  outline-offset: 4px;
+  box-shadow: none;
+}
+
+/* Notices remain open rows, even when they share the detail surface with a task. */
+html[data-look="minimal-light"] .ut-surface--notice {
+  background: var(--ut-bg-app);
+  outline: none;
+}

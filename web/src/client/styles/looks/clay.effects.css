@@ -1,0 +1,262 @@
+/*
+ * Clay: puffed lumps of plasticine on the shared pieces only (clay.css holds the values). Light
+ * from the top left; a pressed button inverts its relief and sinks (--ut-press-offset, styles.css).
+ */
+html[data-look="clay"] .ut-btn--primary,
+html[data-look="clay"] .ut-btn--secondary,
+html[data-look="clay"] .ut-btn--danger,
+html[data-look="clay"] .ut-chip {
+  background-image: var(--ut-clay-grain);
+  border-radius: var(--ut-lump-control);
+  box-shadow: var(--ut-control-relief);
+}
+html[data-look="clay"] .ut-btn--primary {
+  border-color: var(--ut-accent-strong);
+}
+html[data-look="clay"] .ut-btn--secondary {
+  border-color: var(--ut-border-strong);
+}
+html[data-look="clay"] .ut-btn--primary:active:not(:disabled),
+html[data-look="clay"] .ut-btn--secondary:active:not(:disabled),
+html[data-look="clay"] .ut-btn--danger:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+html[data-look="clay"] .ut-btn--primary:disabled,
+html[data-look="clay"] .ut-btn--secondary:disabled,
+html[data-look="clay"] .ut-btn--danger:disabled {
+  box-shadow: var(--ut-control-pressed);
+}
+html[data-look="clay"] .ut-btn--primary:focus-visible,
+html[data-look="clay"] .ut-btn--secondary:focus-visible,
+html[data-look="clay"] .ut-btn--danger:focus-visible,
+html[data-look="clay"] .ut-chip:focus-visible {
+  box-shadow: var(--ut-control-relief), var(--focus-ring);
+}
+html[data-look="clay"] .ut-field,
+html[data-look="clay"] .ut-select,
+html[data-look="clay"] .ut-segmented {
+  background-image: var(--ut-clay-grain);
+  box-shadow: var(--ut-field-relief);
+}
+html[data-look="clay"] .ut-field:focus,
+html[data-look="clay"] .ut-select:focus-visible {
+  box-shadow: var(--ut-field-relief), var(--focus-ring);
+}
+html[data-look="clay"] .ut-card,
+html[data-look="clay"] .ut-dialog,
+html[data-look="clay"] .ut-menu,
+html[data-look="clay"] .ut-toast {
+  background-image: var(--ut-clay-grain);
+  border-radius: var(--ut-lump-card);
+}
+html[data-look="clay"] .ut-switch {
+  box-shadow: var(--ut-field-relief);
+}
+
+/* Both tiles are blended with the background alone, never the content. */
+html[data-look="clay"] .ut-btn--primary,
+html[data-look="clay"] .ut-btn--secondary,
+html[data-look="clay"] .ut-chip,
+html[data-look="clay"] .ut-field,
+html[data-look="clay"] .ut-select,
+html[data-look="clay"] .ut-segmented,
+html[data-look="clay"] .ut-card,
+html[data-look="clay"] .ut-dialog,
+html[data-look="clay"] .ut-menu,
+html[data-look="clay"] .ut-toast {
+  background-image: var(--ut-clay-grain);
+  background-size: var(--ut-material-size);
+  background-blend-mode: var(--ut-material-blend);
+}
+html[data-look="clay"] .ut-surface--bar {
+  background-color: var(--ut-status-bar-bg);
+  border-radius: var(--ut-bar-radius);
+  box-shadow: var(--ut-bar-relief);
+  backdrop-filter: var(--ut-header-blur);
+  -webkit-backdrop-filter: var(--ut-header-blur);
+}
+html[data-look="clay"] .ut-surface--action {
+  background-color: var(--ut-surface-1);
+  border-radius: var(--ut-lump-control);
+  box-shadow: var(--ut-control-relief);
+}
+html[data-look="clay"] .ut-surface--detail {
+  background-color: var(--ut-row-failed-bg);
+  box-shadow: var(--ut-row-shadow);
+}
+
+html[data-look="clay"] .ut-surface--working {
+  background-color: var(--ut-row-working-bg);
+}
+html[data-look="clay"] .ut-surface--waiting,
+html[data-look="clay"] .ut-surface--needs-input,
+html[data-look="clay"] .ut-surface--needs {
+  background-color: var(--ut-row-needs-bg);
+}
+html[data-look="clay"] .ut-surface--idle,
+html[data-look="clay"] .ut-surface--shell,
+html[data-look="clay"] .ut-surface--ready {
+  background-color: var(--ut-row-ready-bg);
+}
+html[data-look="clay"] .ut-surface--failed {
+  background-color: var(--ut-row-failed-bg);
+}
+
+html[data-look="clay"] .ut-surface--material::after {
+  background-color: inherit;
+  background-image: var(--ut-grain-strong);
+  background-size: var(--ut-material-size);
+  background-origin: border-box;
+  background-blend-mode: soft-light, multiply;
+}
+
+html[data-look="clay"] .ut-surface--action::after {
+  background-image: var(--ut-clay-grain);
+}
+
+html[data-look="clay"] .ut-surface--record {
+  background-color: var(--ut-row-working-bg);
+}
+
+
+/* Shared paint-only pieces: floating UI uses the app palette, never terminal --ut-float-*. */
+html[data-look="clay"] .ut-surface--floating,
+html[data-look="clay"] .ut-dialog,
+html[data-look="clay"] .ut-menu,
+html[data-look="clay"] .ut-toast,
+html[data-look="clay"] .ut-tooltip {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-piece-grain);
+  background-size: var(--ut-piece-grain-size);
+  background-repeat: repeat;
+  background-blend-mode: var(--ut-piece-grain-blend);
+  /* The elevation token already paints an outline. Adding a layout border here shrank
+     full-height sheets by 2 px and made WebKit's bottom edge alternate between frames. */
+  box-shadow: var(--ut-elev-3);
+  color: var(--ut-text);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="clay"] .ut-surface--panel,
+html[data-look="clay"] .ut-row {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-piece-grain);
+  background-size: var(--ut-piece-grain-size);
+  background-blend-mode: var(--ut-piece-grain-blend);
+  box-shadow: var(--ut-piece-raised);
+}
+html[data-look="clay"] .ut-surface--control,
+html[data-look="clay"] .ut-icon-btn,
+html[data-look="clay"] .ut-btn--ghost,
+html[data-look="clay"] .ut-btn--danger-ghost,
+html[data-look="clay"] .ut-menu-item,
+html[data-look="clay"] .ut-surface--badge,
+html[data-look="clay"] .ut-badge,
+html[data-look="clay"] .ut-kbd,
+html[data-look="clay"] .ut-switch::after {
+  background-image: var(--ut-piece-grain);
+  background-size: var(--ut-piece-grain-size);
+  background-blend-mode: var(--ut-piece-grain-blend);
+  border-radius: var(--ut-lump-control);
+  box-shadow: var(--ut-piece-control);
+}
+html[data-look="clay"] .ut-surface--inset,
+html[data-look="clay"] .ut-switch {
+  background-image: var(--ut-piece-grain);
+  background-size: var(--ut-piece-grain-size);
+  background-blend-mode: var(--ut-piece-grain-blend);
+  box-shadow: var(--ut-piece-inset);
+}
+html[data-look="clay"] .ut-surface--inset {
+  background-color: var(--ut-surface-1);
+}
+html[data-look="clay"] .ut-surface--control:focus-visible,
+html[data-look="clay"] .ut-icon-btn:focus-visible,
+html[data-look="clay"] .ut-menu-item:focus-visible {
+  box-shadow: var(--ut-piece-control), var(--focus-ring);
+}
+html[data-look="clay"] .ut-surface--inset:focus-visible {
+  box-shadow: var(--ut-piece-inset), var(--focus-ring);
+}
+/* Preserve the select's affordance; its grain must tile, not inherit the arrow's no-repeat. */
+html[data-look="clay"] .ut-select {
+  background-image: var(--ut-select-arrow), var(--ut-clay-grain);
+  background-size: 14px, var(--ut-material-size);
+  background-position: right 0.625rem center, 0 0, 0 0;
+  background-repeat: no-repeat, repeat, repeat;
+  background-blend-mode: normal, soft-light, soft-light;
+}
+
+/* Opaque cream beneath the grain: blending a tile over transparent paint makes it silver. */
+html[data-look="clay"] .ut-surface--control,
+html[data-look="clay"] .ut-surface--badge,
+html[data-look="clay"] .ut-icon-btn,
+html[data-look="clay"] .ut-btn--ghost,
+html[data-look="clay"] .ut-btn--danger-ghost,
+html[data-look="clay"] .ut-menu-item {
+  background-color: var(--ut-surface-1);
+}
+html[data-look="clay"] .ut-surface--material {
+  background-image: none;
+}
+
+/* Section labels and large panels stay quiet; the colored rows retain their full material. */
+html[data-look="clay"] .ut-surface--floating,
+html[data-look="clay"] .ut-dialog {
+  background-color: var(--ut-bg-app);
+}
+html[data-look="clay"] .ut-surface--panel::after,
+html[data-look="clay"] .ut-dialog::after,
+html[data-look="clay"] .ut-surface--floating::after {
+  background-image: var(--ut-piece-grain);
+}
+html[data-look="clay"] .ut-icon-btn,
+html[data-look="clay"] .ut-surface--compact {
+  box-shadow: var(--ut-control-relief-small);
+}
+html[data-look="clay"] .ut-surface--well {
+  background-color: var(--ut-well-fill);
+  background-image: var(--ut-well-grain);
+  box-shadow: var(--ut-field-relief);
+}
+html[data-look="clay"] .ut-surface--well::after {
+  background-image: var(--ut-well-grain);
+  border-image-source: var(--ut-well-edge);
+}
+/* State paint follows neutral paint, including controls portalled outside their owner. */
+html[data-look="clay"] .ut-surface--selected,
+html[data-look="clay"] .ut-surface--control:where([aria-selected="true"]),
+html[data-look="clay"] .ut-surface--control:where([aria-current="page"]),
+html[data-look="clay"] .ut-surface--panel:where([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+}
+html[data-look="clay"] .ut-surface--primary {
+  background-color: var(--ut-accent);
+  color: var(--ut-text-on-accent);
+}
+
+/* Raster nine-slice corners do not follow the host's elliptical radius in WebKit.
+   The inherited-radius inset rim keeps the same material without a second contour. */
+html[data-look="clay"] .ut-surface--material::after {
+  border: 0;
+  border-image-source: none;
+  box-shadow: var(--ut-piece-edge);
+}
+html[data-look="clay"] .ut-surface--bar::after,
+html[data-look="clay"] .ut-surface--well::after {
+  background-color: transparent;
+  box-shadow: none;
+}
+html[data-look="clay"] .ut-icon-btn:where([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+}
+
+html[data-look="clay"] .ut-surface--bar::after { background-image: none; }
+html[data-look="clay"] .ut-surface--floating:where(button) {
+  background-color: var(--ut-surface-raised);
+  box-shadow: var(--ut-control-relief-small);
+}
+html[data-look="clay"] .ut-surface--badge:where([aria-pressed="true"]),
+html[data-look="clay"] .ut-surface--control:where([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+}

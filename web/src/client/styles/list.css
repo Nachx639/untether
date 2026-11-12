@@ -1,0 +1,38 @@
+/*! ut-area:list (the ! keeps this marker in public/bundle/styles.css) */
+/* Home grid, session cards and sidebar rows (session-list, session-card, repository-header).
+   Owned by the list area, imported at the end of styles.css so these rules come after the
+   foundation ones. Legacy blocks moved verbatim from styles.css (2026-10-12): layered rules
+   stay inside @layer components, unlayered ones outside it, as they were. */
+
+/* One file per piece or zone of the list, in the order of the cascade: a change to one piece
+   edits its own file, and two tasks touching different pieces never meet in the same lines
+   (2026-11-11). A new piece is a new file and its line here, where its rules belong in the
+   order. The desktop-* files share one `@layer components`, the phone-* files one
+   `@media` (the phone's): each file opens and closes it for itself, with the same condition. */
+@import "./list/grid-animations.css";
+@import "./list/desktop-toolbar.css";
+@import "./list/desktop-needs-you.css";
+@import "./list/desktop-project-header.css";
+@import "./list/desktop-session-card.css";
+@import "./list/desktop-list-view.css";
+@import "./list/sidebar-rows.css";
+@import "./list/drag-drop.css";
+@import "./list/phone-container.css";
+@import "./list/phone-needs-you.css";
+@import "./list/phone-session-row.css";
+@import "./list/phone-sections-search.css";
+@import "./list/phone-notifications.css";
+@import "./list/phone-tab-bar.css";
+@import "./list/phone-composer.css";
+@import "./list/phone-empty-landscape.css";
+@import "./list/sheet-items.css";
+@import "./list/touch-adjustments.css";
+@import "./list/project-header.css";
+@import "./list/orchestrator.css";
+@import "./list/task-row.css";
+@import "./list/task-details.css";
+@import "./list/task-actions-cards.css";
+@import "./list/task-sheets.css";
+@import "./list/git-init-sheet.css";
+@import "./list/task-groups-result.css";
+@import "./list/row-density.css";

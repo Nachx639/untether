@@ -1,0 +1,40 @@
+# Xcode
+.DS_Store
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+*.xcscmblueprint
+*.playground
+
+# Node.js build cache
+.build-cache/
+
+# Old location (can be removed)
+Untether/Resources/node/
+Untether/Resources/node-server/
+
+# Local development configuration
+Untether/Local.xcconfig
+
+# Build output
+build_output.txt
+
+# Release state - temporary file
+
+# Web content hash - build-time generated file
+.web-content-hash
+
+# Private keys - NEVER commit these!
+*.pem
+private/

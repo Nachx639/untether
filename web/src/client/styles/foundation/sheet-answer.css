@@ -1,0 +1,343 @@
+/* Answer sheet: Claude's waiting prompt from a push or the list (answer-sheet.ts). A content
+   sheet (phone-spec §3.2/§3.6/§4.4, 2026-10-12): full width, grabber, safe areas inside its own
+   background; options in the one prompt-option anatomy (number badge, option 1 filled). */
+.ans-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: var(--ut-overlay-medium);
+  animation: fadeIn 160ms ease-out;
+}
+.ans-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: calc(100dvh - 8px - env(safe-area-inset-top, 0px));
+  max-width: 560px;
+  margin: 0 auto;
+  z-index: 2001;
+  display: flex;
+  flex-direction: column;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  border-radius: var(--radius-dialog, 14px) var(--radius-dialog, 14px) 0 0;
+  overflow: hidden;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  box-shadow: var(--shadow-e3);
+  font-family: var(--font-ui);
+  transform: translateY(105%);
+  transition: transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.ans-sheet.open {
+  transform: translateY(0);
+}
+.ans-sheet:focus {
+  outline: none;
+}
+.ans-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 12px 20px;
+}
+.ans-head-text {
+  min-width: 0;
+  padding-top: 2px;
+}
+.ans-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  line-height: 1.333;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-attention-text);
+}
+.ans-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.294;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-text-bright);
+  overflow-wrap: anywhere;
+}
+.ans-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.385;
+  color: var(--color-text-dim);
+  overflow-wrap: anywhere;
+}
+.ans-x.ut-icon-btn {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-top: -4px;
+  border-radius: var(--ut-r-pill);
+}
+.ans-x.ut-icon-btn::before {
+  inset: 0;
+}
+.ans-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* What the menu is about: the label as a sans eyebrow, the command mono (data). */
+.ans-detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ans-detail-label {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.333;
+  font-weight: var(--ut-fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+  overflow-wrap: anywhere;
+}
+.ans-detail {
+  padding: 8px 10px;
+  border-radius: var(--radius-ctl, 6px);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.385;
+  max-height: calc(18px * 3 + 16px);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.ans-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ans-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 14px 10px 12px;
+  border-radius: var(--ut-r-12);
+  text-align: start;
+  font-size: 1rem;
+  line-height: 1.312;
+  color: var(--color-text);
+  background: var(--color-bg-tertiary);
+  border: 0;
+  overflow-wrap: anywhere;
+  touch-action: manipulation;
+}
+.ans-choice--primary {
+  background: var(--color-primary);
+  color: var(--color-on-fill);
+  font-weight: var(--ut-fw-semibold);
+}
+.ans-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--ut-r-md);
+  font-size: 0.8125rem;
+  font-weight: var(--ut-fw-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  background: var(--color-bg-elevated);
+}
+.ans-choice--primary .ans-num {
+  color: var(--color-on-fill);
+  background: color-mix(in srgb, var(--color-on-fill) 18%, transparent);
+}
+.ans-reply {
+  display: flex;
+  gap: 8px;
+}
+.ans-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: var(--ut-r-12);
+  font-size: max(16px, 1rem);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+}
+.ans-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 48px;
+  min-height: 48px;
+  border-radius: var(--ut-r-12);
+  color: var(--color-on-fill);
+  background: var(--color-primary);
+  touch-action: manipulation;
+}
+.ans-sheet .ans-send:disabled {
+  opacity: 1;
+  color: var(--color-text-dim);
+  background: var(--color-bg-tertiary);
+}
+.ans-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.385;
+  color: var(--color-text-dim);
+}
+.ans-error {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-status-error-text);
+}
+/* The server's own (English) answer behind an error, folded away («Detalles»). */
+.ans-error-details {
+  margin: 4px 0 0;
+  color: var(--color-text-dim);
+  font-size: 0.8125rem;
+}
+.ans-error-details > summary {
+  cursor: pointer;
+}
+.ans-error-details > code {
+  display: block;
+  margin-top: 4px;
+  font: 400 0.75rem/1.45 var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ans-gone {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.333;
+  color: var(--color-text-muted);
+}
+.ans-foot {
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--color-border);
+}
+.ans-open {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--ut-r-12);
+  font-size: 1.0625rem;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-text);
+  background: var(--color-bg-tertiary);
+  touch-action: manipulation;
+}
+.ans-sheet button:disabled {
+  opacity: 0.5;
+}
+.ans-sheet button:active {
+  opacity: 0.8;
+}
+.psr-needs-btn {
+  touch-action: manipulation;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ans-sheet {
+    transition: none;
+  }
+  .ans-backdrop {
+    animation: none;
+  }
+}
+
+/* Quick answers to Claude's prompts from the phone list */
+.psr-choices {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.psr-choices-detail {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.psr-choices-q {
+  font-size: 0.8125rem;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-text);
+}
+.psr-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--ut-r-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  text-align: start;
+  line-height: 1.3;
+  /* A path in an option has no spaces to wrap at: it ran past the edge (2026-10-03, SE). */
+  overflow-wrap: anywhere;
+}
+.psr-choice:active {
+  background: var(--color-surface-hover);
+}
+.psr-choice:disabled {
+  opacity: 0.55;
+}
+.psr-choice.sending {
+  opacity: 1;
+  border-color: var(--color-primary);
+}
+.psr-choice-n {
+  flex: none;
+  /* 22px at the default size; grows with its number. */
+  width: 1.85em;
+  height: 1.85em;
+  border-radius: var(--ut-r-circle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-muted);
+  color: var(--color-primary-text);
+  font-size: 0.75rem;
+  font-weight: var(--ut-fw-bold);
+}
+.psr:has(.psr-choices) {
+  align-items: flex-start;
+}
+
+.psr-sheet-group button.folder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--color-text);
+}
+.psr-choices-error {
+  font-size: 0.75rem;
+  color: var(--color-status-error-text);
+}

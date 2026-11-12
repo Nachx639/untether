@@ -1,0 +1,125 @@
+/* confirmDialog() on a phone (utils/confirm-dialog.ts): the question, then the confirm. */
+.ut-confirm-head {
+  padding: 4px 20px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border-light);
+}
+.ut-confirm-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.333;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+.ut-confirm-body {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.385;
+  color: var(--color-text-dim);
+  overflow-wrap: anywhere;
+}
+.ut-confirm-details {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  line-height: 1.385;
+  color: var(--color-text-muted);
+}
+.ut-confirm-details li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ut-confirm-details li.more {
+  color: var(--color-text-dim);
+}
+.psr-sheet-group button.ut-confirm-ok {
+  min-height: 56px;
+  font-size: 1.0625rem;
+  font-weight: var(--ut-fw-medium);
+  color: var(--color-text);
+}
+.psr-sheet-group button.ut-confirm-ok.destructive {
+  color: var(--color-status-error-text);
+}
+.ut-confirm-sheet:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .p-sheet {
+    transition: none;
+  }
+  .p-sheet-backdrop {
+    animation: none;
+  }
+}
+
+/* Inline rename in a sheet (rename-field.ts), in place of the "Rename" row. */
+.ut-rename {
+  display: block;
+  padding: 12px 16px 14px;
+}
+.psr-sheet-group button + .ut-rename,
+.psr-sheet-group .ut-rename + button {
+  border-top: 1px solid var(--color-border-light);
+}
+.ut-rename-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: var(--color-text-dim);
+}
+.ut-rename-label input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  /* 16px or iOS zooms the page in on focus. */
+  font-size: 1rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--ut-r-lg);
+}
+.ut-rename-label input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+.ut-rename-label input[aria-invalid='true'] {
+  border-color: var(--color-status-error-text);
+}
+.ut-rename-error:empty {
+  display: none;
+}
+.ut-rename-error {
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  color: var(--color-status-error-text);
+  overflow-wrap: anywhere;
+}
+.ut-rename-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.psr-sheet-group .ut-rename-actions button {
+  flex: 1 1 0;
+  width: auto;
+  padding: 10px 6px;
+  font-size: 1rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--ut-r-lg);
+}
+.psr-sheet-group .ut-rename-actions button + button {
+  border-top: 1px solid var(--color-border-light);
+}
+.psr-sheet-group .ut-rename-actions .ut-rename-ok {
+  font-weight: var(--ut-fw-semibold);
+  border-color: var(--color-primary-text);
+}
+.psr-sheet-group .ut-rename-actions button:disabled {
+  opacity: 0.5;
+}

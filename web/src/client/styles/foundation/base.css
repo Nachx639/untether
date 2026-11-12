@@ -1,0 +1,228 @@
+/* Global theme-aware styles */
+@layer base {
+  html {
+    @apply bg-bg text-text;
+    /* Thinner, native-looking text on macOS (design spec 2.2). */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+    height: var(--app-height, 100%);
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  
+  body {
+    @apply bg-bg text-text;
+    /* The style's backdrop: body never scrolls, so it stays fixed behind everything. */
+    background-image: var(--ut-backdrop);
+    background-size: var(--ut-backdrop-size);
+    background-position: var(--ut-backdrop-position);
+    background-repeat: var(--ut-backdrop-repeat);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    height: 100%;
+    height: var(--app-height, 100%);
+    overflow: hidden;
+    /* Removed position:fixed as it can interfere with position:fixed children */
+    width: 100%;
+  }
+  
+  /* Checkbox styling */
+  input[type="checkbox"] {
+    @apply w-4 h-4 rounded-rem border border-border bg-bg cursor-pointer;
+    @apply transition-all duration-200;
+    @apply focus:outline-none;
+    @apply checked:bg-primary checked:border-primary;
+    border-color: var(--ut-choice-border, var(--color-border));
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+  }
+  
+  input[type="checkbox"]:checked::before {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--color-on-fill);
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  input[type="checkbox"]:checked {
+    border-color: var(--ut-choice-selected-border, var(--color-primary));
+  }
+  
+  /* Select element styling */
+  select {
+    @apply w-full rounded-rem border border-border bg-bg cursor-pointer;
+    @apply transition-all duration-200;
+    @apply focus:outline-none;
+    @apply hover:border-border-focus;
+    @apply px-3 py-2 pr-8;
+    appearance: none;
+    background-image: var(--ut-select-arrow);
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+  }
+  
+  /* Dark mode select arrow */
+  [data-theme="dark"] select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  }
+  
+  /* Textarea styling */
+  textarea {
+    @apply w-full rounded-rem border border-border bg-bg;
+    @apply transition-colors duration-200;
+    @apply focus:outline-none;
+    @apply hover:border-border-focus;
+    @apply px-3 py-2;
+    resize: vertical;
+    min-height: 80px;
+  }
+  
+  /* Radio button styling */
+  input[type="radio"] {
+    @apply w-4 h-4 border border-border bg-bg cursor-pointer;
+    @apply transition-all duration-200;
+    @apply focus:outline-none;
+    appearance: none;
+    border-radius: var(--ut-r-circle);
+    position: relative;
+    border-color: var(--ut-choice-border, var(--color-border));
+  }
+  
+  input[type="radio"]:checked {
+    @apply bg-primary border-primary;
+    border-color: var(--ut-choice-selected-border, var(--color-primary));
+  }
+  
+  input[type="radio"]:checked::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--ut-r-circle);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--ut-choice-dot, var(--ut-knob));
+  }
+  
+  /* File input styling */
+  input[type="file"] {
+    @apply w-full rounded-rem border border-border bg-bg cursor-pointer;
+    @apply transition-all duration-200;
+    @apply focus:outline-none;
+    @apply hover:border-primary/50;
+    @apply px-3 py-2;
+    @apply text-sm text-text;
+  }
+  
+  input[type="file"]::file-selector-button {
+    @apply mr-3 px-3 py-1 rounded-rem bg-primary text-on-fill;
+    @apply hover:bg-primary-light;
+    @apply cursor-pointer transition-colors duration-200;
+    border: none;
+    font-weight: var(--ut-fw-medium);
+  }
+  
+  /* Range input styling */
+  input[type="range"] {
+    @apply w-full h-2 bg-bg-tertiary rounded-lg appearance-none cursor-pointer;
+    @apply focus:outline-none;
+  }
+  
+  input[type="range"]::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-pill bg-primary cursor-pointer;
+    @apply hover:bg-primary-hover transition-colors duration-200;
+    @apply shadow-drop-sm hover:shadow-drop-md;
+    background-color: var(--ut-indicator-fill, var(--color-primary));
+  }
+  
+  input[type="range"]::-moz-range-thumb {
+    @apply appearance-none w-4 h-4 rounded-pill bg-primary cursor-pointer;
+    @apply hover:bg-primary-hover transition-colors duration-200;
+    @apply shadow-drop-sm hover:shadow-drop-md;
+    border: none;
+    background-color: var(--ut-indicator-fill, var(--color-primary));
+  }
+
+  @media (hover: hover) {
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background-color: var(--ut-indicator-hover, var(--color-primary-hover));
+    }
+    input[type="range"]::-moz-range-thumb:hover {
+      background-color: var(--ut-indicator-hover, var(--color-primary-hover));
+    }
+  }
+  
+
+  /* Default focus styles. Elements only focused by code (tabindex="-1": sheets and dialogs
+     taking focus so a screen reader starts at their title, quick keys that leave the
+     terminal's keyboard alone) get no ring: it drew a frame around whole sheets on the phone.
+     :where() keeps the specificity of a plain :focus. */
+  :focus {
+    outline: none;
+  }
+  /* The keyboard ring is the unlayered :focus-visible rule further down (--focus-ring). The
+     30% accent glow every focused element used to get here (mouse clicks too) is gone
+     (2026-10-12). Text fields show focus with their border and a soft halo instead. */
+  :where(.ut-field, .ut-select, .input-field, textarea, select):focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 25%, transparent);
+  }
+
+  /* Thin, quiet scrollbars with a mouse or trackpad (design spec 2.10). In the base layer so
+     .scrollbar-hide and components that hide their scrollbar still win. */
+  @media (pointer: fine) {
+    :root {
+      scrollbar-color: color-mix(in srgb, var(--color-text) 22%, transparent) transparent;
+    }
+    * {
+      scrollbar-width: thin;
+    }
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--color-text) 20%, transparent);
+      border: 3px solid transparent;
+      background-clip: padding-box;
+      border-radius: var(--ut-r-pill);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background-color: color-mix(in srgb, var(--color-text) 32%, transparent);
+    }
+  }
+
+  /* Placeholders: Tailwind's default (the text at 50%) was 3.3:1 on the search and reply
+     fields. The dim text token reaches 4.5:1 on every surface. */
+  ::placeholder {
+    color: var(--color-placeholder);
+    opacity: 1;
+  }
+
+  /* iOS Safe Area Support */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}

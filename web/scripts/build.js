@@ -1,0 +1,144 @@
+const { execFileSync, execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const esbuild = require('esbuild');
+const { buildStyles } = require('./css-build.js');
+const { prodOptions, clientAppBuild, cleanClientChunks } = require('./esbuild-config.js');
+const { buildCli } = require('./build-cli.js');
+const { getCustomNodeBuildArgs } = require('./custom-node-args.js');
+
+function validateNodeVersion() {
+  const [major, minor] = process.versions.node.split('.').map(Number);
+  if (major < 22 || major > 24 || (major === 22 && minor < 12)) {
+    throw new Error(
+      `Untether builds require Node.js 22.12 through 24.x; found ${process.version}.`
+    );
+  }
+}
+
+async function build() {
+  console.log('Starting build process...');
+  validateNodeVersion();
+  
+  // Validate version sync
+  console.log('Validating version sync...');
+  execSync('node scripts/validate-version-sync.js', { stdio: 'inherit' });
+
+  // Ensure directories exist
+  console.log('Creating directories...');
+  execSync('node scripts/ensure-dirs.js', { stdio: 'inherit' });
+
+  // Copy assets
+  console.log('Copying assets...');
+  execSync('node scripts/copy-assets.js', { stdio: 'inherit' });
+
+  // Bundle client JavaScript
+  console.log('Bundling client JavaScript...');
+
+  try {
+    // Build main app bundle
+    cleanClientChunks();
+    await esbuild.build({
+      ...prodOptions,
+      ...clientAppBuild,
+    });
+
+    // After the app build: the stylesheet declares the build id it wrote (postcss-build-id.js).
+    console.log('Building CSS...');
+    await buildStyles();
+
+    // Build test bundle
+    await esbuild.build({
+      ...prodOptions,
+      entryPoints: ['src/client/test-entry.ts'],
+      outfile: 'public/bundle/test.js',
+    });
+
+
+    // Build service worker
+    await esbuild.build({
+      ...prodOptions,
+      entryPoints: ['src/client/sw.ts'],
+      outfile: 'public/sw.js',
+      format: 'iife', // Service workers need IIFE format
+    });
+
+    console.log('Client bundles built successfully');
+  } catch (error) {
+    console.error('Build failed:', error);
+    process.exit(1);
+  }
+
+  // Build server TypeScript
+  console.log('Building server...');
+  execSync('pnpm exec tsc6 -p tsconfig.server.json', { stdio: 'inherit' });
+
+  await buildCli();
+
+  // Build Rust forwarder first.
+  // `build-native.js` runs verification in CI which expects the forwarder to exist.
+  console.log('Building Rust forwarder...');
+  execSync('node scripts/build-fwd-rust.js', { stdio: 'inherit' });
+
+
+  const shouldBuildSea =
+    process.env.UNTETHER_BUILD_SEA === '1' ||
+    process.env.UNTETHER_SEA === '1' ||
+    process.env.UNTETHER_SEA === 'true' ||
+    process.argv.includes('--build-sea');
+  const isLinux = process.platform === 'linux';
+  if (isLinux && !shouldBuildSea) {
+    console.log('Skipping native SEA build on Linux (set UNTETHER_BUILD_SEA=1 or --build-sea to override).');
+    console.log('Build completed successfully!');
+    return;
+  }
+
+  // Build native executable
+  console.log('Building native executable...');
+
+  // Check if native binaries already exist (skip build for development)
+  const nativeDir = path.join(__dirname, '..', 'native');
+  const untetherPath = path.join(nativeDir, 'untether');
+  const ptyNodePath = path.join(nativeDir, 'pty.node');
+  const spawnHelperPath = path.join(nativeDir, 'spawn-helper');
+  const forceNativeBuild =
+    process.env.UNTETHER_FORCE_NATIVE_BUILD === '1' ||
+    process.env.UNTETHER_FORCE_NATIVE_BUILD === 'true' ||
+    process.env.UNTETHER_FORCE_NATIVE_BUILD === 'YES' ||
+    process.env.UNTETHER_REQUIRE_CUSTOM_NODE === '1' ||
+    process.env.UNTETHER_REQUIRE_CUSTOM_NODE === 'true' ||
+    process.env.UNTETHER_REQUIRE_CUSTOM_NODE === 'YES';
+
+  if (
+    !forceNativeBuild &&
+    fs.existsSync(untetherPath) &&
+    fs.existsSync(ptyNodePath) &&
+    fs.existsSync(spawnHelperPath)
+  ) {
+    console.log('✅ Native binaries already exist, skipping build...');
+    console.log('  - untether executable: ✓');
+    console.log('  - pty.node: ✓');
+    console.log('  - spawn-helper: ✓');
+  } else {
+    if (forceNativeBuild) {
+      console.log('Forced native rebuild requested.');
+    }
+    const customNodeArgs = getCustomNodeBuildArgs(process.argv);
+
+    if (customNodeArgs) {
+      console.log('Using custom Node.js for smaller binary size...');
+      execFileSync(process.execPath, ['build-native.js', ...customNodeArgs], { stdio: 'inherit' });
+    } else {
+      console.log('Using system Node.js...');
+      execFileSync(process.execPath, ['build-native.js'], { stdio: 'inherit' });
+    }
+  }
+
+  console.log('Build completed successfully!');
+}
+
+// Run the build
+build().catch(error => {
+  console.error('Build failed:', error);
+  process.exit(1);
+});

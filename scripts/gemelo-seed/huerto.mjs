@@ -1,0 +1,127 @@
+// Huerto urbano: riego y calendario de cultivos. An idle orchestrator, a Codex task at work,
+// one ready to merge, a shell and a suspended session.
+export default {
+  folder: 'huerto-urbano',
+  readme: '# Huerto urbano\n\nRiego y calendario de cultivos.\n',
+  // A leaf-like disc.
+  logo: { background: [232, 245, 233], foreground: [46, 125, 50], shape: (x, y) => (x - 0.42) ** 2 + (y - 0.55) ** 2 < 0.1 || (x - 0.6) ** 2 + (y - 0.38) ** 2 < 0.07 },
+  orchestrator: 'huertoBoss',
+  worktrees: { sensores: 'alertas-de-humedad', calendario: 'calendario-de-siembra' },
+  sessions: ({ project, wt, uuid }) => [
+    {
+      key: 'huertoBoss',
+      n: 4,
+      name: 'orquestador-huerto',
+      command: ['claude'],
+      workingDir: project.repo,
+      project,
+      claude: {
+        status: 'idle',
+        title: 'Plan de riego para otoño',
+        user: 'Prepara el plan de riego para otoño.',
+        assistant: 'Las dos tareas están listas para revisar.',
+        minutesAgo: 14,
+      },
+      lastActivityMinutesAgo: 14,
+    },
+    {
+      key: 'sensores',
+      n: 5,
+      name: 'alertas-de-humedad',
+      command: ['codex'],
+      workingDir: wt.sensores,
+      project,
+      branch: 'ut/alertas-de-humedad',
+      taskId: uuid(104),
+      codex: {
+        user: 'Avisa cuando la humedad del suelo baje del 20 %',
+        assistant: 'Estoy añadiendo el umbral a la lectura de los sensores.',
+        busy: true,
+        minutesAgo: 1,
+      },
+      lastActivityMinutesAgo: 1,
+      screen: ['codex · leyendo sensores/umbral.py'],
+    },
+    {
+      key: 'calendario',
+      n: 6,
+      name: 'calendario-de-siembra',
+      command: ['claude'],
+      workingDir: wt.calendario,
+      project,
+      branch: 'ut/calendario-de-siembra',
+      taskId: uuid(105),
+      claude: {
+        status: 'idle',
+        title: 'Calendario de siembra por zonas',
+        user: 'Haz un calendario de siembra por zona climática.',
+        assistant: 'Listo: calendario por zonas con pruebas.',
+        minutesAgo: 22,
+      },
+      lastActivityMinutesAgo: 22,
+    },
+    {
+      key: 'invernadero',
+      n: 7,
+      name: 'invernadero-logs',
+      command: ['/bin/zsh'],
+      workingDir: project.repo,
+      project,
+      userTitle: 'Registro del invernadero',
+      screen: ['$ tail registros/invernadero.log', '10:29 ventilación encendida', '10:30 temperatura 21,4 °C'],
+      lastActivityMinutesAgo: 1,
+    },
+    {
+      key: 'dormida',
+      n: 8,
+      name: 'repaso-de-abonos',
+      command: ['claude'],
+      workingDir: project.repo,
+      project,
+      claude: {
+        status: 'idle',
+        title: 'Repaso de abonos de temporada',
+        user: 'Repasa la lista de abonos.',
+        assistant: 'He dejado la lista ordenada por mes.',
+        minutesAgo: 150,
+      },
+      suspended: { minutesAgo: 90, idleMinutes: 60 },
+      startedMinutesAgo: 240,
+      lastActivityMinutesAgo: 150,
+    },
+  ],
+  tasks: ({ wt, S, task, worked, checked, closed, doneFiller }) => [
+    task(104, 'working', 'Alerta cuando baje la humedad del suelo', {
+      ...worked(wt.sensores, S.sensores, ['sensores/umbral.py']),
+      agent: 'codex',
+      sinceMinutesAgo: 18,
+    }),
+    task(105, 'ready', 'Calendario de siembra por zonas climáticas', {
+      ...worked(wt.calendario, S.calendario, ['src/calendario/zonas.ts', 'src/calendario/zonas.test.ts', 'docs/siembra.md']),
+      sinceMinutesAgo: 20,
+      extra: {
+        ...worked(wt.calendario, S.calendario, [], { commits: 3, files: 3, insertions: 214, deletions: 18 }).extra,
+        ...checked(wt.calendario, 'Tests  41 passed (41)'),
+        summary: 'Calendario por zona climática, con pruebas y una página de ayuda.',
+      },
+    }),
+    task(110, 'merged', 'Modo oscuro en el panel de riego', {
+      ...closed(300, { commits: 4, files: 7, insertions: 188, deletions: 41 }),
+      files: ['web/tema.css'],
+    }),
+    task(113, 'failed', 'Importar el catálogo de semillas', {
+      ...closed(420, { commits: 1, files: 1, insertions: 12, deletions: 0 }, {
+        error: 'El archivo de origen tiene filas con columnas de menos.',
+        blocker: { kind: 'session-exit', message: 'La sesión del agente terminó antes de acabar.' },
+      }),
+    }),
+    // Its share of a long "Hechas" list (2026-11-09): on a real iPhone the avatars of many merged
+    // tasks were painted out of their rows after scrolling; three rows never scrolled far enough.
+    // The number is the task's place in that list, which gives it its id, agent, age and size.
+    doneFiller(1, 'Riego nocturno configurable'),
+    doneFiller(4, 'Sensor de lluvia en el panel'),
+    doneFiller(7, 'Rotación de cultivos por bancal'),
+    doneFiller(10, 'Histórico de temperatura'),
+    doneFiller(13, 'Aviso de heladas'),
+  ],
+};

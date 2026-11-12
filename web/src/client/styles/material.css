@@ -1,0 +1,162 @@
+/* Shared material geometry, enabled only in Clay: these hooks must not change another look's
+   positioning or stacking contexts. The empty layer blends with its inherited surface color,
+   never with text, icons or project images. */
+html[data-look="clay"] .ut-surface--material {
+  position: relative;
+  isolation: var(--ut-material-isolation, auto);
+}
+html[data-look="clay"] .ut-surface--material::after {
+  content: var(--ut-material-content, none);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: var(--ut-material-opacity, 1);
+  clip-path: var(--ut-material-clip, none);
+}
+
+/* Paint-only shared surfaces. Layout, scrolling, safe areas and positioning belong to the
+   caller. The material layer uses these hooks in both inset/full sheets and desktop panels;
+   none reads --ut-float-* (those are reserved for overlays on terminal contents). */
+@layer components {
+  .ut-surface--floating {
+    background-color: var(--color-float);
+    color: var(--color-text);
+  }
+  .ut-surface--panel {
+    background-image: var(--ut-piece-grain);
+    background-size: var(--ut-piece-grain-size);
+    background-blend-mode: var(--ut-piece-grain-blend);
+  }
+  .ut-range { width: 100%; }
+  .ut-progress {
+    appearance: none;
+    width: 100%;
+    height: 10px;
+    border: 0;
+    border-radius: var(--ut-r-pill);
+    overflow: hidden;
+    background: var(--ut-surface-2);
+    box-shadow: var(--ut-piece-track);
+  }
+  .ut-progress::-webkit-progress-bar {
+    background: var(--ut-surface-2);
+    box-shadow: var(--ut-piece-track);
+  }
+  .ut-progress::-webkit-progress-value {
+    background: var(--ut-indicator-fill, var(--ut-accent));
+    border-radius: var(--ut-r-pill);
+    box-shadow: var(--ut-piece-thumb);
+  }
+}
+/* Internal parts of existing base pieces also consume the neutral material tokens. */
+.ut-segmented > button,
+.ut-segmented > .ut-segmented-item {
+  background-image: var(--ut-piece-grain);
+  background-size: var(--ut-piece-grain-size);
+  background-blend-mode: var(--ut-piece-grain-blend);
+}
+.ut-segmented > [aria-pressed='true'],
+.ut-segmented > [aria-selected='true'],
+.ut-segmented > .is-active {
+  /* The comma-separated fallback deliberately retains BOTH original shadows (including Clay). */
+  box-shadow: var(--ut-segment-selected-shadow, var(--ut-piece-control), var(--shadow-e1));
+}
+/* Silver selected ink must win over hover only in Monochrome; other looks keep their cascade. */
+html[data-look="monochrome-elegant"] .ut-segmented > [aria-pressed='true'],
+html[data-look="monochrome-elegant"] .ut-segmented > [aria-selected='true'],
+html[data-look="monochrome-elegant"] .ut-segmented > .is-active {
+  color: var(--ut-segment-selected-ink);
+}
+input[type='range'] { box-shadow: var(--ut-piece-track); }
+input[type='range']::-webkit-slider-thumb { box-shadow: var(--ut-piece-thumb), var(--ut-drop-sm); }
+input[type='range']::-moz-range-thumb { box-shadow: var(--ut-piece-thumb), var(--ut-drop-sm); }
+input[type='checkbox'], input[type='radio'] {
+  background-image: var(--ut-piece-grain);
+  background-size: var(--ut-piece-grain-size);
+  background-blend-mode: var(--ut-piece-grain-blend);
+  box-shadow: var(--ut-piece-inset);
+}
+input[type='checkbox']:checked, input[type='radio']:checked { box-shadow: var(--ut-piece-control); }
+
+/* Anchored variants preserve a sheet's positioning when it opts into material paint. */
+html[data-look="clay"] .ut-surface--material:where(.ut-surface--fixed) { position: fixed; }
+
+.ut-progress::-moz-progress-bar {
+  background: var(--ut-indicator-fill, var(--ut-accent));
+  border-radius: var(--ut-r-pill);
+  box-shadow: var(--ut-piece-thumb);
+}
+
+.ut-segmented > button:not([aria-pressed='true']):not([aria-selected='true']):not(.is-active) {
+  background-color: var(--ut-piece-control-fill, transparent);
+}
+
+/* Inline actions are impressed lettering on their parent surface, not another slab. */
+.ut-text-action { text-shadow: var(--ut-piece-text-shadow); }
+
+/* Raised small controls need room for their rim; keep their touch halo inside the owner. */
+html[data-look="clay"] .ut-icon-btn,
+html[data-look="clay"] .ut-surface--compact {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  flex-shrink: 0;
+  margin: 0;
+}
+/* A compact face is as wide as what it carries: 32 px is its floor, never its width. With a
+   word in it ("Orquestador" from 430 pt) it grows into a pill (2026-11-09: the fixed width
+   left the word outside the face, over "+ Tarea"). */
+html[data-look="clay"] .ut-surface--compact {
+  width: auto;
+  min-width: 32px;
+}
+html[data-look="clay"] .ut-icon-btn--sm {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+}
+html[data-look="clay"] .ut-icon-btn::before { inset: -6px; }
+html[data-look="clay"] .ut-icon-btn--sm::before { inset: -10px; }
+html[data-look="clay"] .ut-surface--panel::after,
+html[data-look="clay"] .ut-dialog::after,
+html[data-look="clay"] .ut-surface--floating::after {
+  opacity: var(--ut-panel-material-opacity);
+}
+
+html[data-look="clay"] .ut-segmented > [aria-pressed='true'],
+html[data-look="clay"] .ut-segmented > [aria-selected='true'],
+html[data-look="clay"] .ut-segmented > .is-active {
+  background-color: var(--ut-surface-selected);
+}
+html[data-look="clay"] .ut-toolbar[role='toolbar'] { padding: 2px 2px 9px; }
+/* A compact painted face still accepts a 44 px tap; the empty halo carries no material. */
+html[data-look="clay"] .ut-surface--compact { position: relative; }
+@media (pointer: coarse) {
+  html[data-look="clay"] .ut-surface--compact::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+}
+
+/* Two bars one over the other are ONE surface (2026-11-11: the home's header and the list's
+   toolbar each drew their own bottom corners, edge and shadow; the page's background showed
+   between them at both ends and they read as two pills). The one on top, .ut-surface--bar-over,
+   is straight below, with no edge and no shadow: the last bar carries the corners, the edge and
+   the shadow of the whole. What tells them apart, if the style wants it, is a fillet inside the
+   surface (--ut-bar-seam, the color of the top bar's own 1 px line; transparent for none), which
+   draws no corner. The token is unset by default and falls back to --color-border here, where it
+   is used: an alias declared on :root would not follow a scope that changes the palette.
+   The home's header takes the piece by itself while the list after it shows its toolbar, whatever
+   box wraps that list.
+   Stronger than a style's own bar rule on purpose: no style paints this joint by hand
+   (scripts/ui-layout-audit.mjs, "stacked-bar-…"). */
+:root .ut-surface--bar.ut-surface--bar-over,
+:root app-header:has(~ .ut-list-toolbar, ~ * .ut-list-toolbar) .ut-home-header.ut-surface--bar {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: var(--ut-bar-seam, var(--color-border));
+  box-shadow: none;
+}

@@ -1,0 +1,179 @@
+@layer components {
+  /* Text fields. Focus: border + halo (@layer base). */
+  .ut-field {
+    display: block;
+    width: 100%;
+    height: var(--ut-ctl-h);
+    padding: 0 10px;
+    border: var(--ut-outline-width) solid var(--color-border-strong);
+    border-radius: var(--radius-ctl);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--ut-control-size, 13px);
+    line-height: var(--ut-control-line, 18px);
+    transition-property: border-color, box-shadow;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+  .ut-field::placeholder {
+    color: var(--color-placeholder);
+  }
+  .ut-field:hover:not(:focus):not(:disabled) {
+    border-color: var(--color-border-focus);
+  }
+  .ut-field--mono {
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  /* Cut HUD corners, off by default. A clip also cuts shadows and rings, so a focused piece has
+     none; a floating piece never has one: it would cut the menu it opens. */
+  .ut-btn,
+  .ut-chip,
+  .ut-field,
+  .ut-select {
+    clip-path: var(--ut-clip-control);
+  }
+  .ut-card {
+    clip-path: var(--ut-clip-card);
+  }
+  /* Bevelled plates and keys (Cyberpunk, 2026-11-10), off by default: --ut-clip-action cuts the
+     buttons alone (a chip or a field is too small for its bevel), --ut-clip-plate the plates
+     that open nothing: a request, a notice, the record and the selected row. A key keeps its
+     cut while focused, with its ring inside; a row's ring is outside, so its cut goes. */
+  .ut-btn {
+    clip-path: var(--ut-clip-action, var(--ut-clip-control));
+  }
+  .ut-surface--action,
+  .ut-surface--request-action,
+  .ut-surface--segment {
+    clip-path: var(--ut-clip-action, none);
+  }
+  .ut-surface--request,
+  .ut-surface--notice,
+  .ut-surface--record,
+  .ut-surface--selected-row {
+    clip-path: var(--ut-clip-plate, none);
+  }
+  .ut-surface--selected-row:focus-visible {
+    clip-path: none;
+  }
+  .ut-btn:focus-visible,
+  .ut-chip:focus-visible,
+  .ut-field:focus,
+  .ut-select:focus-visible,
+  .ut-card:focus-within,
+  .ut-card:focus-visible {
+    clip-path: none;
+  }
+  textarea.ut-field {
+    height: auto;
+    min-height: 64px;
+    padding: 6px 10px;
+  }
+  .ut-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3e%3cpath stroke='%238f8b86' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='M4 6l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.625rem center;
+    background-repeat: no-repeat;
+    background-size: 14px;
+    cursor: pointer;
+  }
+  .ut-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: var(--ut-fw-medium);
+  }
+
+  /* Switch: <button class="ut-switch" role="switch" aria-checked="true|false">. */
+  .ut-switch {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 36px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ut-r-pill);
+    background: var(--color-border-strong);
+    cursor: pointer;
+    transition: background-color var(--dur-2) var(--ease-out);
+  }
+  .ut-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: var(--ut-r-pill);
+    background: var(--ut-knob);
+    box-shadow: var(--shadow-e1);
+    transition: transform var(--dur-2) var(--ease-out);
+  }
+  .ut-switch[aria-checked='true'] {
+    background: var(--ut-indicator-fill, var(--color-primary));
+  }
+  .ut-switch[aria-checked='true']::after {
+    transform: translateX(16px);
+  }
+  .ut-switch:disabled {
+    opacity: var(--ut-disabled-opacity, 0.4);
+    cursor: default;
+  }
+
+  /* Segmented control: items are buttons with aria-pressed / aria-selected or .is-active. */
+  .ut-segmented {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 2px;
+    height: var(--ut-segment-h, 28px);
+    padding: 2px;
+    border-radius: var(--radius-ctl);
+    background: var(--ut-segment-bg, var(--color-bg-tertiary));
+  }
+  .ut-segmented > button,
+  .ut-segmented > .ut-segmented-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--ut-segment-item-h, 24px);
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--ut-segment-radius, var(--ut-r-5));
+    background: transparent;
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: var(--ut-fw-medium);
+    white-space: nowrap;
+    cursor: pointer;
+    transition-property: background-color, color;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+  .ut-segmented > button:hover,
+  .ut-segmented > .ut-segmented-item:hover {
+    color: var(--color-text);
+  }
+  .ut-segmented > [aria-pressed='true'],
+  .ut-segmented > [aria-selected='true'],
+  .ut-segmented > .is-active {
+    background: var(--ut-segment-selected-bg, var(--color-bg-elevated));
+    color: var(--color-text);
+    box-shadow: var(--ut-segment-selected-shadow, var(--shadow-e1));
+  }
+  .ut-segmented svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+  }
+}

@@ -1,0 +1,33 @@
+PASS src/utils.test.js
+FAIL src/math.test.js
+  ● math › adds
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 3
+    Received: 2
+
+      3 | describe('math', () => {
+      4 |   test('adds', () => {
+    > 5 |     expect(1 + 1).toBe(3);
+        |                   ^
+      6 |   });
+      7 | });
+
+      at Object.toBe (src/math.test.js:5:19)
+
+  ● math › divides
+
+    TypeError: Cannot read properties of undefined (reading 'x')
+
+      10 |   test('divides', () => {
+    > 11 |     return undefined.x;
+         |                      ^
+
+      at Object.<anonymous> (src/math.test.js:11:22)
+
+Test Suites: 1 failed, 1 passed, 2 total
+Tests:       2 failed, 5 passed, 7 total
+Snapshots:   0 total
+Time:        0.812 s, estimated 1 s
+Ran all test suites.

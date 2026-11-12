@@ -1,0 +1,277 @@
+/* "Ver registro": a task's log tail in a sheet. */
+/* A task whose session is gone, tapped: what it did or why it stopped. */
+.tsk-sheet-status,
+.tsk-sheet-detail,
+.tsk-sheet-note {
+  margin: 0;
+  padding: var(--ut-detail-pad, 4px var(--p-gutter, 16px));
+  font: 400 var(--ut-detail-size, var(--p-text-footnote, 13px)) / var(--ut-detail-line, 1.4) var(--font-ui);
+}
+.tsk-sheet-status {
+  color: var(--color-text);
+  font-weight: var(--ut-fw-semibold);
+}
+.tsk-sheet-detail {
+  color: var(--color-text-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tsk-sheet-note {
+  color: var(--color-text-dim);
+}
+[data-testid='task-detail-sheet'] > .tsk-btn {
+  /* The sheet makes its buttons 100% wide: with this margin that overflowed on the right
+     (seen at 390 px, 2026-11-09). */
+  box-sizing: border-box;
+  width: calc(100% - 2 * var(--p-gutter, 16px));
+  margin: 8px var(--p-gutter, 16px) 12px;
+}
+.tsk-log {
+  max-height: 60vh;
+  margin: 0;
+  padding: 10px var(--p-gutter, 16px) 16px;
+  overflow: auto;
+  color: var(--color-text-muted);
+  font: 400 var(--ut-record-size, 12px)/var(--ut-record-line, 1.45) var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+/* Desktop "Orquestar": quieter than "+ Tarea", as on the phone; running, a dot on the sparkles. */
+.ut-repo-orch {
+  position: relative;
+  color: var(--color-text-muted);
+}
+.ut-repo-orch.running {
+  color: var(--color-primary-text);
+}
+.ut-repo-orch .prj-orch-dot {
+  top: 5px;
+  left: 17px;
+  width: 6px;
+  height: 6px;
+}
+/* The sidebar's icon-only "Orquestar", and the grid's once its word has given way to the
+   project's name (data-squeeze 2): the dot on the sparkles' corner. */
+.ut-repo-head--fit:is([data-squeeze="2"], [data-squeeze="3"]) > .ut-repo-orch .prj-orch-dot,
+.ut-icon-btn.ut-repo-orch .prj-orch-dot {
+  top: 3px;
+  left: auto;
+  right: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tsk-pulse,
+  .tsk-spinner,
+  .prj-orch-dot {
+    animation: none;
+  }
+}
+/* The goal sheet's "O usa una sesión abierta": the project's open Claude sessions. */
+.orch-adopt {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+.orch-adopt-title {
+  margin: 0;
+  color: var(--color-text);
+  font: 600 var(--p-text-subhead, 15px) / 1.3 var(--font-ui);
+}
+.orch-adopt-hint {
+  margin: 2px 0 6px;
+  color: var(--color-text-muted);
+  font: 400 var(--p-text-footnote, 13px) / 1.4 var(--font-ui);
+}
+.orch-adopt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.orch-adopt-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 var(--p-text-body, 15px) / 1.3 var(--font-ui);
+}
+.orch-adopt-row .ut-btn {
+  flex: none;
+  gap: 4px;
+  color: var(--color-primary-text);
+}
+/* The orchestrator's goal sheet: what it will do, in three short lines. */
+.orch-points {
+  margin: 0;
+  padding: 0 0 0 18px;
+  color: var(--color-text-muted);
+  font: 400 var(--p-text-footnote, 13px) / 1.45 var(--font-ui);
+}
+.orch-points li + li {
+  margin-top: 4px;
+}
+
+/* Task sheets (project settings, new task): the answer sheet (ans-*) with form fields. */
+.tks-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tks-label {
+  font: 600 13px/18px var(--font-ui);
+  color: var(--color-text-muted);
+}
+.tks-hint {
+  font: 400 13px/1.385 var(--font-ui);
+  color: var(--color-text-dim);
+}
+.tks-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--ut-r-12);
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: 400 max(16px, 1rem) / 1.35 var(--font-ui);
+}
+.tks-input.mono {
+  font-family: var(--font-mono);
+  font-size: max(16px, 0.875rem);
+}
+textarea.tks-input {
+  resize: vertical;
+  min-height: 96px;
+}
+.tks-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tks-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: var(--ut-r-12);
+  border: 1px solid var(--color-border-light);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+  text-align: start;
+  touch-action: manipulation;
+}
+.tks-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-muted);
+}
+.tks-radio {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: var(--ut-r-circle);
+  border: 2px solid var(--color-border-strong);
+}
+.tks-option.selected .tks-radio {
+  border: 6px solid var(--color-primary);
+}
+.tks-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.tks-option-label {
+  font: 600 15px/20px var(--font-ui);
+}
+/* An on/off setting (the project's AI review). */
+.tks-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  color: var(--color-text);
+  text-align: start;
+  touch-action: manipulation;
+}
+.tks-knob {
+  flex: none;
+  position: relative;
+  width: 42px;
+  height: 26px;
+  border-radius: var(--ut-r-13);
+  background: var(--color-bg-tertiary);
+  transition: background 0.15s;
+}
+.tks-knob.on {
+  background: var(--color-primary);
+}
+.tks-knob span {
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--ut-r-circle);
+  background: var(--ut-knob);
+  transition: inset-inline-start 0.15s;
+}
+.tks-knob.on span {
+  inset-inline-start: 19px;
+}
+.tks-detected {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: -4px;
+}
+.tks-detected-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tks-detected-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-dim);
+  font: 400 13px/1.385 var(--font-ui);
+  overflow-wrap: anywhere;
+}
+.tks-detected-text code {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+/* The primary action stays in reach at the bottom of the scrolling form. */
+.tks-foot {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -16px -12px;
+  padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--color-bg-elevated);
+  border-top: 1px solid var(--color-border-light);
+}
+.tks-primary {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--ut-r-12);
+  background: var(--color-primary);
+  color: var(--color-on-fill);
+  font: 600 17px/1 var(--font-ui);
+  touch-action: manipulation;
+}
+.tks-primary .tsk-spinner {
+  display: inline-block;
+  margin-inline-end: 8px;
+  vertical-align: -2px;
+}
+.tks-primary:disabled {
+  opacity: 1;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-dim);
+}

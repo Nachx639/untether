@@ -1,0 +1,64 @@
+/* View transition animations for split view */
+@view-transition {
+  navigation: auto;
+}
+
+/* Fade transition for header elements during view transitions */
+::view-transition-old(app-header),
+::view-transition-new(app-header) {
+  animation-duration: 0.3s;
+  animation-timing-function: ease-in-out;
+}
+
+::view-transition-old(app-header) {
+  animation-name: fade-out;
+}
+
+::view-transition-new(app-header) {
+  animation-name: fade-in;
+}
+
+/* Disable morphing animations for sidebar elements */
+.sidebar-header {
+  view-transition-name: sidebar-header;
+}
+
+::view-transition-old(sidebar-header),
+::view-transition-new(sidebar-header) {
+  animation-duration: 0s !important;
+}
+
+/* Prevent header flicker during session transitions */
+.app-header {
+  view-transition-name: none !important;
+}
+
+/* Disable all button transitions in session view */
+.session-view button,
+.session-header button,
+.sidebar-header button {
+  transition: none !important;
+}
+
+/* Also disable transitions on interactive elements */
+.session-view .interactive,
+.session-view .interactive-fast,
+.session-view .interactive-slow {
+  transition: none !important;
+}
+
+.session-toggle-checkbox {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+[data-theme="dark"] .session-toggle-checkbox {
+  opacity: 0.9;
+}
+
+.session-toggle-checkbox:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

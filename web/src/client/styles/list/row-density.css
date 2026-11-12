@@ -1,0 +1,94 @@
+/* A phone row is its title, state, one line and time (2026-11-08, «las tarjetas de inicio son
+   muy verbosas»): the status line and what a prompt approves never wrap into a paragraph (the
+   legacy .psr-preview clamp let them run over two lines, every span inside wrapping too). */
+.psr .psr-preview.psr-status,
+.psr .psr-caption.psr-choices-detail {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.psr .psr-preview.psr-status *,
+.psr .psr-caption.psr-choices-detail * {
+  white-space: nowrap;
+}
+.psr-explain {
+  color: var(--color-text-muted);
+}
+/* Its sheet's lines under the title: a given name, folder · branch, the agent's whole line. */
+.psr-sheet-where {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: var(--ut-fw-normal);
+  line-height: 18px;
+  color: var(--color-text-dim);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.psr-sheet-where .psr-where {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.psr-sheet-explain {
+  color: var(--color-text-muted);
+}
+/* «Te necesita · Permiso ›» on one line: the reason is cut, never the chevron. */
+.psr .psr-needs-btn {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  white-space: nowrap;
+}
+.psr .psr-needs-btn > .psr-needs-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Detail titles use the optional density scale without enlarging menus. All fallbacks match
+ * the existing .psr-sheet-title (including its inherited line-height) in styles.css. */
+.tsk-sheet-title {
+  font-family: var(--ut-task-title-font, var(--ut-font-title));
+  font-style: var(--ut-task-title-style, inherit);
+  font-size: var(--ut-task-title-size, 0.8125rem);
+  line-height: var(--ut-task-title-line, inherit);
+  font-weight: var(--ut-task-title-weight, inherit);
+  letter-spacing: var(--ut-task-title-tracking, inherit);
+  color: var(--ut-task-title-ink, var(--color-text-dim));
+  text-align: var(--ut-task-title-align, center);
+  white-space: var(--ut-task-title-wrap, nowrap);
+}
+
+@media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+  .ut-needs--phone .ut-needs-main {
+    gap: var(--ut-phone-needs-gap, 10px);
+    min-height: var(--ut-phone-needs-main-h, 52px);
+    padding: var(--ut-phone-needs-pad, 6px 8px);
+  }
+  .ut-needs--phone .ut-needs-time {
+    font-size: var(--ut-phone-needs-time, 12px);
+  }
+  .ut-needs--phone .ut-needs-line {
+    font-size: var(--ut-phone-needs-meta, 12px);
+  }
+}
+
+/* Clay's relief fits within its existing rows, including controls anchored at a corner. */
+html[data-look="clay"] .ask-claude-tasks { top: 8px; right: 8px; }
+html[data-look="clay"] .ut-tabbar {
+  padding-top: 6px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+
+html[data-look="clay"] .prj-tools { margin-right: 0; }
+@media (pointer: coarse) {
+  html[data-look="clay"] .main-list-scroll {
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+  }
+  html[data-look="clay"] .main-list-scroll::-webkit-scrollbar { display: none; }
+}
+html[data-look="clay"] .ask-claude-tasks.ut-surface--compact { position: absolute; }

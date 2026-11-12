@@ -1,0 +1,863 @@
+#!/bin/bash
+# Unified Untether CLI wrapper - compatible with both Mac app and npm installations
+
+# Function to convert absolute paths to use ~
+prettify_path() {
+    local path="$1"
+    local home="$HOME"
+    if [[ "$path" == "$home"* ]]; then
+        echo "~${path#$home}"
+    else
+        echo "$path"
+    fi
+}
+
+# Default unless a Mac app is detected
+APP_PATH=""
+
+# Only check for Mac app on macOS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # Respect explicit overrides (tests/dev setups): don't auto-switch to app bundle.
+    if [ -z "$UNTETHER_BIN" ]; then
+    # macOS symlink resolution function using BSD readlink
+    resolve_symlink_macos() {
+        local target="$1"
+        local current="$target"
+        while [ -L "$current" ]; do
+            current="$(readlink "$current")"
+            # Handle relative symlinks
+            if [[ "$current" != /* ]]; then
+                current="$(dirname "$target")/$current"
+            fi
+        done
+        echo "$current"
+    }
+
+    # Get the real path of this script to avoid infinite recursion
+    SCRIPT_REAL_PATH="$(resolve_symlink_macos "${BASH_SOURCE[0]}")"
+
+    # Comprehensive Mac app search - order depends on UNTETHER_PREFER_DERIVED_DATA
+    APP_PATH=""
+    
+    if [ -n "$UNTETHER_PREFER_DERIVED_DATA" ]; then
+        # When preference is set, try DerivedData first
+        for CANDIDATE in $(find ~/Library/Developer/Xcode/DerivedData -name "Untether.app" -type d 2>/dev/null | grep -v "\.dSYM" | grep -v "Index\.noindex" | sort -r); do
+            if [ -f "$CANDIDATE/Contents/Resources/untether" ]; then
+                UT_SCRIPT="$CANDIDATE/Contents/Resources/ut"
+                if [ -f "$UT_SCRIPT" ] && [ -x "$UT_SCRIPT" ]; then
+                    UT_REAL_PATH="$(resolve_symlink_macos "$UT_SCRIPT")"
+                    if [ "$SCRIPT_REAL_PATH" != "$UT_REAL_PATH" ]; then
+                        # Don't exec to the app bundle ut script - use the binary instead
+                        # This allows our self-healing to work
+                        # exec "$UT_SCRIPT" "$@"
+                        true  # Continue to use the binary
+                    fi
+                fi
+                APP_PATH="$CANDIDATE"
+                break
+            fi
+        done
+    fi
+    
+    # If not found yet, try standard locations
+    if [ -z "$APP_PATH" ]; then
+        for TRY_PATH in "/Applications/Untether.app" "$HOME/Applications/Untether.app"; do
+            if [ -d "$TRY_PATH" ] && [ -f "$TRY_PATH/Contents/Resources/untether" ]; then
+                UT_SCRIPT="$TRY_PATH/Contents/Resources/ut"
+                if [ -f "$UT_SCRIPT" ] && [ -x "$UT_SCRIPT" ]; then
+                    # Avoid infinite recursion by checking if this is the same script
+                    UT_REAL_PATH="$(resolve_symlink_macos "$UT_SCRIPT")"
+                    if [ "$SCRIPT_REAL_PATH" != "$UT_REAL_PATH" ]; then
+                        exec "$UT_SCRIPT" "$@"
+                    fi
+                fi
+                APP_PATH="$TRY_PATH"
+                break
+            fi
+        done
+    fi
+    
+    # If not found in standard locations and UNTETHER_PREFER_DERIVED_DATA wasn't set, search development builds
+    if [ -z "$APP_PATH" ] && [ -z "$UNTETHER_PREFER_DERIVED_DATA" ]; then
+        # Try DerivedData (for development)
+        for CANDIDATE in $(find ~/Library/Developer/Xcode/DerivedData -name "Untether.app" -type d 2>/dev/null | grep -v "\.dSYM" | grep -v "Index\.noindex"); do
+            if [ -f "$CANDIDATE/Contents/Resources/untether" ]; then
+                UT_SCRIPT="$CANDIDATE/Contents/Resources/ut"
+                if [ -f "$UT_SCRIPT" ] && [ -x "$UT_SCRIPT" ]; then
+                    UT_REAL_PATH="$(resolve_symlink_macos "$UT_SCRIPT")"
+                    if [ "$SCRIPT_REAL_PATH" != "$UT_REAL_PATH" ]; then
+                        # Don't exec to the app bundle ut script - use the binary instead
+                        # This allows our self-healing to work
+                        # exec "$UT_SCRIPT" "$@"
+                        true  # Continue to use the binary
+                    fi
+                fi
+                APP_PATH="$CANDIDATE"
+                break
+            fi
+        done
+        
+        # If still not found, use mdfind as last resort
+        if [ -z "$APP_PATH" ]; then
+            for CANDIDATE in $(mdfind -name "Untether.app" 2>/dev/null | grep -v "\.dSYM"); do
+                if [ -f "$CANDIDATE/Contents/Resources/untether" ]; then
+                    UT_SCRIPT="$CANDIDATE/Contents/Resources/ut"
+                    if [ -f "$UT_SCRIPT" ] && [ -x "$UT_SCRIPT" ]; then
+                        UT_REAL_PATH="$(resolve_symlink_macos "$UT_SCRIPT")"
+                        if [ "$SCRIPT_REAL_PATH" != "$UT_REAL_PATH" ]; then
+                            exec "$UT_SCRIPT" "$@"
+                        fi
+                    fi
+                    APP_PATH="$CANDIDATE"
+                    break
+                fi
+            done
+        fi
+    fi
+    
+    # If we found a Mac app but couldn't use its ut script, use its binary directly
+    if [ -n "$APP_PATH" ]; then
+        UNTETHER_BIN="$APP_PATH/Contents/Resources/untether"
+        if [ -f "$UNTETHER_BIN" ]; then
+            # Found Mac app bundle - will use this binary
+            # Silent operation - no message printed
+            true  # No-op command to fix syntax error
+        fi
+    fi
+    fi
+fi
+
+# If we get here without a Mac app, use the npm-installed untether
+if [ -z "$UNTETHER_BIN" ]; then
+    # First, try to find untether in the same directory as this script
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "$SCRIPT_DIR/untether" ]; then
+        UNTETHER_BIN="$SCRIPT_DIR/untether"
+    else
+        # Try to find untether in PATH
+        if command -v untether >/dev/null 2>&1; then
+            UNTETHER_BIN="$(command -v untether)"
+        fi
+    fi
+fi
+
+if [ -z "$UNTETHER_BIN" ] || [ ! -f "$UNTETHER_BIN" ]; then
+    echo "Error: untether binary not found. Please ensure untether is installed." >&2
+    echo "Install with: npm install -g untether" >&2
+    exit 1
+fi
+
+# Prefer native forwarder binary when available
+if [ -z "$UNTETHER_FWD_BIN" ]; then
+    if [ -n "$APP_PATH" ] && [ -f "$APP_PATH/Contents/Resources/untether-fwd" ]; then
+        UNTETHER_FWD_BIN="$APP_PATH/Contents/Resources/untether-fwd"
+    else
+        FWD_CANDIDATE="$(dirname "$UNTETHER_BIN")/untether-fwd"
+        if [ -f "$FWD_CANDIDATE" ]; then
+            UNTETHER_FWD_BIN="$FWD_CANDIDATE"
+        fi
+    fi
+fi
+
+# Check if this is a command that should suppress wrapper output
+SUPPRESS_OUTPUT=false
+# Debug: echo "First argument at line 139: '$1'" >&2
+if [[ "$1" == "title" || "$1" == "status" || "$1" == "--version" || "$1" == "version" || "$1" == "follow" || "$1" == "unfollow" || "$1" == "open" || "$1" == "task" || "$1" == "project" || "$1" == "events" || "$1" == "diag" || "$1" == "doctor" || "$1" == "check-slot" || ("$1" == "git" && "$2" == "event") ]]; then
+    SUPPRESS_OUTPUT=true
+fi
+
+# Log Untether binary info when UNTETHER_PREFER_DERIVED_DATA is set
+if [ -n "$UNTETHER_PREFER_DERIVED_DATA" ] && [ -n "$UNTETHER_BIN" ] && [ "$SUPPRESS_OUTPUT" != "true" ]; then
+    # Get version and build info
+    VERSION_OUTPUT=$("$UNTETHER_BIN" --version 2>&1)
+    VERSION_LINE=$(echo "$VERSION_OUTPUT" | grep "^Untether Server" | head -n 1)
+    BUILD_LINE=$(echo "$VERSION_OUTPUT" | grep "^Built:" | head -n 1)
+    
+    # Gray color (bright black)
+    GRAY='\033[90m'
+    RESET='\033[0m'
+    
+    # Always log this info regardless of verbosity level
+    # Shorten path by removing /Contents/Resources/untether suffix
+    DISPLAY_PATH=$(prettify_path "$UNTETHER_BIN")
+    DISPLAY_PATH=${DISPLAY_PATH%/Contents/Resources/untether}
+    echo -e "${GRAY}[Untether] ${DISPLAY_PATH}${RESET}"
+    if [ -n "$VERSION_LINE" ] && [ -n "$BUILD_LINE" ]; then
+        echo -e "${GRAY}[Untether] Version: ${VERSION_LINE#Untether Server } (${BUILD_LINE})${RESET}"
+    elif [ -n "$VERSION_LINE" ]; then
+        echo -e "${GRAY}[Untether] Version: ${VERSION_LINE#Untether Server }${RESET}"
+    fi
+fi
+
+# Handle safe commands first that work both inside and outside sessions
+# This must come BEFORE the session check to avoid the recursive session error
+if [[ "$1" == "status" || "$1" == "version" || "$1" == "--version" ]]; then
+    # These commands can run safely inside or outside a session
+    exec "$UNTETHER_BIN" "$@"
+fi
+
+# 'ut task ...' / 'ut project ...': the task engine, inside and outside sessions (an agent in
+# a task's session reports with 'ut task done'; the server decides what each caller may do).
+if [[ "$1" == "task" || "$1" == "project" ]]; then
+    # An older untether binary takes an unknown command as "start the server": check first.
+    if ! "$UNTETHER_BIN" help 2>/dev/null | grep -q "task <command>"; then
+        echo "Error: this Untether version does not support 'ut $1' yet; update Untether." >&2
+        exit 1
+    fi
+    exec "$UNTETHER_BIN" "$@"
+fi
+
+# 'ut events ...': the event log (tasks, sessions, doctor, pushes), inside and outside sessions.
+if [[ "$1" == "events" ]]; then
+    if ! "$UNTETHER_BIN" help 2>/dev/null | grep -q "events \[--follow\]"; then
+        echo "Error: this Untether version does not support 'ut events' yet; update Untether." >&2
+        exit 1
+    fi
+    exec "$UNTETHER_BIN" "$@"
+fi
+
+# 'ut diag input ...': what devices with input diagnostics on measured (keyboard, key latency,
+# scrolling), inside and outside sessions. An untether binary without it would take "diag" for
+# "start the server", so it is asked first.
+if [[ "$1" == "diag" ]]; then
+    if ! "$UNTETHER_BIN" help 2>/dev/null | grep -q "diag input"; then
+        echo "Error: this Untether version does not support 'ut diag' yet; update Untether." >&2
+        exit 1
+    fi
+    exec "$UNTETHER_BIN" "$@"
+fi
+
+# 'ut doctor': what Untether found wrong with itself and how the installed app's own update is
+# doing, inside and outside sessions. An untether binary without it would take "doctor" for
+# "start the server", so it is asked first.
+if [[ "$1" == "doctor" ]]; then
+    if ! "$UNTETHER_BIN" help 2>/dev/null | grep -q "untether doctor"; then
+        echo "Error: this Untether version does not support 'ut doctor' yet; update Untether." >&2
+        exit 1
+    fi
+    exec "$UNTETHER_BIN" "$@"
+fi
+
+# 'ut check-slot ...': a heavy check run in one of the Mac's check slots, inside and outside
+# sessions. It never keeps the run from happening: an untether binary that does not know it
+# (older) just runs the command, without a slot.
+if [[ "$1" == "check-slot" ]]; then
+    if "$UNTETHER_BIN" help 2>/dev/null | grep -q "check-slot run"; then
+        exec "$UNTETHER_BIN" "$@"
+    fi
+    if [[ "$2" == "run" ]]; then
+        shift 2
+        while [[ $# -gt 0 && "$1" != "--" ]]; do shift; done
+        if [[ "$1" == "--" && $# -gt 1 ]]; then
+            shift
+            echo "[untether] this Untether version has no check slots yet: running without one" >&2
+            if [[ $# -eq 1 ]]; then exec /bin/sh -c "$1"; fi
+            exec "$@"
+        fi
+        echo "Error: ut check-slot run needs a command after --" >&2
+        exit 1
+    fi
+    # acquire / release / status: no ticket, nothing held.
+    exit 0
+fi
+
+# Check if we're already inside an Untether session
+if [ -n "$UNTETHER_SESSION_ID" ]; then
+    # Special case: handle 'ut title' command inside a session
+    if [[ "$1" == "title" ]]; then
+        if [[ $# -lt 2 ]]; then
+            echo "Error: 'ut title' requires a title argument" >&2
+            echo "Usage: ut title <new title>" >&2
+            exit 1
+        fi
+        shift # Remove 'title' from arguments
+        TITLE="$*" # Get all remaining arguments as the title
+        
+        # Use native forwarder when available for --update-title
+        if [ -n "$UNTETHER_FWD_BIN" ] && [ -x "$UNTETHER_FWD_BIN" ]; then
+            exec "$UNTETHER_FWD_BIN" --update-title "$TITLE" --session-id "$UNTETHER_SESSION_ID"
+        else
+            exec "$UNTETHER_BIN" fwd --update-title "$TITLE" --session-id "$UNTETHER_SESSION_ID"
+        fi
+        # If exec fails, exit with error
+        exit 1
+    fi
+    
+    # 'ut open <port|url>': show a dev server of this session in the Untether app
+    if [[ "$1" == "open" ]]; then
+        shift
+        # An older untether binary takes an unknown command as "start the server": check first.
+        if ! "$UNTETHER_BIN" help 2>/dev/null | grep -q "open <port|url>"; then
+            echo "Error: this Untether version does not support 'ut open' yet; update Untether." >&2
+            exit 1
+        fi
+        exec "$UNTETHER_BIN" open "$@"
+    fi
+
+    # For all other commands, block recursive sessions
+    echo "Error: Already inside an Untether session (ID: $UNTETHER_SESSION_ID). Recursive Untether sessions are not supported." >&2
+    echo "If you need to run commands, use them directly without the 'ut' prefix." >&2
+    exit 1
+fi
+
+# Function to get git repository root
+get_git_root() {
+    git rev-parse --show-toplevel 2>/dev/null
+}
+
+# Function to escape strings for JSON
+json_escape() {
+    local str="$1"
+    # Escape backslashes first, then quotes, then other special characters
+    str="${str//\\/\\\\}"
+    str="${str//\"/\\\"}"
+    str="${str//$'\n'/\\n}"
+    str="${str//$'\r'/\\r}"
+    str="${str//$'\t'/\\t}"
+    printf '%s' "$str"
+}
+
+# Function to show help
+show_help() {
+    cat << 'EOF'
+ut - Untether TTY Forward Wrapper
+
+USAGE:
+    ut [command] [args...]
+    ut --shell [args...]
+    ut -i [args...]
+    ut --no-shell-wrap [command] [args...]
+    ut -S [command] [args...]
+    ut title <new title>    # Inside an Untether session only
+    ut open <port|url>      # Inside a session: show a dev server in the app (preview)
+    ut task <command>       # Tasks: an agent on its own branch, merged when done (ut task help)
+    ut project show|set     # Task settings of this repository
+    ut project orchestrate  # Start its orchestrator with a goal (asks your OK from an agent)
+    ut events [--follow]    # Event log: tasks, sessions, doctor, pushes (ut events --help)
+    ut diag input [--since 24h]   # What devices measured: keyboard, key latency, scrolling (--help)
+    ut doctor [--run] [--json]    # What Untether found wrong with itself; the app's own update
+    ut check-slot run -- <command>   # A heavy check in one of the Mac's check slots (--help)
+    ut status              # Show server status and follow mode
+    ut follow [branch]      # Enable follow mode for current or specified branch
+    ut unfollow            # Disable follow mode
+    ut git event           # Git hook notifications
+    ut --help
+
+QUICK VERBOSITY:
+    -q (quiet), -v (verbose), -vv (extra), -vvv (debug)
+
+DESCRIPTION:
+    This wrapper script allows Untether to see the output of commands by
+    forwarding TTY data through the untether utility. When you run commands
+    through 'ut', Untether can monitor and display the command's output
+    in real-time.
+
+    By default, commands are executed through your shell to resolve aliases,
+    functions, and builtins. Use --no-shell-wrap to execute commands directly.
+
+    Inside an Untether session, use 'ut title' to update the session name.
+    
+    Follow mode automatically switches your Untether terminal to the Git
+    worktree that matches the branch you're working on in your editor/IDE.
+    When you switch branches in your editor, Untether follows along.
+    
+    The 'ut git event' command is used by Git hooks to notify Untether
+    of repository changes for automatic worktree switching.
+
+EXAMPLES:
+    ut top                  # Watch top with Untether monitoring
+    ut python script.py     # Run Python script with output forwarding
+    ut npm test             # Run tests with Untether visibility
+    ut --shell              # Launch current shell (equivalent to ut $SHELL)
+    ut -i                   # Launch current shell (short form)
+    ut -S ls -la            # List files without shell alias resolution
+    ut title "My Project"   # Update session title (inside session only)
+    ut -q npm test          # Run with minimal output (errors only)
+    ut -vv npm run dev      # Run with verbose output
+    
+    # Server status:
+    ut status               # Check if server is running and follow mode status
+    
+    # Git follow mode:
+    ut follow               # Enable follow mode for current branch
+    ut follow main          # Switch to main branch and enable follow mode
+    ut unfollow            # Disable follow mode
+    
+    # Git event command (typically called by Git hooks):
+    ut git event            # Notify Untether of Git changes
+
+OPTIONS:
+    --shell, -i            Launch current shell (equivalent to ut $SHELL)
+    --no-shell-wrap, -S    Execute command directly without shell wrapper
+    --title-mode <mode>    Terminal title mode (none, filter, static)
+                          Default: none
+    --quiet, -q            Quiet mode - only show errors
+    --verbose, -v          Verbose mode - show more information
+    -vv                    Extra verbose - show all except debug
+    -vvv                   Debug mode - show all messages
+    --help, -h             Show this help message and exit
+    
+TITLE MODES:
+    none       No title management - apps control their own titles
+    filter     Block all title changes from applications  
+    static     Show working directory and command in title
+
+VERBOSITY:
+    By default, only errors are shown. Use verbosity flags to control output:
+    -q/--quiet    Suppress all output except critical errors
+    -v/--verbose  Show errors, warnings, and informational messages
+    -vv           Show everything except debug messages
+    -vvv          Show all messages including debug
+
+    You can also set UNTETHER_LOG_LEVEL environment variable:
+    export UNTETHER_LOG_LEVEL=error    # Default
+    export UNTETHER_LOG_LEVEL=warn     # Show errors and warnings
+    export UNTETHER_LOG_LEVEL=info     # Show errors, warnings, and info
+    export UNTETHER_LOG_LEVEL=verbose  # All except debug
+    export UNTETHER_LOG_LEVEL=debug    # Everything
+
+NOTE:
+    This script automatically detects and uses the best available Untether installation:
+    - Mac app bundle (preferred on macOS)
+    - npm package installation (fallback)
+EOF
+    
+    # Show path and version info
+    echo
+    echo "UNTETHER BINARY:"
+    echo "    Path: $UNTETHER_BIN"
+    if [ -f "$UNTETHER_BIN" ]; then
+        # Try to get version from binary output first (works for both Mac app and npm)
+        VERSION_INFO=$("$UNTETHER_BIN" --version 2>&1 | grep "^Untether Server" | head -n 1)
+        BUILD_INFO=$("$UNTETHER_BIN" --version 2>&1 | grep "^Built:" | head -n 1)
+        PLATFORM_INFO=$("$UNTETHER_BIN" --version 2>&1 | grep "^Platform:" | head -n 1)
+        
+        if [ -n "$VERSION_INFO" ]; then
+            echo "    Version: ${VERSION_INFO#Untether Server }"
+        else
+            # Fallback to package.json for npm installations
+            PACKAGE_JSON="$(dirname "$(dirname "$UNTETHER_BIN")")/package.json"
+            if [ -f "$PACKAGE_JSON" ]; then
+                VERSION=$(grep '"version"' "$PACKAGE_JSON" | head -1 | sed 's/.*"version".*:.*"\(.*\)".*/\1/')
+                echo "    Version: $VERSION"
+            fi
+        fi
+        
+        if [ -n "$BUILD_INFO" ]; then
+            echo "    ${BUILD_INFO}"
+        fi
+        if [ -n "$PLATFORM_INFO" ]; then
+            echo "    ${PLATFORM_INFO}"
+        fi
+        
+        # Determine installation type
+        if [[ "$UNTETHER_BIN" == */Applications/Untether.app/* ]]; then
+            echo "    Status: Mac app bundle"
+        elif [[ "$UNTETHER_BIN" == */DerivedData/* ]]; then
+            echo "    Status: Development build"
+        elif [[ "$UNTETHER_BIN" == *npm* ]] || [[ "$UNTETHER_BIN" == */bin/untether ]]; then
+            echo "    Status: Installed via npm"
+        else
+            echo "    Status: Unknown installation"
+        fi
+    else
+        echo "    Status: Not found"
+    fi
+}
+
+# Exit code of `ut` when its session was closed from Untether rather than ended in the window.
+UT_EXIT_CLOSED=166
+
+# Function to execute with self-healing fallback
+exec_with_fallback() {
+    # Save the command for potential fallback
+    local SAVED_CMD=("$@")
+    local STARTED_DIR=""
+    local STARTED_FILE=""
+    local CLOSED_FILE=""
+    local FORWARDER_STARTED=false
+    local CLOSED_FROM_UNTETHER=false
+
+    STARTED_DIR=$(mktemp -d "${TMPDIR:-/tmp}/untether-fwd-started.XXXXXX" 2>/dev/null || true)
+    if [ -n "$STARTED_DIR" ]; then
+        STARTED_FILE="$STARTED_DIR/started"
+        CLOSED_FILE="$STARTED_DIR/closed"
+    fi
+    
+    # Try running with Untether
+    local START_TIME=$(date +%s%N 2>/dev/null || echo "0")  # nanoseconds if available
+    
+    # Run the command (without exec to capture exit code).
+    # User report (2026-10-14): bash reports a command killed by a signal on its own stderr
+    # ("ut: line N: PID Killed: 9 ..."), printed into the Mac window over the program's last
+    # frame. The command keeps the real stderr (fd 3); only bash's own goes to /dev/null.
+    if [ -n "$STARTED_FILE" ]; then
+        { UNTETHER_FWD_STARTED_FILE="$STARTED_FILE" UNTETHER_FWD_CLOSED_FILE="$CLOSED_FILE" "$@" 2>&3 3>&-; } 3>&2 2>/dev/null
+    else
+        { "$@" 2>&3 3>&-; } 3>&2 2>/dev/null
+    fi
+    local EXIT_CODE=$?
+
+    if [ -n "$STARTED_FILE" ] && [ -e "$STARTED_FILE" ]; then
+        FORWARDER_STARTED=true
+    fi
+    # The forwarder writes it when the session was closed from Untether (Kill/close on the
+    # phone or the web), never for /exit, Ctrl+D or a signal.
+    if [ -n "$CLOSED_FILE" ] && [ -e "$CLOSED_FILE" ]; then
+        CLOSED_FROM_UNTETHER=true
+    fi
+    if [ -n "$STARTED_FILE" ]; then
+        rm -f "$STARTED_FILE" "$CLOSED_FILE"
+        rmdir "$STARTED_DIR" 2>/dev/null || true
+    fi
+
+    if [[ "$CLOSED_FROM_UNTETHER" == "true" ]]; then
+        # A shell wrapper (e.g. a zsh function running `ut claude`) may close its window on it.
+        exit "$UT_EXIT_CLOSED"
+    fi
+    if [[ "$FORWARDER_STARTED" == "true" && $EXIT_CODE -eq 137 ]]; then
+        # The forwarder itself was SIGKILLed and could not restore the window: do it here.
+        printf '\033[?25h\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l\033[?1004l\033[<u\033[0m' >&2
+        stty sane 2>/dev/null || true
+    fi
+    
+    local END_TIME=$(date +%s%N 2>/dev/null || echo "1000000000")  # 1 second if date doesn't support nanoseconds
+    
+    # Calculate duration in milliseconds
+    local DURATION=0
+    if [[ "$START_TIME" != "0" && "$END_TIME" != "1000000000" ]]; then
+        DURATION=$(( (END_TIME - START_TIME) / 1000000 ))
+    fi
+    
+    # Runtime SIGKILL also exits 137, including force-termination from the web UI.
+    # Only use the direct fallback when the forwarder never reached its entrypoint.
+    if [ -n "$STARTED_FILE" ] && [[ "$FORWARDER_STARTED" != "true" ]] && { [[ $EXIT_CODE -eq 137 ]] || ([[ $EXIT_CODE -ne 0 ]] && [[ $DURATION -lt 100 ]]); }; then
+        # Log the error
+        echo "[ut] Untether binary killed by macOS (exit code: $EXIT_CODE). Running command directly." >&2
+        
+        # Extract the actual command (skip untether binary and forwarder)
+        local FALLBACK_CMD=()
+        local SKIP_NEXT=0
+        local IN_COMMAND=0
+        local USING_FWD_BIN=false
+
+        if [[ -n "$UNTETHER_FWD_BIN" && "${SAVED_CMD[0]}" == "$UNTETHER_FWD_BIN" ]]; then
+            USING_FWD_BIN=true
+        fi
+        
+        for arg in "${SAVED_CMD[@]}"; do
+            # Skip the untether binary path
+            if [[ "$arg" == "$UNTETHER_BIN" || "$arg" == "$UNTETHER_FWD_BIN" ]]; then
+                continue
+            fi
+            # Skip "fwd" when using untether binary
+            if [[ "$USING_FWD_BIN" != "true" && "$arg" == "fwd" ]]; then
+                IN_COMMAND=1
+                continue
+            fi
+            # Skip verbosity/title-mode/session-id/log-file/update-title args
+            if [[ "$arg" == "--verbosity" || "$arg" == "--title-mode" || "$arg" == "--session-id" || "$arg" == "--log-file" || "$arg" == "--update-title" ]]; then
+                SKIP_NEXT=1
+                continue
+            fi
+            # Skip end-of-options marker
+            if [[ "$arg" == "--" && $IN_COMMAND -eq 0 ]]; then
+                IN_COMMAND=1
+                continue
+            fi
+            if [[ $SKIP_NEXT -eq 1 ]]; then
+                SKIP_NEXT=0
+                continue
+            fi
+            # If using untether-fwd, detect first non-option as command start
+            if [[ "$USING_FWD_BIN" == "true" && $IN_COMMAND -eq 0 ]]; then
+                if [[ "$arg" == --* || "$arg" == "-"* ]]; then
+                    continue
+                fi
+                IN_COMMAND=1
+            fi
+            # Add to fallback command
+            if [[ $IN_COMMAND -eq 1 ]]; then
+                FALLBACK_CMD+=("$arg")
+            fi
+        done
+        
+        # Execute the original command directly
+        exec "${FALLBACK_CMD[@]}"
+    else
+        # Normal exit - return the exit code
+        exit $EXIT_CODE
+    fi
+}
+
+# Function to run the forwarder (prefer native Rust binary when present)
+exec_fwd() {
+    if [ -n "$UNTETHER_FWD_BIN" ] && [ -x "$UNTETHER_FWD_BIN" ]; then
+        exec_with_fallback "$UNTETHER_FWD_BIN" "$@"
+    else
+        # Fall back to untether fwd (which will exec untether-fwd if available)
+        exec_with_fallback "$UNTETHER_BIN" fwd "$@"
+    fi
+}
+
+# Resolve a command to an absolute executable path (only for real binaries)
+resolve_binary_path() {
+    local cmd="$1"
+    local cmd_type
+
+    cmd_type=$(type -t "$cmd" 2>/dev/null || true)
+    if [[ "$cmd_type" != "file" ]]; then
+        return 1
+    fi
+
+    local resolved
+    resolved=$(command -v "$cmd" 2>/dev/null || true)
+    if [[ -n "$resolved" && -x "$resolved" ]]; then
+        printf '%s\n' "$resolved"
+        return 0
+    fi
+
+    return 1
+}
+
+# Function to resolve command through user's shell
+resolve_command() {
+    local user_shell="${SHELL:-/bin/bash}"
+    local cmd="$1"
+    shift
+
+    local shell_name=$(basename "$user_shell")
+
+    # Always try through shell first to handle aliases, functions, and builtins
+    # The shell will fall back to PATH lookup if no alias/function exists
+    case "$shell_name" in
+        zsh)
+            # For zsh, we need interactive mode to get aliases
+            exec_fwd ${VERBOSITY_ARGS:+$VERBOSITY_ARGS} "${TITLE_MODE_ARGS[@]}" "$user_shell" -i -c "$(printf '%q ' "$cmd" "$@")"
+            ;;
+        bash)
+            # For bash, enable alias expansion before parsing the command string.
+            # `shopt -s expand_aliases` inside the same `-c` string is too late.
+            local cmd_string
+            cmd_string="$(printf '%q ' "$cmd" "$@")"
+            local bash_env_file
+            bash_env_file="$(mktemp "${TMPDIR:-/tmp}/ut-bash-env.XXXXXX")"
+            cat >"$bash_env_file" <<'EOF'
+shopt -s expand_aliases
+source ~/.bashrc 2>/dev/null || source ~/.bash_profile 2>/dev/null || true
+rm -f "$BASH_ENV"
+EOF
+            exec_fwd ${VERBOSITY_ARGS:+$VERBOSITY_ARGS} "${TITLE_MODE_ARGS[@]}" /usr/bin/env BASH_ENV="$bash_env_file" "$user_shell" -c "$cmd_string"
+            ;;
+        *)
+            # Generic shell handling
+            exec_fwd ${VERBOSITY_ARGS:+$VERBOSITY_ARGS} "${TITLE_MODE_ARGS[@]}" "$user_shell" -c "$(printf '%q ' "$cmd" "$@")"
+            ;;
+    esac
+}
+
+# Handle --help or -h option, or no arguments (show help)
+if [[ $# -eq 0 || "$1" == "--help" || "$1" == "-h" ]]; then
+    show_help
+    exit 0
+fi
+
+
+# Handle 'ut open' when not inside a session
+if [[ "$1" == "open" ]]; then
+    echo "Error: 'ut open' can only be used inside an Untether session." >&2
+    exit 1
+fi
+
+# Handle 'ut title' command when not inside a session
+if [[ "$1" == "title" ]]; then
+    echo "Error: 'ut title' can only be used inside an Untether session." >&2
+    echo "Start a session first with 'ut' or 'ut <command>'" >&2
+    exit 1
+fi
+
+# Handle 'ut follow' command
+if [[ "$1" == "follow" ]]; then
+    # Detect if we're in a worktree
+    IS_WORKTREE=$(git rev-parse --is-inside-work-tree 2>/dev/null)
+    COMMON_DIR=$(git rev-parse --git-common-dir 2>/dev/null)
+    
+    if [[ "$IS_WORKTREE" == "true" ]] && [[ "$COMMON_DIR" != ".git" ]]; then
+        # We're in a worktree
+        if [[ -n "$2" ]]; then
+            # Error if trying to specify path/branch from worktree
+            WORKTREE_PATH=$(git rev-parse --show-toplevel)
+            echo "Error: Cannot specify arguments when running from a worktree."
+            echo "To enable follow mode for this worktree ($(prettify_path "$WORKTREE_PATH")):"
+            echo "  ut follow"
+            exit 1
+        fi
+        
+        WORKTREE_PATH=$(git rev-parse --show-toplevel)
+        # Extract main repo path from git common dir
+        MAIN_REPO=$(dirname "$COMMON_DIR")
+        
+        echo "Enabling follow mode for worktree: $(prettify_path "$WORKTREE_PATH")"
+        echo "Main repository ($(prettify_path "$MAIN_REPO")) will track this worktree"
+        
+        # Use untether CLI with worktree context
+        exec "$UNTETHER_BIN" follow --from-worktree --worktree-path "$WORKTREE_PATH" --main-repo "$MAIN_REPO"
+    else
+        # We're in main repo
+        MAIN_REPO=$(git rev-parse --show-toplevel 2>/dev/null)
+        if [[ -z "$MAIN_REPO" ]]; then
+            echo "Error: Not in a git repository" >&2
+            exit 1
+        fi
+        
+        ARG="$2"
+        
+        if [[ -z "$ARG" ]]; then
+            # No argument - try to be smart
+            CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
+            
+            if [[ -z "$CURRENT_BRANCH" ]]; then
+                # Detached HEAD
+                echo "Error: Not on a branch (detached HEAD state)."
+                echo "Available worktrees:"
+                git worktree list | tail -n +2 | while read -r line; do
+                    WPATH=$(echo "$line" | awk '{print $1}')
+                    WBRANCH=$(echo "$line" | grep -oE '\[[^]]+\]' | tr -d '[]')
+                    echo "  $WBRANCH -> $(prettify_path "$WPATH")"
+                done
+                echo ""
+                echo "To follow a worktree, use one of:"
+                echo "  ut follow <branch-name>"
+                echo "  ut follow <worktree-path>"
+                exit 1
+            fi
+            
+            # Check if current branch has a worktree
+            WORKTREE_PATH=$(git worktree list --porcelain | grep -B2 "branch refs/heads/$CURRENT_BRANCH" | grep "worktree" | cut -d' ' -f2 | grep -v "^$MAIN_REPO$" | head -n1)
+            
+            if [[ -z "$WORKTREE_PATH" ]]; then
+                # No worktree for current branch
+                echo "Error: Current branch '$CURRENT_BRANCH' has no associated worktree."
+                echo "Available worktrees:"
+                git worktree list | tail -n +2 | while read -r line; do
+                    WPATH=$(echo "$line" | awk '{print $1}')
+                    WBRANCH=$(echo "$line" | grep -oE '\[[^]]+\]' | tr -d '[]')
+                    echo "  $WBRANCH -> $(prettify_path "$WPATH")"
+                done
+                echo ""
+                echo "To follow a worktree, use one of:"
+                echo "  ut follow <branch-name>"
+                echo "  ut follow <worktree-path>"
+                exit 1
+            fi
+            
+            # Success - current branch has a worktree
+            echo "Enabling follow mode for branch: $CURRENT_BRANCH"
+            echo "Following worktree: $(prettify_path "$WORKTREE_PATH")"
+            echo "Main repository: $(prettify_path "$MAIN_REPO")"
+            exec "$UNTETHER_BIN" follow --worktree-path "$WORKTREE_PATH" --main-repo "$MAIN_REPO"
+            
+        elif [[ -d "$ARG" ]] || [[ "$ARG" == /* ]] || [[ "$ARG" == ../* ]]; then
+            # Path argument
+            WORKTREE_PATH=$(realpath "$ARG" 2>/dev/null)
+            if [[ -z "$WORKTREE_PATH" ]] || [[ ! -d "$WORKTREE_PATH" ]]; then
+                echo "Error: Invalid path: $ARG" >&2
+                exit 1
+            fi
+            echo "Enabling follow mode for worktree: $(prettify_path "$WORKTREE_PATH")"
+            echo "Main repository: $(prettify_path "$MAIN_REPO")"
+            exec "$UNTETHER_BIN" follow --worktree-path "$WORKTREE_PATH" --main-repo "$MAIN_REPO"
+        else
+            # Branch argument
+            WORKTREE_PATH=$(git worktree list --porcelain | grep -B2 "branch refs/heads/$ARG" | grep "worktree" | cut -d' ' -f2 | grep -v "^$MAIN_REPO$" | head -n1)
+            
+            if [[ -z "$WORKTREE_PATH" ]]; then
+                echo "Error: No worktree found for branch '$ARG'"
+                echo "Create a worktree first: git worktree add ../${ARG//\//-} $ARG"
+                exit 1
+            fi
+            
+            echo "Enabling follow mode for branch: $ARG"
+            echo "Following worktree: $(prettify_path "$WORKTREE_PATH")"
+            echo "Main repository: $(prettify_path "$MAIN_REPO")"
+            exec "$UNTETHER_BIN" follow --worktree-path "$WORKTREE_PATH" --main-repo "$MAIN_REPO"
+        fi
+    fi
+fi
+
+# Handle 'ut unfollow' command
+if [[ "$1" == "unfollow" ]]; then
+    # Use untether CLI to disable follow mode via socket
+    exec "$UNTETHER_BIN" unfollow
+fi
+
+# Handle 'ut git event' command
+if [[ "$1" == "git" && "$2" == "event" ]]; then
+    # Use untether CLI to send git event via socket
+    exec "$UNTETHER_BIN" git-event
+fi
+
+# Handle verbosity flags
+VERBOSITY_ARGS=""
+if [[ "$1" == "--quiet" || "$1" == "-q" ]]; then
+    VERBOSITY_ARGS="--verbosity silent"
+    shift
+elif [[ "$1" == "--verbose" || "$1" == "-v" ]]; then
+    VERBOSITY_ARGS="--verbosity info"
+    shift
+elif [[ "$1" == "-vv" ]]; then
+    VERBOSITY_ARGS="--verbosity verbose"
+    shift
+elif [[ "$1" == "-vvv" ]]; then
+    VERBOSITY_ARGS="--verbosity debug"
+    shift
+fi
+
+# Handle --shell or -i option (launch current shell)
+if [[ "$1" == "--shell" || "$1" == "-i" ]]; then
+    shift
+    # Execute current shell through untether
+    exec "$0" ${VERBOSITY_ARGS:+$VERBOSITY_ARGS} "${SHELL:-/bin/bash}" "$@"
+fi
+
+# Handle --no-shell-wrap or -S option
+NO_SHELL_WRAP=false
+if [[ "$1" == "--no-shell-wrap" || "$1" == "-S" ]]; then
+    NO_SHELL_WRAP=true
+    shift
+fi
+
+# Handle --title-mode option
+TITLE_MODE_ARGS=()
+if [[ "$1" == "--title-mode" && $# -gt 1 ]]; then
+    TITLE_MODE_ARGS=(--title-mode "$2")
+    shift 2
+fi
+
+# Check if we have arguments and if the first argument is not an option
+if [ $# -gt 0 ] && [[ "$1" != -* ]]; then
+    if [[ "$NO_SHELL_WRAP" == "true" ]]; then
+        # Execute directly without shell wrapper
+        exec_fwd ${VERBOSITY_ARGS:+$VERBOSITY_ARGS} "${TITLE_MODE_ARGS[@]}" "$@"
+    else
+        # Resolve binaries to absolute paths so the server uses the same executable
+        cmd="$1"
+        shift
+        cmd_args=("$@")
+
+        if [[ "$cmd" == */* ]]; then
+            exec_fwd ${VERBOSITY_ARGS:+$VERBOSITY_ARGS} "${TITLE_MODE_ARGS[@]}" "$cmd" "${cmd_args[@]}"
+        else
+            resolved_path="$(resolve_binary_path "$cmd" || true)"
+            if [[ -n "$resolved_path" ]]; then
+                exec_fwd ${VERBOSITY_ARGS:+$VERBOSITY_ARGS} "${TITLE_MODE_ARGS[@]}" "$resolved_path" "${cmd_args[@]}"
+            else
+                # Not a real binary, try alias resolution
+                resolve_command "$cmd" "${cmd_args[@]}"
+            fi
+        fi
+    fi
+else
+    # Run with fwd command (original behavior for options)
+    exec_fwd ${VERBOSITY_ARGS:+$VERBOSITY_ARGS} "${TITLE_MODE_ARGS[@]}" "$@"
+fi

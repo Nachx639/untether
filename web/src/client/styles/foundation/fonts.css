@@ -1,0 +1,84 @@
+/* Fira Code Variable Font */
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src:
+    url('/fonts/FiraCode-VF.woff2') format('woff2-variations'),
+    url('/fonts/FiraCode-VF.ttf') format('truetype-variations');
+  font-variation-settings: 'wght' 400;
+}
+
+/* Hack Nerd Font Mono, split by scripts/build-terminal-fonts.py (2026-10-04): the core file
+   (~110 KB, text, box drawing, Powerline) is preloaded by index.html; the icon files (Private
+   Use, ~590 + ~455 KB) are fetched only when a page draws one of their characters. Keep the
+   unicode-range values in step with PARTS in that script (terminal-fonts.test.ts checks). */
+@font-face {
+  font-family: 'Hack Nerd Font Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/hack-core-regular.woff2') format('woff2');
+  unicode-range: U+0-DFFF, U+E0A0-E0D7, U+F900-EFFFF;
+}
+
+@font-face {
+  font-family: 'Hack Nerd Font Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/hack-pua-regular.woff2') format('woff2');
+  unicode-range: U+E000-E09F, U+E0D8-F8FF;
+}
+
+@font-face {
+  font-family: 'Hack Nerd Font Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/hack-spua-regular.woff2') format('woff2');
+  unicode-range: U+F0000-10FFFF;
+}
+
+@font-face {
+  font-family: 'Hack Nerd Font Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/hack-core-bold.woff2') format('woff2');
+  unicode-range: U+0-DFFF, U+E0A0-E0D7, U+F900-EFFFF;
+}
+
+@font-face {
+  font-family: 'Hack Nerd Font Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/hack-pua-bold.woff2') format('woff2');
+  unicode-range: U+E000-E09F, U+E0D8-F8FF;
+}
+
+@font-face {
+  font-family: 'Hack Nerd Font Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/hack-spua-bold.woff2') format('woff2');
+  unicode-range: U+F0000-10FFFF;
+}
+
+/* Override Tailwind's font-mono to use Hack Nerd Font */
+.font-mono {
+  font-family: var(--font-mono) !important;
+}
+
+/* Numbers that line up (durations, counts, times) and short machine data. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+.ut-data {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}

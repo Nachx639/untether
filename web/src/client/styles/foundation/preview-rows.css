@@ -1,0 +1,169 @@
+/* Dev-server previews as rows (components/preview-row.ts) and their own view
+   (components/preview-view.ts), 2026-10-03. */
+.pvr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0 6px;
+}
+.pvr-header .pvr-heading {
+  margin: 0;
+}
+/* "+ Añadir vista previa": a quiet text button on the section heading (2026-10-03). */
+.pvr-add {
+  flex: none;
+  min-height: 32px;
+  padding: 0 8px;
+  margin-right: -8px;
+  border-radius: var(--ut-r-8);
+  font-size: 0.8125rem;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-primary-text);
+  touch-action: manipulation;
+}
+.pvr-add:active,
+.pvr-add:hover {
+  background: var(--color-bg-tertiary);
+}
+/* "de: <session>" while that session exists: a link to it. */
+.pvr-from-link {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.pvr-heading {
+  margin: 4px 0 6px;
+  font-size: 0.75rem;
+  font-weight: var(--ut-fw-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.pvr-list {
+  margin-bottom: 16px;
+}
+.pvr-avatar {
+  background: color-mix(in srgb, var(--color-primary) 16%, var(--color-bg-tertiary));
+  font-size: 24px;
+}
+.pvr-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 2px;
+  font-size: 0.875rem;
+  color: var(--color-text-dim);
+}
+.pvr-from {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pvr-port {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+.pvr-state {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-text-muted);
+}
+.pvr-state-live {
+  color: var(--color-status-success-text);
+}
+.pvr-state-down {
+  color: var(--color-status-error-text);
+}
+.pvr-down .psr-avatar,
+.pvr-down .psr-title,
+.pvr-down .pvr-from {
+  opacity: 0.5;
+}
+.pvr-close {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ut-r-circle);
+  color: var(--color-text-muted);
+  font-size: 16px;
+  touch-action: manipulation;
+}
+.pvr-close:active,
+.pvr-close:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+}
+.pvr-highlight {
+  animation: pvr-glow 2.4s ease-out;
+}
+@keyframes pvr-glow {
+  0%,
+  40% {
+    background: var(--color-primary-muted);
+    box-shadow: inset 3px 0 0 var(--color-primary);
+  }
+  100% {
+    background: var(--color-bg);
+    box-shadow: inset 3px 0 0 transparent;
+  }
+}
+.pv-view {
+  height: 100vh;
+  height: 100dvh;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  border-bottom: 0;
+}
+.pv-back-name {
+  max-width: 34vw;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Opened from a session, Back carries its name ("‹ claude (~/project…)"). On a wide phone that
+   name plus six fixed buttons left the address no room: ":4321" slid under the reload button.
+   The name gives way first, down to the arrow, and the address keeps room for the port. */
+.pv-view .pv-btn.pv-back {
+  flex-shrink: 1;
+  min-width: 40px;
+}
+.pv-view .pv-address-form {
+  min-width: 6.5rem;
+}
+.pv-view .pv-btn.pv-back svg {
+  flex-shrink: 0;
+}
+.pv-down {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.pv-down-icon {
+  font-size: 40px;
+  opacity: 0.5;
+}
+.pv-down-title {
+  font-size: 1.0625rem;
+  font-weight: var(--ut-fw-semibold);
+}
+.pv-down-body {
+  max-width: 320px;
+  font-size: 0.9375rem;
+  color: var(--color-text-dim);
+  margin-bottom: 8px;
+}

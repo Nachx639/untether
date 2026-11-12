@@ -1,0 +1,13 @@
+[96ma.ts[0m:[93m1[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'number'.
+
+[7m1[0m const x: number = 'a';
+[7m [0m [91m      ~[0m
+
+[96ma.ts[0m:[93m2[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'foo' does not exist on type 'string'.
+
+[7m2[0m function f(y: string) { return y.foo; }
+[7m [0m [91m                                 ~~~[0m
+
+
+Found 2 errors in the same file, starting at: a.ts[90m:1[0m
+

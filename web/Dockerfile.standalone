@@ -1,0 +1,223 @@
+# Untether Standalone Server Docker Image
+# Mount your code and get instant web terminal access with tunnels
+
+FROM node:24-trixie-slim
+
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+# Install system dependencies and common development tools
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    make \
+    g++ \
+    git \
+    curl \
+    wget \
+    vim \
+    nano \
+    htop \
+    tree \
+    jq \
+    unzip \
+    ca-certificates \
+    openssh-client \
+    dash \
+    bash \
+    xz-utils \
+    libpam0g-dev \
+    && ln -sf /bin/dash /bin/sh \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install the pinned Rust toolchain for untether-fwd builds.
+SHELL ["/bin/bash", "-c"]
+ARG RUST_VERSION=1.97.0
+ARG RUSTUP_VERSION=1.29.0
+ARG RUSTUP_AMD64_SHA256=4acc9acc76d5079515b46346a485974457b5a79893cfb01112423c89aeb5aa10
+ARG RUSTUP_ARM64_SHA256=9732d6c5e2a098d3521fca8145d826ae0aaa067ef2385ead08e6feac88fa5792
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo
+ENV PATH=/usr/local/cargo/bin:${PATH}
+ARG PNPM_VERSION=10.15.0
+ARG TYPESCRIPT_VERSION=7.0.2
+ARG TS_NODE_VERSION=10.9.2
+ARG NODEMON_VERSION=3.1.14
+ARG NGROK_VERSION=3.39.7
+ARG NGROK_REPO_ASC_SHA256=8a57c28e1779e2a8e5bba3865fffd6805e15898988c235eae862f3069c3f2c28
+ARG CLOUDFLARED_VERSION=2026.6.0
+ARG CLOUDFLARED_AMD64_SHA256=08d27c4c5d3ed73ee3e98ef2ddceb4ad09fd4cfc28e243565a189538e8ccd706
+ARG CLOUDFLARED_ARM64_SHA256=8482ebf1e74a2a4a1a9f1e090e17e3de08423f94100ece6789287cb26fb9480f
+RUN set -euo pipefail; \
+    arch="$(uname -m)"; \
+    case "$arch" in \
+      aarch64|arm64) rust_target="aarch64-unknown-linux-gnu"; rustup_sha="$RUSTUP_ARM64_SHA256";; \
+      x86_64|amd64) rust_target="x86_64-unknown-linux-gnu"; rustup_sha="$RUSTUP_AMD64_SHA256";; \
+      *) echo "unsupported arch: $arch" >&2; exit 1;; \
+    esac; \
+    rustup_url="https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/${rust_target}/rustup-init"; \
+    curl --proto '=https' --tlsv1.2 -fsSL "$rustup_url" -o /tmp/rustup-init; \
+    echo "${rustup_sha}  /tmp/rustup-init" | sha256sum -c -; \
+    chmod +x /tmp/rustup-init; \
+    /tmp/rustup-init -y --no-modify-path --profile minimal --default-toolchain "$RUST_VERSION"; \
+    rm /tmp/rustup-init; \
+    host_target="$(rustc +"$RUST_VERSION" -vV | sed -n 's/^host: //p')"; \
+    rustup target add --toolchain "$RUST_VERSION" "$host_target"; \
+    rustc +"$RUST_VERSION" --version | grep -F "rustc $RUST_VERSION "
+
+# Install ngrok from its signed repository at an exact package version.
+RUN set -euo pipefail; \
+    curl -fsSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc -o /tmp/ngrok.asc; \
+    echo "${NGROK_REPO_ASC_SHA256}  /tmp/ngrok.asc" | sha256sum -c -; \
+    mkdir -p /etc/apt/keyrings; \
+    install -m 0644 /tmp/ngrok.asc /etc/apt/keyrings/ngrok.asc; \
+    echo "deb [signed-by=/etc/apt/keyrings/ngrok.asc] https://ngrok-agent.s3.amazonaws.com buster main" \
+      > /etc/apt/sources.list.d/ngrok.list; \
+    apt-get update; \
+    apt-get install -y "ngrok=${NGROK_VERSION}"; \
+    rm -rf /var/lib/apt/lists/* /tmp/ngrok.asc
+
+# Install cloudflared from a pinned release.
+RUN set -euo pipefail; \
+    arch="$(uname -m)"; \
+    case "$arch" in \
+      aarch64|arm64) cloudflared_arch="arm64"; cloudflared_sha="$CLOUDFLARED_ARM64_SHA256";; \
+      x86_64|amd64) cloudflared_arch="amd64"; cloudflared_sha="$CLOUDFLARED_AMD64_SHA256";; \
+      *) echo "unsupported arch: $arch" >&2; exit 1;; \
+    esac; \
+    cloudflared_url="https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/cloudflared-linux-${cloudflared_arch}"; \
+    curl -fsSL "$cloudflared_url" -o /usr/local/bin/cloudflared; \
+    echo "${cloudflared_sha}  /usr/local/bin/cloudflared" | sha256sum -c -; \
+    chmod +x /usr/local/bin/cloudflared
+
+# Install the package manager and pinned development CLIs advertised by this image.
+RUN corepack enable \
+    && corepack prepare "pnpm@${PNPM_VERSION}" --activate \
+    && npm install --global \
+      "typescript@${TYPESCRIPT_VERSION}" \
+      "ts-node@${TS_NODE_VERSION}" \
+      "nodemon@${NODEMON_VERSION}"
+
+# Set working directory for Untether
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
+COPY node-pty ./node-pty
+COPY scripts ./scripts
+# 2026-10-25: pnpm install failed with ENOENT on patches/authenticate-pam@1.0.5.patch: the
+# patchedDependencies files must be in the image before the install.
+COPY patches ./patches
+
+# Install dependencies
+ENV PUPPETEER_SKIP_DOWNLOAD=1
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Ensure ut-fwd sources exist for web-only context builds.
+ARG UT_FWD_REPOSITORY=https://github.com/Nachx639/untether.git
+ARG UT_FWD_COMMIT
+# 2026-10-25: a failed fetch (private repository) went on to cp and cargo, which failed far from
+# the cause: stop at the first failing command.
+RUN set -e; if [ ! -d /app/native/ut-fwd ]; then \
+      if [ -z "$UT_FWD_COMMIT" ]; then \
+        echo "UT_FWD_COMMIT must be an exact Untether commit" >&2; \
+        exit 1; \
+      fi; \
+      git init /tmp/ut-src; \
+      git -C /tmp/ut-src remote add origin "$UT_FWD_REPOSITORY"; \
+      git -C /tmp/ut-src fetch --depth 1 origin "$UT_FWD_COMMIT"; \
+      git -C /tmp/ut-src checkout --detach FETCH_HEAD; \
+      mkdir -p /app/native; \
+      cp -R /tmp/ut-src/native/ut-fwd /app/native/ut-fwd; \
+      rm -rf /tmp/ut-src; \
+    fi
+
+# Build and install the native forwarder with Cargo.
+RUN set -euo pipefail; \
+    version="$(node -p 'require("./package.json").version')"; \
+    UNTETHER_VERSION="$version" \
+      cargo +"$RUST_VERSION" build --locked --release \
+        --manifest-path native/ut-fwd/Cargo.toml; \
+    mkdir -p native bin; \
+    install -m 0755 native/ut-fwd/target/release/untether-fwd native/untether-fwd; \
+    install -m 0755 native/ut-fwd/target/release/untether-fwd bin/untether-fwd
+
+# Build the project
+ENV UT_SKIP_VERSION_SYNC=1
+RUN ln -sf /bin/dash /bin/sh && pnpm run build
+
+# Create workspace directory for mounted code
+RUN mkdir -p /workspace
+WORKDIR /workspace
+
+# Expose default port
+EXPOSE 4020
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV UNTETHER_BUNDLED=true
+ENV BUILD_PUBLIC_PATH=/app/public
+ENV PORT=4020
+ENV PATH="/workspace/node_modules/.bin:${PATH}"
+
+# Create entrypoint script that handles command passthrough
+RUN cat <<'EOF' > /entrypoint.sh
+#!/bin/bash
+set -e
+# If no arguments provided, show usage
+if [ $# -eq 0 ]; then
+  echo "Untether Docker Container"
+  echo "Usage: docker run -v /path/to/code:/workspace -p 4020:4020 untether [OPTIONS]"
+  echo ""
+  echo "Examples:"
+  echo "  docker run -v \$(pwd):/workspace -p 4020:4020 untether --ngrok"
+  echo "  docker run -v \$(pwd):/workspace -p 4020:4020 untether --cloudflare"
+  echo "  docker run -v \$(pwd):/workspace -p 4020:4020 untether --ngrok"
+  echo ""
+  echo "Your code will be available at /workspace in the terminal"
+  echo "Access via browser at http://localhost:4020 or the tunnel URL"
+  exit 1
+fi
+# Start Untether with all provided arguments
+exec node /app/dist/cli.js --bind 0.0.0.0 "$@"
+EOF
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Default arguments (can be overridden).
+# 2026-10-20: --no-auth alone now binds 127.0.0.1 and refuses a network address, so the old
+# CMD ["--no-auth"] (the entrypoint adds --bind 0.0.0.0) made the container exit at start. A
+# container is a network service by design: listen on all interfaces and say so explicitly.
+# Publish the port on the host's loopback (-p 127.0.0.1:4020:4020) unless the network is trusted.
+CMD ["--no-auth", "--bind", "0.0.0.0", "--unsafe-no-auth-on-network"]
+
+# Example Usage:
+#
+# Build from a source checkout:
+# docker build -f Dockerfile.standalone -t untether \
+#   --build-arg UT_FWD_COMMIT="$(git rev-parse HEAD)" .
+#
+# Released npm packages contain the runtime-only Dockerfile.npm variant:
+# docker build -f Dockerfile.standalone -t untether .
+#
+# Mount your code and run with ngrok:
+# docker run -v $(pwd):/workspace -p 4020:4020 untether --ngrok
+#
+# With Cloudflare tunnel:
+# docker run -v /path/to/project:/workspace -p 4020:4020 untether --cloudflare
+#
+# With ngrok auth token:
+# docker run -v $(pwd):/workspace -p 4020:4020 untether --ngrok --ngrok-auth YOUR_TOKEN
+#
+# Local development (no tunnel):
+# docker run -v $(pwd):/workspace -p 127.0.0.1:4020:4020 untether
+#
+# With authentication:
+# docker run -v $(pwd):/workspace -p 4020:4020 untether --enable-ssh-keys
+#
+# Your mounted code will be available at /workspace in the terminal
+# Access via http://localhost:4020 or the tunnel URL

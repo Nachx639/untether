@@ -1,0 +1,30 @@
+@media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+  /* ---- «Te necesita (n)» on the phone: the same section, edge to edge, rows of 52 px
+     (thumb targets), the button at the end of the row ---- */
+  .ut-needs--phone {
+    margin: 0 calc(-1 * var(--p-gutter, 16px)) 12px;
+    border-width: 0 0 1px;
+    border-radius: 0;
+  }
+  .ut-needs--phone .ut-needs-head {
+    padding: 4px calc(var(--p-gutter, 16px) - 8px) 0 var(--p-gutter, 16px);
+  }
+  .ut-needs--phone .ut-needs-list {
+    padding: 0 calc(var(--p-gutter, 16px) - 8px) 4px;
+  }
+  .ut-needs--phone .ut-needs-item,
+  .ut-needs--phone .ut-needs-main {
+    min-height: var(--ut-phone-needs-h, 52px);
+  }
+  .ut-needs--phone .ut-needs-name {
+    font-size: var(--ut-phone-row-title, 15px);
+    line-height: var(--ut-phone-row-line, 20px);
+  }
+  .ut-needs--phone .ut-needs-act {
+    min-height: var(--ut-action-h, 36px);
+    font-size: 14px;
+  }
+  .ut-needs--phone .ut-needs-more {
+    margin-left: calc(var(--p-gutter, 16px) - 8px);
+  }
+}

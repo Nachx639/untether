@@ -1,0 +1,68 @@
+@layer components {
+  /* A finger needs 44 px: the hit area grows, the look does not. */
+  @media (pointer: coarse) {
+    .ut-icon-btn::before,
+    .ut-btn::before,
+    .ut-switch::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+    }
+    .ut-icon-btn--sm::before {
+      inset: -10px;
+    }
+    .ut-btn::before {
+      inset: -6px 0;
+    }
+    .ut-btn--sm::before {
+      inset: -8px 0;
+    }
+    .ut-switch::before {
+      inset: -12px -4px;
+    }
+    .ut-menu-item {
+      min-height: 44px;
+    }
+    /* A thumb-sized segmented control (phone-spec §2, 2026-10-12): the visual size changes
+       here on purpose, a 28 px track was too small to hit on an iPad as well. */
+    .ut-segmented {
+      height: 36px;
+      padding: 3px;
+    }
+    .ut-segmented > button,
+    .ut-segmented > .ut-segmented-item {
+      position: relative;
+      height: 30px;
+      padding: 0 12px;
+      font-size: 14px;
+      line-height: 18px;
+    }
+    /* 30 px items, 44 px to the finger: the halo grows up and down only (neighbours touch,
+       never overlap). */
+    .ut-segmented > button::before,
+    .ut-segmented > .ut-segmented-item::before {
+      content: '';
+      position: absolute;
+      inset: -7px 0;
+    }
+  }
+
+  /* Phone settings-style rows: readable at arm's length (phone-spec §3.2). */
+  @media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+    .ut-row {
+      min-height: 52px;
+    }
+    .ut-row-label {
+      font-size: var(--p-text-row);
+      line-height: var(--p-text-row--line-height);
+    }
+    .ut-row-desc {
+      font-size: var(--p-text-caption);
+      line-height: var(--p-text-caption--line-height);
+    }
+    .ut-section-label {
+      font-size: var(--p-text-micro);
+      line-height: var(--p-text-micro--line-height);
+    }
+  }
+}

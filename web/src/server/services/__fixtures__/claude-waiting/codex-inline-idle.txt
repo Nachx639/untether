@@ -1,0 +1,30 @@
+
+  >_ OpenAI Codex (v0.164.0)
+     ~/proyecto/repo
+
+
+› Ask Codex to do anything
+
+  mock-model default · ~/proyecto/repo
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

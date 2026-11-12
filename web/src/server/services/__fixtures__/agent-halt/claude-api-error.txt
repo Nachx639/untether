@@ -1,0 +1,13 @@
+⏺ Bash(pnpm run test -- task-scheduler)
+  ⎿  Test Files  12 passed (12)
+          Tests  412 passed (412)
+
+⏺ Update(src/server/services/task-scheduler.ts)
+  ⎿  Updated src/server/services/task-scheduler.ts with 4 additions
+  ⎿  API Error: Can't reach the API server — check your internet or DNS (ENOTFOUND)
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Opus 5.5  ·  semana 37% (reinicia vie 11:00)  ·  contexto 22%
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

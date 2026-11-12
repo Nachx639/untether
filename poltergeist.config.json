@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "projectType": "swift",
+  "targets": [
+    {
+      "name": "untether",
+      "type": "app-bundle",
+      "buildCommand": "xcodebuild -workspace Untether.xcworkspace -scheme Untether -configuration Debug -derivedDataPath mac/build build",
+      "outputPath": "./mac/build/Build/Products/Debug/Untether.app",
+      "bundleId": "com.nachx639.untether.debug",
+      "watchPaths": [
+        "./**/*.{swift,xcconfig,entitlements,plist}",
+        "./**/*.xcodeproj/**",
+        "./native/ut-fwd/src/**/*.rs",
+        "./native/ut-fwd/Cargo.toml",
+        "./native/ut-fwd/rust-toolchain.toml",
+        "./native/ut-fwd/Cargo.lock",
+        "./web/scripts/build-fwd-rust.js"
+      ]
+    },
+    {
+      "name": "untether-ios",
+      "type": "app-bundle",
+      "buildCommand": "cd ios && xcodebuild -project Untether-iOS.xcodeproj -scheme Untether-iOS -configuration Debug -sdk iphonesimulator -derivedDataPath build build",
+      "outputPath": "./ios/build/Build/Products/Debug-iphonesimulator/Untether.app",
+      "bundleId": "com.nachx639.untether.ios",
+      "watchPaths": [
+        "ios/**/*.{swift,xcconfig,entitlements,plist}",
+        "ios/**/*.xcodeproj/**"
+      ],
+      "enabled": false
+    }
+  ]
+}

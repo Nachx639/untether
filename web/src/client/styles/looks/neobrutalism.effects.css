@@ -1,0 +1,315 @@
+/* Neobrutalismo: 3 px black frames, 4 px corners and hard shadows on the shared paint hooks only.
+ * Values live in neobrutalism.css. Every fill is flat; nothing here filters, blends or moves what a
+ * piece holds. */
+
+/* The lesser bars are white, closed by a 3 px black rule; the top bars are yellow bands with a
+   4 px one. */
+html[data-look="neobrutalism"] .ut-surface--bar {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  box-shadow: var(--ut-bar-rule);
+  border-color: var(--ut-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="neobrutalism"] .ut-surface--bar:where(.ut-home-header),
+html[data-look="neobrutalism"] .ut-surface--bar:where(.ut-phone-header),
+html[data-look="neobrutalism"] .ut-surface--bar:where(.ut-sidebar-header),
+html[data-look="neobrutalism"] .ut-surface--bar:where(.ut-session-header),
+html[data-look="neobrutalism"] .ut-surface--bar:where(.ut-ph-header) {
+  background-color: var(--ut-session-bar);
+  background-image: var(--ut-bar-fill);
+  box-shadow: var(--ut-bar-relief);
+}
+
+/* Panels: warm white, a 3 px black frame and the hard shadow. */
+html[data-look="neobrutalism"] .ut-card,
+html[data-look="neobrutalism"] .ut-surface--panel {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  border: 3px solid var(--ut-border);
+  border-radius: var(--ut-r-md);
+  box-shadow: var(--ut-panel-shadow);
+}
+
+/* A request: a plate of its own, flat. */
+html[data-look="neobrutalism"] .ut-surface--request {
+  background-image: none;
+  border: 3px solid var(--ut-border);
+  box-shadow: var(--ut-needs-item-shadow);
+}
+
+/* A task's sheet: flat, in a black frame drawn inside (its sheet would cut a shadow). Coral says
+   failure and pale yellow a question, each also said in words; the shield notice is the one
+   orange plate. */
+html[data-look="neobrutalism"] .ut-surface--detail {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  border-color: var(--ut-border);
+  box-shadow: inset 0 0 0 3px var(--ut-border);
+}
+html[data-look="neobrutalism"] .ut-surface--detail:where(.ut-surface--failed) {
+  background-color: var(--ut-paper-coral);
+}
+html[data-look="neobrutalism"] .ut-surface--detail:where(.ut-surface--needs) {
+  background-color: var(--ut-paper-yellow);
+}
+html[data-look="neobrutalism"] .ut-surface--detail:where(.ut-surface--ready) {
+  background-color: var(--ut-paper-green);
+}
+html[data-look="neobrutalism"] .ut-surface--notice {
+  background-color: var(--ut-banner-bg);
+  background-image: none;
+  border: var(--ut-banner-border);
+  border-radius: var(--ut-r-md);
+  box-shadow: var(--ut-banner-relief);
+}
+
+/* Floating pieces: warm white; the frame and the hard shadow come from the elevation. */
+html[data-look="neobrutalism"] .ut-surface--floating,
+html[data-look="neobrutalism"] .ut-dialog,
+html[data-look="neobrutalism"] .ut-menu,
+html[data-look="neobrutalism"] .ut-toast,
+html[data-look="neobrutalism"] .ut-tooltip {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-look="neobrutalism"] .ut-menu,
+html[data-look="neobrutalism"] .ut-toast,
+html[data-look="neobrutalism"] .ut-tooltip {
+  box-shadow: var(--ut-elev-2);
+}
+/* A sheet's own close button sits at the screen's edge: a short shadow that fits there. */
+html[data-look="neobrutalism"] .ut-surface--floating:where(button) {
+  box-shadow: inset 0 0 0 3px var(--ut-border), var(--ut-control-relief-small);
+}
+
+/* Controls: warm white, a 3 px black outline and a hard 4 px shadow. Chips are lighter (2 px):
+   they sit inside rows. */
+html[data-look="neobrutalism"] .ut-btn,
+html[data-look="neobrutalism"] .ut-surface--action {
+  border: 3px solid var(--ut-border);
+  border-radius: var(--ut-r-md);
+}
+html[data-look="neobrutalism"] .ut-chip {
+  border: 2px solid var(--ut-border);
+  border-radius: var(--ut-r-md);
+}
+html[data-look="neobrutalism"] .ut-surface--action,
+html[data-look="neobrutalism"] .ut-btn--secondary,
+html[data-look="neobrutalism"] .ut-btn--danger,
+html[data-look="neobrutalism"] .ut-chip {
+  background-color: var(--ut-surface-1);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: var(--ut-control-relief);
+}
+html[data-look="neobrutalism"] .ut-chip {
+  box-shadow: var(--ut-control-relief-small);
+}
+html[data-look="neobrutalism"] .ut-btn--ghost,
+html[data-look="neobrutalism"] .ut-btn--danger-ghost {
+  border-color: transparent;
+  box-shadow: none;
+}
+html[data-look="neobrutalism"] .ut-btn--danger,
+html[data-look="neobrutalism"] .ut-btn--danger-ghost,
+html[data-look="neobrutalism"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+/* Discard: coral with the danger ink, as the recipe's. */
+html[data-look="neobrutalism"] .ut-btn--danger,
+html[data-look="neobrutalism"] .ut-surface--action:where(.ut-surface--danger) {
+  background-color: var(--ut-paper-coral);
+}
+
+/* Tags: a small outlined label, as the «falló» of the recipe. */
+html[data-look="neobrutalism"] .ut-badge,
+html[data-look="neobrutalism"] .ut-status,
+html[data-look="neobrutalism"] .ut-kbd {
+  box-shadow: inset 0 0 0 2px var(--ut-border);
+}
+html[data-look="neobrutalism"] .ut-kbd {
+  background-color: var(--ut-surface-1);
+  color: var(--ut-text);
+}
+
+/* Fields: pure white inside a black outline, flat; the grid never reaches under the writing. */
+html[data-look="neobrutalism"] .ut-surface--inset,
+html[data-look="neobrutalism"] .ut-surface--well,
+html[data-look="neobrutalism"] .ut-field,
+html[data-look="neobrutalism"] .ut-select {
+  background-color: var(--ut-well-fill);
+  background-image: none;
+  border-color: var(--ut-border);
+}
+/* The chat's message box is a plate of its own: the 3 px frame and the hard shadow. */
+html[data-look="neobrutalism"] .ut-surface--well {
+  border: 3px solid var(--ut-border);
+  box-shadow: var(--ut-control-relief);
+}
+/* A plain entry keeps its own 1 px border and gains a ring inside it: a 2 px black line with no
+   change of size. */
+html[data-look="neobrutalism"] .ut-surface--inset {
+  box-shadow: var(--ut-inset-ring);
+}
+html[data-look="neobrutalism"] .ut-field,
+html[data-look="neobrutalism"] .ut-select {
+  box-shadow: var(--ut-field-relief);
+}
+html[data-look="neobrutalism"] .ut-field,
+html[data-look="neobrutalism"] .ut-select {
+  border-width: 3px;
+  border-style: solid;
+}
+
+/* The record: white in a black frame under a black head strip; monospace, nothing under its
+   letters. After the fields, because the record is a well too. */
+html[data-look="neobrutalism"] .ut-surface--record {
+  background-color: var(--ut-well-fill);
+  background-image: none;
+  color: var(--ut-text);
+  border: 3px solid var(--ut-border);
+  border-top-width: 14px;
+  border-radius: var(--ut-r-md);
+  box-shadow: var(--ut-panel-shadow);
+}
+
+html[data-look="neobrutalism"] .ut-segmented {
+  background-color: var(--ut-surface-1);
+  box-shadow: var(--ut-segment-outline);
+}
+
+/* Small ancillary controls stay flat inside their owner: lettering, not blocks. */
+html[data-look="neobrutalism"] .ut-surface--control,
+html[data-look="neobrutalism"] .ut-surface--compact,
+html[data-look="neobrutalism"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-look="neobrutalism"] .ut-switch {
+  box-shadow: inset 0 0 0 2px var(--ut-border);
+}
+
+/* Selection: a yellow plate, a black outline and a hard shadow; never color alone. */
+html[data-look="neobrutalism"] .ut-surface--selected-row,
+html[data-look="neobrutalism"] .ut-surface--selected {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-text);
+  border-color: var(--ut-border);
+  box-shadow: var(--ut-row-selected-shadow);
+}
+/* :is(), not :where(): a pressed icon elsewhere takes the accent as its ink, which would vanish on
+   the yellow fill. */
+html[data-look="neobrutalism"] .ut-surface--control:is([aria-selected="true"]),
+html[data-look="neobrutalism"] .ut-surface--control:is([aria-current="page"]),
+html[data-look="neobrutalism"] .ut-surface--control:is([aria-pressed="true"]),
+html[data-look="neobrutalism"] .ut-surface--panel:is([aria-pressed="true"]),
+html[data-look="neobrutalism"] .ut-surface--badge:is([aria-pressed="true"]),
+html[data-look="neobrutalism"] .ut-icon-btn:is([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-text);
+  box-shadow: var(--ut-tab-selected-shadow);
+}
+html[data-look="neobrutalism"] .ut-surface--segment:where(.selected) {
+  background-color: var(--ut-invert-bg);
+  color: var(--ut-invert-ink);
+  box-shadow: none;
+}
+
+/* Yellow with black lettering: the main action. It follows the neutral paint so it is never erased. */
+html[data-look="neobrutalism"] .ut-surface--primary,
+html[data-look="neobrutalism"] .ut-surface--request-action,
+html[data-look="neobrutalism"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: none;
+  color: var(--ut-text-on-accent);
+  border: 3px solid var(--ut-border);
+  border-radius: var(--ut-r-md);
+  box-shadow: var(--ut-control-relief);
+}
+
+@media (hover: hover) {
+  html[data-look="neobrutalism"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="neobrutalism"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="neobrutalism"] .ut-chip:hover:not(:disabled),
+  html[data-look="neobrutalism"] .ut-surface--action:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+  }
+  html[data-look="neobrutalism"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="neobrutalism"] .ut-surface--control:hover:not(:disabled),
+  html[data-look="neobrutalism"] .ut-menu-item:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+  }
+  html[data-look="neobrutalism"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="neobrutalism"] .ut-surface--primary:hover:not(:disabled),
+  html[data-look="neobrutalism"] .ut-surface--request-action:hover:not(:disabled) {
+    background-color: var(--ut-accent-hover);
+    color: var(--ut-text-on-accent);
+  }
+}
+
+/* Pressed: the block lands, its shadow gone. */
+html[data-look="neobrutalism"] .ut-btn:active:not(:disabled),
+html[data-look="neobrutalism"] .ut-chip:active:not(:disabled),
+html[data-look="neobrutalism"] .ut-surface--action:active:not(:disabled),
+html[data-look="neobrutalism"] .ut-surface--primary:active:not(:disabled),
+html[data-look="neobrutalism"] .ut-surface--request-action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+
+/* Disabled: flat grey, a dashed outline and no shadow; the text stays opaque and legible. */
+html[data-look="neobrutalism"] .ut-btn:disabled,
+html[data-look="neobrutalism"] .ut-icon-btn:disabled,
+html[data-look="neobrutalism"] .ut-menu-item:disabled,
+html[data-look="neobrutalism"] .ut-field:disabled,
+html[data-look="neobrutalism"] .ut-surface--control:disabled,
+html[data-look="neobrutalism"] .ut-surface--primary:disabled,
+html[data-look="neobrutalism"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+html[data-look="neobrutalism"] .ut-btn:disabled,
+html[data-look="neobrutalism"] .ut-surface--primary:disabled,
+html[data-look="neobrutalism"] .ut-surface--action:disabled {
+  border-style: dashed;
+}
+html[data-look="neobrutalism"] .ut-icon-btn:disabled,
+html[data-look="neobrutalism"] .ut-menu-item:disabled,
+html[data-look="neobrutalism"] .ut-switch:disabled {
+  outline: 2px dashed var(--ut-border);
+  outline-offset: -2px;
+}
+html[data-look="neobrutalism"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  box-shadow: none;
+}
+
+/* Focus: a black ring, 3 px, apart from the piece. */
+html[data-look="neobrutalism"] .ut-btn:focus-visible,
+html[data-look="neobrutalism"] .ut-icon-btn:focus-visible,
+html[data-look="neobrutalism"] .ut-chip:focus-visible,
+html[data-look="neobrutalism"] .ut-menu-item:focus-visible,
+html[data-look="neobrutalism"] .ut-switch:focus-visible,
+html[data-look="neobrutalism"] .ut-field:focus-visible,
+html[data-look="neobrutalism"] .ut-select:focus-visible,
+html[data-look="neobrutalism"] .ut-surface--control:focus-visible,
+html[data-look="neobrutalism"] .ut-surface--inset:focus-visible,
+html[data-look="neobrutalism"] .ut-surface--action:focus-visible,
+html[data-look="neobrutalism"] .ut-surface--primary:focus-visible,
+html[data-look="neobrutalism"] .ut-surface--request-action:focus-visible,
+html[data-look="neobrutalism"] .ut-surface--well:focus-within {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: 4px;
+}

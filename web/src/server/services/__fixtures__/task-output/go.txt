@@ -1,0 +1,9 @@
+--- FAIL: TestSub (0.00s)
+    a_test.go:4: got 2, want 3
+    a_test.go:4: more detail
+--- FAIL: TestThird (0.00s)
+    --- FAIL: TestThird/inner (0.00s)
+        a_test.go:5: inner broke
+FAIL
+FAIL	fx	0.212s
+FAIL

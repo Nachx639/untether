@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "lib": ["ES2020"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "types": ["node"],
+    "composite": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/tsconfig.server.tsbuildinfo",
+    "inlineSourceMap": true,
+    "inlineSources": true
+  },
+  "include": [
+    "src/server/**/*",
+    "src/shared/**/*",
+    "src/types/**/*",
+    "src/cli.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "public",
+    "src/client/**/*",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts"
+  ]
+}

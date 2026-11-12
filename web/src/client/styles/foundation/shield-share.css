@@ -1,0 +1,96 @@
+/* "N conversaciones sin blindar · Blindar" (components/shield-banner.ts). */
+.ut-shield-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: var(--ut-banner-pad, 10px 8px 10px 14px);
+  border-radius: var(--ut-banner-radius, var(--ut-r-xl));
+  background: var(--ut-banner-bg, color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated)));
+  background-image: var(--ut-grain);
+  box-shadow: var(--ut-banner-relief);
+  border: var(--ut-banner-border, 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent));
+  border-bottom: var(--ut-banner-divider, 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent));
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-family: var(--font-ui);
+}
+.ut-shield-banner-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ut-shield-banner-action {
+  flex: none;
+  min-height: var(--ut-action-h, 34px);
+  padding: 6px 14px;
+  border-radius: var(--ut-r-lg);
+  background: var(--ut-banner-action-bg, var(--color-primary));
+  border: var(--ut-banner-action-border, 0 solid transparent);
+  box-shadow: var(--ut-action-relief);
+  color: var(--ut-banner-action-ink, var(--color-on-fill));
+  font-weight: var(--ut-fw-semibold);
+}
+.ut-shield-banner-close {
+  flex: none;
+  padding: 4px 8px;
+  font-size: 18px;
+  color: var(--color-text-muted);
+}
+.ut-shield-row {
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  border-top: 1px solid var(--color-border-light);
+  text-align: left;
+}
+.ut-shield-busy {
+  color: var(--color-text-muted);
+}
+.ut-shield-error {
+  color: var(--color-status-error-text);
+}
+
+/* "Compartir en solo lectura" (session-view/share-sheet.ts): rows inside an action sheet. */
+.ut-share-row {
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border-light);
+  text-align: left;
+  font-size: 0.875rem;
+}
+.ut-share-url {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.ut-share-muted {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+.ut-share-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.psr-sheet-group .ut-share-actions button {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  padding: 9px 6px;
+  font-size: 0.9375rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--ut-r-lg);
+  white-space: nowrap;
+}
+.psr-sheet-group .ut-share-actions button:disabled {
+  opacity: 0.5;
+}
+.psr-sheet-group .ut-share-actions .ut-share-danger {
+  color: var(--color-status-error-text);
+}
+.ut-share-error {
+  margin-top: 8px;
+  color: var(--color-status-error-text);
+  font-size: 0.8125rem;
+}

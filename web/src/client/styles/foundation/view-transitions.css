@@ -1,0 +1,215 @@
+/* View Transitions */
+@supports (view-transition-name: none) {
+  ::view-transition {
+    /* Set the transition duration to 0.2s */
+    --transition-duration: 200ms;
+  }
+
+  ::view-transition-group(*) {
+    animation-duration: var(--transition-duration);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: var(--transition-duration);
+    mix-blend-mode: normal;
+  }
+
+  /* Specific styling for terminal transitions */
+  ::view-transition-old(terminal-*) {
+    animation: view-transition-fade-out var(--transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  ::view-transition-new(terminal-*) {
+    animation: view-transition-fade-in var(--transition-duration) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes view-transition-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes view-transition-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* View Transitions for Create Session */
+  ::view-transition-old(create-session-button),
+  ::view-transition-new(create-session-button) {
+    animation-duration: 0.25s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  ::view-transition-old(create-session-modal),
+  ::view-transition-new(create-session-modal) {
+    /* Handled by individual animations below */
+    mix-blend-mode: normal;
+    z-index: 1000;
+  }
+
+  /* Black hole collapse animation for session removal */
+  @keyframes black-hole-collapse {
+    0% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+      filter: brightness(1);
+    }
+    50% {
+      transform: scale(0.3) rotate(180deg);
+      opacity: 0.8;
+      filter: brightness(0.6) hue-rotate(90deg);
+    }
+    100% {
+      transform: scale(0) rotate(360deg);
+      opacity: 0;
+      filter: brightness(0) hue-rotate(180deg);
+    }
+  }
+
+  /* Zoom animations for session navigation */
+  @keyframes zoom-in {
+    from {
+      transform: scale(0.7);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes zoom-out {
+    from {
+      transform: scale(1);
+      opacity: 1;
+    }
+    to {
+      transform: scale(1.3);
+      opacity: 0;
+    }
+  }
+
+  /* Session navigation transitions */
+  ::view-transition-old(session-*) {
+    animation: zoom-out 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+  }
+
+  ::view-transition-new(session-*) {
+    animation: zoom-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
+  }
+
+  /* Black hole collapse animation class */
+  .black-hole-collapsing {
+    animation: black-hole-collapse 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+    transform-origin: center;
+    pointer-events: none;
+  }
+}
+
+/* Split view sidebar animations - DISABLED */
+.sidebar-transition {
+  /* transition: width var(--ut-transition-sidebar) cubic-bezier(0.25, 0.46, 0.45, 0.94); */
+  transition: none !important;
+}
+
+/* Mobile sessions list slide animation - DISABLED */
+@media (max-width: 768px) {
+  .mobile-sessions-sidebar {
+    /* transition: transform var(--ut-transition-mobile-slide) cubic-bezier(0.25, 0.46, 0.45, 0.94); */
+    transition: none !important;
+  }
+
+  .mobile-sessions-sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+
+  .mobile-sessions-sidebar.expanded {
+    transform: translateX(0);
+  }
+}
+
+/* Ensure proper scrolling in split view - only scroll when needed */
+.split-view-sidebar {
+  height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  min-height: 0;
+  overflow: hidden; /* Strictly prevent container scroll - same as session-view-grid */
+  overscroll-behavior: none; /* Prevent iOS rubber-band scroll */
+  touch-action: none; /* Disable browser handling of gestures on sidebar container */
+  -webkit-overflow-scrolling: auto;
+}
+
+.split-view-root {
+  height: var(--app-height, 100dvh);
+  max-height: var(--app-height, 100dvh);
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none; /* Only children opt-in to pan */
+  -webkit-overflow-scrolling: auto;
+}
+
+.split-view-sidebar .sidebar-scroll-area {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain; /* Confine scroll bounce to the list */
+  touch-action: pan-y; /* Allow vertical scrolling only */
+  contain: layout style paint;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive breakpoints for split view */
+@media (max-width: 768px) {
+  /* On mobile, sidebar should take most of the width when expanded, leaving 80px for tap-to-close */
+  .split-view-sidebar-expanded {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: calc(100vw - 80px) !important;
+    z-index: 30;
+  }
+}
+
+/* Android keyboard fix for embedded applications like Claude Code */
+@media (max-width: 768px) {
+  /* When visualViewport changes due to keyboard, ensure terminal is scrollable */
+  .terminal-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* When keyboard is visible, adjust the entire view to be scrollable */
+  .session-view-grid[data-keyboard-visible="true"] {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ensure app content adjusts for keyboard using env() */
+  .app-container,
+session-view {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height accounts for keyboard */
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Additional helper for when keyboard height is detected */
+  .session-view-grid[data-keyboard-visible="true"] .terminal-container {
+    padding-bottom: env(keyboard-inset-height, 0);
+  }
+}

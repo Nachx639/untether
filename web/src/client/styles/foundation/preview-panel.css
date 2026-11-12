@@ -1,0 +1,230 @@
+/* Dev-server preview panel (components/preview-panel.ts). Split: on top, the session's
+   input and newest output stay visible below the divider. */
+.pv-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 1900;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-ui);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+body.preview-split-open session-view .session-view-grid {
+  padding-top: var(--ut-preview-offset, 0px) !important;
+  box-sizing: border-box;
+}
+/* The panel above already clears the notch: the session header needs no inset of its own. */
+body.preview-split-open session-view .session-header-area {
+  padding-top: 0 !important;
+}
+.pv-panel.pv-split {
+  height: var(--pv-split, 55dvh);
+  max-height: calc(100dvh - 220px);
+  box-shadow: var(--ut-drop-20-25);
+}
+.pv-panel.pv-full {
+  bottom: 0;
+  height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pv-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px max(4px, env(safe-area-inset-right, 0px)) 4px max(4px, env(safe-area-inset-left, 0px));
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border-light);
+}
+.pv-btn.pv-back {
+  width: auto;
+  gap: 2px;
+  padding: 0 10px 0 4px;
+  font-size: 0.9375rem;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-primary-text);
+}
+.pv-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ut-r-lg);
+  color: var(--color-text-muted);
+  touch-action: manipulation;
+}
+.pv-btn:disabled {
+  opacity: 0.35;
+}
+.pv-btn:not(:disabled):active,
+.pv-btn:not(:disabled):hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-bright);
+}
+.pv-address-form {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: var(--ut-r-lg);
+  background: var(--color-bg-tertiary);
+}
+.pv-port,
+.pv-port-select {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-dim);
+  background: transparent;
+  font-family: var(--font-mono);
+}
+.pv-address {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: max(16px, 1rem); /* below 16px iOS zooms the page on focus */
+  font-family: var(--font-mono);
+  border: 0;
+  box-shadow: none;
+  outline: none;
+  padding: 0;
+}
+.pv-address:focus {
+  border: 0;
+  box-shadow: none;
+}
+.pv-address-form:focus-within {
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+.pv-title {
+  flex: 1;
+  font-weight: var(--ut-fw-semibold);
+  padding: 0 6px;
+}
+/*
+ * Behind the previewed site: never white. On an iPhone a tap inside the site flashed the whole
+ * preview white (2026-10-03, not reproducible in the simulator): whatever iOS shows while it
+ * repaints the frame is this, and no tap highlight is drawn over it.
+ */
+.pv-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--color-bg);
+  -webkit-tap-highlight-color: transparent;
+}
+.pv-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  /*
+   * No color-scheme of its own: it inherits the app's, which is what the site's
+   * prefers-color-scheme reports. "normal" here turned a dark-mode site light (2026-10-03).
+   */
+  -webkit-tap-highlight-color: transparent;
+  /* Its own compositing layer: not re-rastered when something else on the page changes. */
+  transform: translateZ(0);
+}
+.pv-dragging .pv-frame {
+  pointer-events: none;
+}
+/* Split while the keyboard is up for the session: the session gets the whole screen. */
+.pv-panel.pv-kbd-hidden {
+  display: none;
+}
+.pv-note {
+  padding: 16px;
+  font-size: 0.9375rem;
+  color: var(--color-text-dim);
+  background: var(--color-bg);
+}
+.pv-port-form {
+  height: 100%;
+  background: var(--color-bg);
+}
+.pv-port-row {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+.pv-port-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: var(--ut-r-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+  font-size: max(16px, 1rem);
+}
+.pv-go {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: var(--ut-r-lg);
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-weight: var(--ut-fw-semibold);
+}
+.pv-divider {
+  flex-shrink: 0;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-elevated);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: contain;
+  cursor: row-resize;
+}
+.pv-divider span {
+  width: 44px;
+  height: 5px;
+  border-radius: var(--ut-r-pill);
+  background: var(--color-text-muted);
+  opacity: 0.6;
+}
+.ut-preview-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--ut-r-pill);
+  font-size: 0.75rem;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-primary-text);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  touch-action: manipulation;
+}
+.psr-preview-chip-row {
+  margin-top: 6px;
+}
+.ut-preview-chip-icon {
+  display: none;
+}
+/* Narrow phones: the word "Vista previa" left the session title as "Con…"; an icon (same
+   accessible name) gives the title the room (2026-10-03). */
+@media (max-width: 400px) {
+  .ut-preview-chip {
+    padding: 4px 7px;
+  }
+  .ut-preview-chip-icon {
+    display: block;
+  }
+  .ut-preview-chip-label {
+    display: none;
+  }
+}

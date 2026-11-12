@@ -1,0 +1,98 @@
+@media (pointer: coarse) and (max-width: 599px), (pointer: coarse) and (max-height: 599px) {
+  /* ---- Sections: previews and finished as 12 px eyebrows with a disclosure ---- */
+  .ut-phone-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 44px;
+    margin: 12px 0 0;
+  }
+  .pvr-header.ut-phone-section {
+    margin: 12px 0 0;
+  }
+  .ut-phone-disclosure {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text-dim);
+    font: inherit;
+  }
+  .ut-phone-disclosure > svg {
+    flex: none;
+  }
+  .ut-phone-disclosure[aria-expanded='true'] > svg {
+    transform: rotate(90deg);
+  }
+  .ut-phone-disclosure:disabled {
+    opacity: 1;
+  }
+  .ut-phone-eyebrow {
+    font: var(--ut-eyebrow-style, normal) var(--ut-eyebrow-weight, 600) var(--ut-eyebrow-size, var(--p-text-micro, 12px)) / var(--ut-eyebrow-line, 16px) var(--ut-eyebrow-font, var(--font-ui));
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ut-eyebrow-ink, var(--color-text-dim));
+  }
+  .ut-phone-text-btn {
+    min-height: 44px;
+    /* Its text ends where its section ends, and so does the button (2026-11-10: a negative
+       margin put «Borrar todas» 4px outside its section; ui-layout-audit). */
+    padding: 0 0 0 4px;
+    color: var(--color-text-muted);
+    font: 500 var(--p-text-body, 15px) var(--font-ui);
+  }
+  .ut-phone-text-btn:disabled {
+    opacity: 0.5;
+  }
+  .pvr-add.ut-icon-btn {
+    width: 44px;
+    height: 44px;
+    margin-right: var(--ut-section-actions-end, -12px);
+    color: var(--color-text-muted);
+  }
+  .pvr-list {
+    margin-bottom: 0;
+  }
+  .pvr-compact {
+    min-height: 56px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .pvr-compact .psr-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--ut-r-logo-lg);
+  }
+  .pvr-avatar {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-muted);
+  }
+  .pvr-menu {
+    width: 44px;
+    height: 44px;
+    color: var(--color-text-dim);
+  }
+
+  /* ---- Search: the rows' first child, shown after a pull down (or while it has text) ---- */
+  .phone-search {
+    min-height: 44px;
+    margin: 0 0 8px;
+    padding: 0 12px;
+    overflow: hidden;
+    transition:
+      min-height var(--dur-2, 180ms) var(--ease-out, ease),
+      margin var(--dur-2, 180ms) var(--ease-out, ease),
+      opacity var(--dur-2, 180ms) var(--ease-out, ease);
+  }
+  .phone-search-hidden {
+    min-height: 0;
+    height: 0;
+    margin: 0;
+    opacity: 0;
+  }
+}

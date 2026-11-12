@@ -1,0 +1,102 @@
+/* "Orquestar" / "Orquestador" (P7): quieter than "+ Tarea"; while one runs, a live dot. */
+.prj-orch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 8px;
+  border-radius: var(--ut-r-lg);
+  color: var(--color-text-muted);
+  font: 600 var(--p-text-body, 15px) var(--font-ui);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.prj-orch-btn:active {
+  background: var(--color-surface-hover);
+}
+.prj-orch-btn.running {
+  color: var(--color-primary-text);
+}
+.prj-orch-btn {
+  position: relative;
+  max-width: 42vw;
+}
+/* A long word ("Orquestador preparándose…", other languages) is cut inside its button before it
+   can reach "+ Tarea" or leave the project's name without room. */
+.prj-orch-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Running: a live dot on the sparkles' corner. */
+.prj-orch-dot {
+  position: absolute;
+  top: 11px;
+  left: 20px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--ut-r-circle);
+  background: var(--color-primary);
+  animation: psr-pulse-primary 2s ease-in-out infinite;
+}
+/* No room for the word (data-squeeze 2): the sparkles alone, its name stays in aria-label. */
+.prj-head:is([data-squeeze="2"], [data-squeeze="3"]) .prj-orch-btn {
+  min-width: 44px;
+  justify-content: center;
+  padding: 0;
+}
+.prj-head:is([data-squeeze="2"], [data-squeeze="3"]) .prj-orch-dot {
+  left: 26px;
+}
+.prj-head:is([data-squeeze="2"], [data-squeeze="3"]) .prj-orch-label,
+.prj-head[data-squeeze="3"] .prj-new > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+/* "+ Tarea" as its "+" (data-squeeze 3): a square target, like the gear next to it. */
+.prj-head[data-squeeze="3"] .prj-new {
+  min-width: 44px;
+  justify-content: center;
+  padding: 0;
+}
+/* The orchestrator's session, pinned on top of its project with its badge and an accent edge
+   (a border: the row paints its own background over an inset shadow). */
+.prj-orch {
+  display: flex;
+  flex-direction: column;
+  border-inline-start: var(--ut-orchestrator-edge, 3px solid var(--color-primary));
+  background: var(--ut-orchestrator-fill, color-mix(in srgb, var(--color-primary) 5%, var(--color-bg)));
+}
+.prj-orch-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  margin: 10px calc(var(--p-gutter, 16px) - 3px) 0;
+  padding: 0 8px;
+  border-radius: var(--ut-r-pill);
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  color: var(--color-primary-text);
+  font: 600 11px/20px var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.prj-orch-badge > svg {
+  flex: none;
+}
+/* The orchestrator's row comes first under its badge: a style's rule between rows
+   (--ut-row-rule) would part the two, so it has a value of its own here. */
+.prj-orch .psr {
+  background-image: var(--ut-row-rule-first, var(--ut-row-rule, var(--ut-grain)));
+}
+/* The desktop card's badge: inline in its head, no margins of its own. */
+.prj-orch-badge.ut-card-orch {
+  flex: none;
+  align-self: center;
+  margin: 0;
+}

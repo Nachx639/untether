@@ -1,0 +1,139 @@
+/* Last output line of a shell session, under its folder. */
+.psr-last-line {
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--color-text-dim);
+}
+.psr-needs {
+  color: var(--color-status-warning-text);
+  font-weight: var(--ut-fw-semibold);
+}
+.psr-working {
+  color: var(--color-status-info-text);
+  font-weight: var(--ut-fw-semibold);
+}
+/* Claude replied; only background agents still run: calm, not "working" (no dots). */
+.psr-background {
+  color: var(--color-text-dim);
+  font-weight: var(--ut-fw-medium);
+}
+/* Running time of Claude's current step; fixed-width digits so the line doesn't jiggle. */
+.psr-elapsed,
+claude-activity-elapsed {
+  font-variant-numeric: tabular-nums;
+}
+.psr-dots::after {
+  content: '';
+  animation: psr-dots 1.2s steps(4, end) infinite;
+}
+@keyframes psr-dots {
+  0% {
+    content: '';
+  }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75% {
+    content: '...';
+  }
+}
+.psr-menu {
+  flex: none;
+  width: 36px;
+  height: 44px;
+  border-radius: var(--ut-r-lg);
+  color: var(--color-text-dim);
+  font-size: 20px;
+}
+.psr-menu:active {
+  background: var(--color-surface-hover);
+}
+@media (prefers-reduced-motion: reduce) {
+  .psr-dot-working,
+  .psr-dots::after {
+    animation: none;
+  }
+}
+
+/* "On this Mac" (components/mac-session-row.ts): session rows that also say where the tmux
+   session or the agent runs, with small badges ("In Untether", "Read-only"). */
+.msr-where {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-top: 1px;
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+}
+.msr-where-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.msr-badge {
+  flex: none;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 7px;
+  border-radius: var(--ut-r-pill);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  font-weight: var(--ut-fw-semibold);
+  line-height: 1.5;
+}
+.psr-top .msr-badge {
+  align-self: center;
+}
+.msr-badge-ut {
+  background: var(--color-primary-muted);
+  color: var(--color-primary-text);
+}
+.msr-path {
+  font-family: var(--font-mono);
+}
+.msr-more {
+  color: var(--color-text-dim);
+}
+.msr-pending .psr-main {
+  opacity: 0.6;
+}
+/* "Opening…" / "Disconnecting…": a live region kept in place, empty most of the time. */
+.psr-live:not(:empty) {
+  margin-top: 4px;
+  font-size: 0.8125rem;
+  font-weight: var(--ut-fw-semibold);
+  color: var(--color-primary-text);
+}
+/* A session opened with ut in a terminal window (phone-session-row.ts): 🖥 and its app. */
+.psr-mac-window {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+.psr-mac-mark {
+  flex: none;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.psr-mac-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,30 @@
+
+  >_ OpenAI Codex (v0.164.0)
+     ~/proyecto/repo
+
+
+› LENTO por favor
+
+
+• Working (3s • esc to interrupt)
+
+
+› Ask Codex to do anything
+
+  mock-model default · ~/proyecto/repo  ⚠ 1 warning · f2 to view
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

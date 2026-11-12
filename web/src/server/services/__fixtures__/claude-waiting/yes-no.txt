@@ -1,0 +1,4 @@
+⏺ The migration will drop the legacy table.
+
+ Found an existing .untether/config.json in this folder.
+ Overwrite it with the new defaults? (y/n)

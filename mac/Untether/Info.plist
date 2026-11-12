@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIconFile</key>
+	<string></string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>0.0.0.0</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>100.100.100.100</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>127.0.0.1</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSSupportsAutomaticTermination</key>
+	<false/>
+	<key>NSSupportsSuddenTermination</key>
+	<false/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Untether needs to control terminal applications to create new terminal sessions from the dashboard.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Untether will notify you about important events such as new terminal connections, and session status changes.</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>Untether lets you browse, search and open files in your Desktop folder from the web dashboard and your phone.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Untether lets you browse, search and open files in your Documents folder from the web dashboard and your phone.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>Untether lets you browse, search and open files in your Downloads folder from the web dashboard and your phone.</string>
+	<key>NSRemovableVolumesUsageDescription</key>
+	<string>Untether lets you browse and open files on external drives from the web dashboard and your phone.</string>
+	<key>NSNetworkVolumesUsageDescription</key>
+	<string>Untether lets you browse and open files on network drives from the web dashboard and your phone.</string>
+</dict>
+</plist>

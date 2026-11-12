@@ -1,0 +1,291 @@
+/* Neumórfico / Frosted: pieces raised out of the page's own pearl (a light and a dark shadow,
+ * an edge of light, a satin tile), cavities for what is selected, typed or read, peach for the
+ * main action, on the shared paint hooks only. Values live in neumorphic.css. */
+
+/* Bars are the same material, raised: light on their upper edge, shade under the lower one. */
+html[data-look="neumorphic"] .ut-surface--bar {
+  background-image: var(--ut-bar-fill);
+  background-size: 100% 100%, 128px 128px;
+  background-repeat: no-repeat, repeat;
+  box-shadow: var(--ut-bar-relief);
+}
+
+/* Raised panes: the light falls across them from the top left, the satin sits under the text. */
+html[data-look="neumorphic"] .ut-card,
+html[data-look="neumorphic"] .ut-group,
+html[data-look="neumorphic"] .ut-surface--panel,
+html[data-look="neumorphic"] .ut-surface--request,
+html[data-look="neumorphic"] .ut-surface--notice {
+  background-color: var(--ut-surface-1);
+  background-image: var(--ut-sheen), var(--ut-satin);
+  background-size: 100% 100%, 128px 128px;
+  background-repeat: no-repeat, repeat;
+  border-color: var(--ut-light-edge);
+  box-shadow: var(--ut-elev-1);
+}
+
+html[data-look="neumorphic"] .ut-surface--request {
+  box-shadow: var(--ut-needs-item-shadow);
+}
+
+html[data-look="neumorphic"] .ut-surface--notice {
+  background-color: var(--ut-banner-bg);
+  border: var(--ut-banner-border);
+  box-shadow: var(--ut-banner-relief);
+}
+
+/* The failure: a paler raised pane; the words and their color say it. */
+html[data-look="neumorphic"] .ut-surface--detail {
+  background-color: var(--ut-detail-fill);
+  background-image: var(--ut-detail-sheen);
+  border-color: var(--ut-light-edge);
+  box-shadow: var(--ut-elev-2);
+}
+
+/* Floating pieces are solid pearl with the deepest pair of shadows and a fine slate outline. */
+html[data-look="neumorphic"] .ut-surface--floating,
+html[data-look="neumorphic"] .ut-dialog,
+html[data-look="neumorphic"] .ut-menu,
+html[data-look="neumorphic"] .ut-toast,
+html[data-look="neumorphic"] .ut-tooltip {
+  background-color: var(--ut-surface-1);
+  background-image: var(--ut-sheen), var(--ut-satin);
+  background-size: 100% 100%, 128px 128px;
+  background-repeat: no-repeat, repeat;
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Every button: a short relief and a solid slate outline that identifies it without shadows. */
+html[data-look="neumorphic"] .ut-surface--action,
+html[data-look="neumorphic"] .ut-surface--request-action,
+html[data-look="neumorphic"] .ut-btn--secondary,
+html[data-look="neumorphic"] .ut-btn--danger,
+html[data-look="neumorphic"] .ut-chip {
+  background-color: var(--ut-piece-control-fill);
+  background-image: var(--ut-raised-fill);
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-control-relief);
+}
+
+html[data-look="neumorphic"] .ut-surface--request-action,
+html[data-look="neumorphic"] .ut-surface--action {
+  border: 1px solid var(--ut-border-strong);
+  border-radius: var(--ut-action-radius);
+}
+
+html[data-look="neumorphic"] .ut-chip {
+  box-shadow: var(--ut-control-relief-small);
+}
+
+/* Embedded controls (tabs, toolbar toggles) keep their relief inside their fixed bar. */
+html[data-look="neumorphic"] .ut-surface--control {
+  background-color: var(--ut-piece-control-fill);
+  background-image: var(--ut-raised-fill);
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-piece-control);
+}
+
+html[data-look="neumorphic"] .ut-btn--danger,
+html[data-look="neumorphic"] .ut-btn--danger-ghost,
+html[data-look="neumorphic"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+/* Labels are pressed into the surface, a shallow cavity with an outline. */
+html[data-look="neumorphic"] .ut-surface--badge,
+html[data-look="neumorphic"] .ut-badge,
+html[data-look="neumorphic"] .ut-kbd {
+  background-color: var(--ut-surface-2);
+  color: var(--ut-text-muted);
+  box-shadow: var(--ut-badge-relief);
+}
+
+html[data-look="neumorphic"] .ut-badge--danger {
+  background-color: var(--ut-danger-fill);
+  color: var(--ut-danger-text);
+  box-shadow: var(--ut-danger-relief);
+}
+
+/* Fields and tracks are cavities; no satin under what is typed. */
+html[data-look="neumorphic"] .ut-surface--inset,
+html[data-look="neumorphic"] .ut-field,
+html[data-look="neumorphic"] .ut-segmented {
+  background-color: var(--ut-field-bg);
+  background-image: var(--ut-inset-fill);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-field-relief);
+}
+
+/* The «what to do» box: the deepest cavity, with its outline. */
+html[data-look="neumorphic"] .ut-surface--well {
+  background-color: var(--ut-composer-bg);
+  background-image: none;
+  border-color: var(--ut-composer-border);
+  box-shadow: var(--ut-composer-relief);
+}
+
+/* Small ancillary controls stay flat inside their owner: no slab over a card's corner. */
+html[data-look="neumorphic"] .ut-surface--compact,
+html[data-look="neumorphic"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Keep the native select's arrow. */
+html[data-look="neumorphic"] .ut-select {
+  background-color: var(--ut-piece-control-fill);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-control-relief-small);
+}
+
+html[data-look="neumorphic"] .ut-switch {
+  box-shadow: inset 0 0 0 1px var(--ut-border-strong), var(--ut-field-relief);
+}
+
+html[data-look="neumorphic"] .ut-switch::after {
+  box-shadow: var(--ut-knob-relief);
+}
+
+/* The record: a cavity with a solid edge and nothing under its lines. */
+html[data-look="neumorphic"] .ut-surface--record {
+  background-color: var(--ut-record-bg);
+  background-image: var(--ut-record-fill);
+  box-shadow: var(--ut-record-relief);
+}
+
+/* Selection is dug in: lavender ground, lavender outline, inner shadows and violet ink.
+   Never color alone. */
+html[data-look="neumorphic"] .ut-surface--selected-row,
+html[data-look="neumorphic"] .ut-surface--selected,
+html[data-look="neumorphic"] .ut-surface--control:where([aria-selected="true"]),
+html[data-look="neumorphic"] .ut-surface--control:where([aria-current="page"]),
+html[data-look="neumorphic"] .ut-surface--control:where([aria-pressed="true"]),
+html[data-look="neumorphic"] .ut-surface--panel:where([aria-pressed="true"]),
+html[data-look="neumorphic"] .ut-surface--badge:where([aria-pressed="true"]),
+html[data-look="neumorphic"] .ut-icon-btn:where([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+  background-image: none;
+  color: var(--ut-accent-strong);
+  border-color: var(--ut-lavender-edge);
+  box-shadow: var(--ut-sunken);
+}
+
+html[data-look="neumorphic"] .ut-surface--selected-row {
+  box-shadow: var(--ut-row-selected-shadow);
+}
+
+/* The chosen segment is the one raised piece inside its cavity (Claude / Codex). */
+html[data-look="neumorphic"] .ut-surface--segment:where(.selected) {
+  background-color: var(--ut-segment-selected-bg);
+  background-image: var(--ut-raised-fill);
+  color: var(--ut-segment-selected-ink);
+  box-shadow: var(--ut-segment-selected-shadow);
+}
+
+/* The main action: bathed in peach, brown ink, its own darker outline. It follows the neutral
+   paint so it is never erased. */
+html[data-look="neumorphic"] .ut-surface--primary,
+html[data-look="neumorphic"] .ut-btn--primary {
+  background-color: var(--ut-peach-base);
+  background-image: var(--ut-peach);
+  color: var(--ut-peach-ink);
+  border-color: var(--ut-peach-edge);
+  box-shadow: var(--ut-peach-relief);
+}
+
+html[data-look="neumorphic"] .ut-surface--request-action {
+  background-color: var(--ut-needs-act-bg);
+  background-image: var(--ut-raised-fill);
+  color: var(--ut-needs-act-fg);
+  border-color: var(--ut-needs-act-border);
+  box-shadow: var(--ut-control-relief);
+}
+
+/* A sheet's own button (Cancel) sits at the edge of the screen: a shorter relief. */
+html[data-look="neumorphic"] .ut-surface--floating:where(button) {
+  box-shadow: var(--ut-control-relief-small);
+}
+
+@media (hover: hover) {
+  html[data-look="neumorphic"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="neumorphic"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="neumorphic"] .ut-surface--action:hover:not(:disabled),
+  html[data-look="neumorphic"] .ut-surface--request-action:hover:not(:disabled) {
+    background-image: var(--ut-raised-fill-hover);
+    box-shadow: var(--ut-control-hover);
+  }
+  html[data-look="neumorphic"] .ut-surface--control:hover:not(:disabled) {
+    background-image: var(--ut-raised-fill-hover);
+  }
+  html[data-look="neumorphic"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="neumorphic"] .ut-menu-item:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+  }
+  html[data-look="neumorphic"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="neumorphic"] .ut-surface--primary:hover:not(:disabled) {
+    background-image: var(--ut-peach-hover);
+    color: var(--ut-peach-ink);
+    box-shadow: var(--ut-control-hover);
+  }
+}
+
+/* Pressed: the outer pair of shadows turns into an inner one. */
+html[data-look="neumorphic"] .ut-btn:active:not(:disabled),
+html[data-look="neumorphic"] .ut-surface--action:active:not(:disabled),
+html[data-look="neumorphic"] .ut-surface--request-action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+
+/* Disabled: level with the surface, no relief, a dashed boundary; the text stays legible. */
+html[data-look="neumorphic"] .ut-btn:disabled,
+html[data-look="neumorphic"] .ut-icon-btn:disabled,
+html[data-look="neumorphic"] .ut-menu-item:disabled,
+html[data-look="neumorphic"] .ut-field:disabled,
+html[data-look="neumorphic"] .ut-surface--control:disabled,
+html[data-look="neumorphic"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+
+html[data-look="neumorphic"] .ut-btn:disabled,
+html[data-look="neumorphic"] .ut-icon-btn:disabled,
+html[data-look="neumorphic"] .ut-menu-item:disabled,
+html[data-look="neumorphic"] .ut-switch:disabled,
+html[data-look="neumorphic"] .ut-surface--action:disabled {
+  outline: 1px dashed var(--ut-border-strong);
+  outline-offset: -1px;
+}
+
+html[data-look="neumorphic"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  box-shadow: none;
+}
+
+html[data-look="neumorphic"] .ut-switch:disabled::after {
+  background-color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+
+html[data-look="neumorphic"] .ut-btn:focus-visible,
+html[data-look="neumorphic"] .ut-icon-btn:focus-visible,
+html[data-look="neumorphic"] .ut-chip:focus-visible,
+html[data-look="neumorphic"] .ut-menu-item:focus-visible,
+html[data-look="neumorphic"] .ut-switch:focus-visible,
+html[data-look="neumorphic"] .ut-field:focus-visible,
+html[data-look="neumorphic"] .ut-select:focus-visible,
+html[data-look="neumorphic"] .ut-surface--control:focus-visible,
+html[data-look="neumorphic"] .ut-surface--inset:focus-visible,
+html[data-look="neumorphic"] .ut-surface--action:focus-visible,
+html[data-look="neumorphic"] .ut-surface--well:focus-within {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: 3px;
+}

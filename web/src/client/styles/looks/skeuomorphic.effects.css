@@ -1,0 +1,317 @@
+/* Skeuomórfico moderno: brushed chassis, bevelled plates, raised keys parted by a gloss line,
+ * cavities for what is selected, typed or read, an orange main key and a framed screen, on the
+ * shared paint hooks only. Values live in skeuomorphic.css. */
+
+/* Bars are the chassis itself: brushed metal lit on its upper edge, a black cut under it. */
+html[data-look="skeuomorphic"] .ut-surface--bar {
+  background-color: var(--ut-session-bar);
+  background-image: var(--ut-bar-fill);
+  background-size: 256px 128px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  box-shadow: var(--ut-bar-relief);
+  text-shadow: var(--ut-piece-text-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Plates: a moulded grain over the two-tone face, a black cut all round with the upper edge
+   lit, and a contact shadow. */
+html[data-look="skeuomorphic"] .ut-card,
+html[data-look="skeuomorphic"] .ut-group,
+html[data-look="skeuomorphic"] .ut-surface--panel,
+html[data-look="skeuomorphic"] .ut-surface--request,
+html[data-look="skeuomorphic"] .ut-surface--notice,
+html[data-look="skeuomorphic"] .ut-surface--detail {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-polymer), var(--ut-face);
+  background-size: 128px 128px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  border-color: var(--ut-cut);
+  border-top-color: var(--ut-bevel);
+  box-shadow: var(--ut-elev-1);
+}
+
+html[data-look="skeuomorphic"] .ut-surface--request {
+  box-shadow: var(--ut-needs-item-shadow);
+}
+
+/* The failure: a reddened plate with a salmon bar on its leading edge; the words say it too. */
+html[data-look="skeuomorphic"] .ut-surface--detail {
+  background-color: var(--ut-detail-fill);
+  background-image: var(--ut-polymer), var(--ut-detail-sheen);
+  border-top-color: var(--ut-detail-edge);
+  border-left: 3px solid var(--ut-danger-text);
+  box-shadow: var(--ut-elev-2);
+}
+
+/* The shield notice: the same plate, warmed. It is also a detail, so it follows it. */
+html[data-look="skeuomorphic"] .ut-surface--notice {
+  background-color: var(--ut-banner-bg);
+  background-image: var(--ut-polymer), var(--ut-banner-sheen);
+  border: var(--ut-banner-border);
+  border-top-color: var(--ut-banner-edge);
+  box-shadow: var(--ut-banner-relief);
+}
+
+/* Floating pieces: a thicker plate with the deepest contact shadow and a black cut. */
+html[data-look="skeuomorphic"] .ut-surface--floating,
+html[data-look="skeuomorphic"] .ut-dialog,
+html[data-look="skeuomorphic"] .ut-menu,
+html[data-look="skeuomorphic"] .ut-toast,
+html[data-look="skeuomorphic"] .ut-tooltip {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-polymer), var(--ut-chassis);
+  background-size: 128px 128px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Keys: lit half over shaded half, a black cut with the upper edge lit, the contact shadow
+   and lettering pressed into the key. */
+html[data-look="skeuomorphic"] .ut-surface--action,
+html[data-look="skeuomorphic"] .ut-surface--request-action,
+html[data-look="skeuomorphic"] .ut-btn--secondary,
+html[data-look="skeuomorphic"] .ut-btn--danger,
+html[data-look="skeuomorphic"] .ut-chip {
+  background-color: var(--ut-piece-control-fill);
+  background-image: var(--ut-key);
+  color: var(--ut-text);
+  border-color: var(--ut-cut);
+  border-top-color: var(--ut-bevel);
+  box-shadow: var(--ut-control-relief);
+  text-shadow: var(--ut-piece-text-shadow);
+}
+
+html[data-look="skeuomorphic"] .ut-surface--request-action,
+html[data-look="skeuomorphic"] .ut-surface--action {
+  border: 1px solid var(--ut-cut);
+  border-top-color: var(--ut-bevel);
+  border-radius: var(--ut-action-radius);
+}
+
+html[data-look="skeuomorphic"] .ut-chip {
+  box-shadow: var(--ut-control-relief-small);
+}
+
+/* Embedded controls (tabs, toolbar toggles) keep their relief inside their fixed bar. */
+html[data-look="skeuomorphic"] .ut-surface--control {
+  background-color: var(--ut-piece-control-fill);
+  background-image: var(--ut-key);
+  color: var(--ut-text);
+  border-color: var(--ut-cut);
+  border-top-color: var(--ut-bevel);
+  box-shadow: var(--ut-piece-control);
+  text-shadow: var(--ut-piece-text-shadow);
+}
+
+html[data-look="skeuomorphic"] .ut-btn--danger,
+html[data-look="skeuomorphic"] .ut-btn--danger-ghost,
+html[data-look="skeuomorphic"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+/* Labels are stamped into the surface: a shallow cavity with a black cut. */
+html[data-look="skeuomorphic"] .ut-surface--badge,
+html[data-look="skeuomorphic"] .ut-badge,
+html[data-look="skeuomorphic"] .ut-kbd {
+  background-color: var(--ut-field-bg);
+  background-image: var(--ut-cavity);
+  color: var(--ut-text-muted);
+  box-shadow: var(--ut-badge-relief);
+}
+
+html[data-look="skeuomorphic"] .ut-badge--danger {
+  background-color: var(--ut-danger-fill);
+  background-image: var(--ut-danger-sheen);
+  color: var(--ut-danger-text);
+  box-shadow: var(--ut-danger-relief);
+}
+
+/* Fields and tracks are cavities: no grain under what is typed. */
+html[data-look="skeuomorphic"] .ut-surface--inset,
+html[data-look="skeuomorphic"] .ut-field,
+html[data-look="skeuomorphic"] .ut-segmented {
+  background-color: var(--ut-field-bg);
+  background-image: var(--ut-inset-fill);
+  border-color: var(--ut-cut);
+  box-shadow: var(--ut-field-relief);
+}
+
+/* The «what to do» box: the deepest cavity. */
+html[data-look="skeuomorphic"] .ut-surface--well {
+  background-color: var(--ut-composer-bg);
+  background-image: none;
+  border-color: var(--ut-composer-border);
+  box-shadow: var(--ut-composer-relief);
+}
+
+/* Small ancillary controls stay flat inside their owner: no slab over a plate's corner. */
+html[data-look="skeuomorphic"] .ut-surface--compact,
+html[data-look="skeuomorphic"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Keep the native select's arrow. */
+html[data-look="skeuomorphic"] .ut-select {
+  background-color: var(--ut-field-bg);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-field-relief);
+}
+
+html[data-look="skeuomorphic"] .ut-switch {
+  box-shadow: inset 0 0 0 1px var(--ut-cut), var(--ut-field-relief);
+}
+
+html[data-look="skeuomorphic"] .ut-switch::after {
+  box-shadow: var(--ut-knob-relief);
+}
+
+/* The record: a near-black screen inside its frame, nothing under its lines. */
+html[data-look="skeuomorphic"] .ut-surface--record {
+  background-color: var(--ut-record-bg);
+  background-image: var(--ut-record-fill);
+  box-shadow: var(--ut-record-relief);
+}
+
+/* Selection is pressed in: a warm cavity with the orange index mark and warm ink. Never
+   color alone. */
+html[data-look="skeuomorphic"] .ut-surface--selected-row,
+html[data-look="skeuomorphic"] .ut-surface--selected,
+html[data-look="skeuomorphic"] .ut-surface--control:where([aria-selected="true"]),
+html[data-look="skeuomorphic"] .ut-surface--control:where([aria-current="page"]),
+html[data-look="skeuomorphic"] .ut-surface--control:where([aria-pressed="true"]),
+html[data-look="skeuomorphic"] .ut-surface--panel:where([aria-pressed="true"]),
+html[data-look="skeuomorphic"] .ut-surface--badge:where([aria-pressed="true"]),
+html[data-look="skeuomorphic"] .ut-icon-btn:where([aria-pressed="true"]) {
+  background-color: var(--ut-surface-selected);
+  background-image: var(--ut-cavity-warm);
+  color: var(--ut-accent-light);
+  border-color: var(--ut-cut);
+  box-shadow: inset 0 -3px 0 var(--ut-accent), var(--ut-sunken);
+  text-shadow: var(--ut-piece-text-shadow);
+}
+
+html[data-look="skeuomorphic"] .ut-surface--selected-row {
+  box-shadow: var(--ut-row-selected-shadow);
+}
+
+/* The chosen segment is the one raised key inside its rail (Claude / Codex), warm with warm ink. */
+html[data-look="skeuomorphic"] .ut-surface--segment:where(.selected) {
+  background-color: var(--ut-segment-selected-bg);
+  background-image: var(--ut-key-warm);
+  color: var(--ut-segment-selected-ink);
+  box-shadow: var(--ut-segment-selected-shadow);
+  text-shadow: var(--ut-piece-text-shadow);
+}
+
+/* The main key: orange, lit half over shaded half, dark ink with a lit lower edge. It follows
+   the neutral paint so it is never erased. */
+html[data-look="skeuomorphic"] .ut-surface--primary,
+html[data-look="skeuomorphic"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: var(--ut-orange);
+  color: var(--ut-text-on-accent);
+  border-color: var(--ut-orange-edge);
+  border-top-color: var(--ut-accent-light);
+  box-shadow: var(--ut-orange-relief);
+  text-shadow: var(--ut-orange-text-shadow);
+}
+
+html[data-look="skeuomorphic"] .ut-surface--request-action {
+  background-color: var(--ut-needs-act-bg);
+  background-image: var(--ut-key);
+  color: var(--ut-needs-act-fg);
+  border-color: var(--ut-needs-act-border);
+  border-top-color: var(--ut-bevel);
+  box-shadow: var(--ut-control-relief);
+}
+
+/* A sheet's own button (Cancel) sits at the edge of the screen: a shorter relief. */
+html[data-look="skeuomorphic"] .ut-surface--floating:where(button) {
+  background-image: var(--ut-key);
+  box-shadow: var(--ut-control-relief-small);
+}
+
+@media (hover: hover) {
+  html[data-look="skeuomorphic"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="skeuomorphic"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="skeuomorphic"] .ut-surface--action:hover:not(:disabled),
+  html[data-look="skeuomorphic"] .ut-surface--request-action:hover:not(:disabled) {
+    background-image: var(--ut-key-hover);
+    box-shadow: var(--ut-control-hover);
+  }
+  html[data-look="skeuomorphic"] .ut-surface--control:hover:not(:disabled) {
+    background-image: var(--ut-key-hover);
+  }
+  html[data-look="skeuomorphic"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="skeuomorphic"] .ut-menu-item:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+  }
+  html[data-look="skeuomorphic"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="skeuomorphic"] .ut-surface--primary:hover:not(:disabled) {
+    background-image: var(--ut-orange-hover);
+    color: var(--ut-text-on-accent);
+    box-shadow: var(--ut-orange-relief);
+  }
+}
+
+/* Pressed: the key goes down and its contact shadow turns into an inner one. */
+html[data-look="skeuomorphic"] .ut-btn:active:not(:disabled),
+html[data-look="skeuomorphic"] .ut-surface--action:active:not(:disabled),
+html[data-look="skeuomorphic"] .ut-surface--request-action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+
+/* Disabled: level with the chassis, no relief, a dashed boundary; the text stays legible. */
+html[data-look="skeuomorphic"] .ut-btn:disabled,
+html[data-look="skeuomorphic"] .ut-icon-btn:disabled,
+html[data-look="skeuomorphic"] .ut-menu-item:disabled,
+html[data-look="skeuomorphic"] .ut-field:disabled,
+html[data-look="skeuomorphic"] .ut-surface--control:disabled,
+html[data-look="skeuomorphic"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  box-shadow: none;
+  text-shadow: none;
+}
+
+html[data-look="skeuomorphic"] .ut-btn:disabled,
+html[data-look="skeuomorphic"] .ut-icon-btn:disabled,
+html[data-look="skeuomorphic"] .ut-menu-item:disabled,
+html[data-look="skeuomorphic"] .ut-switch:disabled,
+html[data-look="skeuomorphic"] .ut-surface--action:disabled {
+  outline: 1px dashed var(--ut-border-strong);
+  outline-offset: -1px;
+}
+
+html[data-look="skeuomorphic"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  box-shadow: none;
+}
+
+html[data-look="skeuomorphic"] .ut-switch:disabled::after {
+  background-color: var(--ut-disabled-ink);
+  box-shadow: none;
+}
+
+html[data-look="skeuomorphic"] .ut-btn:focus-visible,
+html[data-look="skeuomorphic"] .ut-icon-btn:focus-visible,
+html[data-look="skeuomorphic"] .ut-chip:focus-visible,
+html[data-look="skeuomorphic"] .ut-menu-item:focus-visible,
+html[data-look="skeuomorphic"] .ut-switch:focus-visible,
+html[data-look="skeuomorphic"] .ut-field:focus-visible,
+html[data-look="skeuomorphic"] .ut-select:focus-visible,
+html[data-look="skeuomorphic"] .ut-surface--control:focus-visible,
+html[data-look="skeuomorphic"] .ut-surface--inset:focus-visible,
+html[data-look="skeuomorphic"] .ut-surface--action:focus-visible,
+html[data-look="skeuomorphic"] .ut-surface--well:focus-within {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: 3px;
+}

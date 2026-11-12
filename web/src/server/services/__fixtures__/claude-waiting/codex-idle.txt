@@ -1,0 +1,29 @@
+│ update.
+│
+│
+│
+│ See full release notes:
+│
+│ https://github.com/openai/codex/releases/la
+test │
+╰────────────────────────────────────────────
+─────╯
+
+╭───────────────────────────────────────────╮
+│ >_ OpenAI Codex (v0.155.1)                │
+│                                           │
+│ model:       gpt-6-astra xhigh   /model … │
+│ directory:   ~/.untether-qa/qa-codex-1  │
+│ permissions: YOLO mode                    │
+╰───────────────────────────────────────────╯
+
+  Tip: New Use /fast to enable our fastest
+  inference with increased plan usage.
+
+• You have 2 usage limit resets available.
+Run /usage to use one.
+
+
+› Ask Codex to do anything
+
+  gpt-6-astra xhigh · ~/.untether-qa/qa-co…

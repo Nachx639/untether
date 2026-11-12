@@ -1,0 +1,368 @@
+/* Cyberpunk: bevelled plates of violet black with a magenta tab, keys with a cyan corner mark,
+ * a cyan frame for what is read and typed, a magenta one for what is selected, on the shared
+ * paint hooks only. Values and the bevels' clips live in cyberpunk.css. */
+
+/* Bars: an indigo plate with a fillet under it. */
+html[data-look="cyberpunk"] .ut-surface--bar {
+  background-color: var(--ut-session-bar);
+  background-image: var(--ut-plate-bar);
+  box-shadow: var(--ut-bar-relief);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* The app's top bars: the magenta line above and a cyan stretch at the end of the lower edge. */
+html[data-look="cyberpunk"] .ut-surface--bar:where(.ut-home-header),
+html[data-look="cyberpunk"] .ut-surface--bar:where(.ut-phone-header),
+html[data-look="cyberpunk"] .ut-surface--bar:where(.ut-sidebar-header),
+html[data-look="cyberpunk"] .ut-surface--bar:where(.session-header-container) {
+  background-image: var(--ut-tab-cold), var(--ut-plate-bar);
+  background-size: min(260px, 34%) 3px, 100% 100%;
+  background-position: right bottom, 0 0;
+  background-repeat: no-repeat;
+  box-shadow: var(--ut-bar-relief-top);
+}
+
+/* Plates that may open something stay whole: a straight frame and the magenta tab. */
+html[data-look="cyberpunk"] .ut-group,
+html[data-look="cyberpunk"] .ut-surface--panel,
+html[data-look="cyberpunk"] .ut-surface--detail {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-tab-hot), var(--ut-plate);
+  background-size: 48px 3px, 100% 100%;
+  background-position: left top, 0 0;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-surface-edge);
+}
+
+/* Bevelled plates: the frame, the stroke along both cuts and the tab. */
+html[data-look="cyberpunk"] .ut-card,
+html[data-look="cyberpunk"] .ut-surface--request,
+html[data-look="cyberpunk"] .ut-surface--notice {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-chamfer), var(--ut-chamfer), var(--ut-tab-hot), var(--ut-plate);
+  background-size: 13px 13px, 13px 13px, 48px 3px, 100% 100%;
+  background-position: right top, left bottom, left top, 0 0;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-surface-edge);
+}
+
+html[data-look="cyberpunk"] .ut-surface--request {
+  box-shadow: var(--ut-needs-item-shadow);
+}
+
+/* Every third request reads cold: a cyan tab and a cyan rail on its leading edge. */
+html[data-look="cyberpunk"] .ut-surface--request:nth-child(3n) {
+  background-image: var(--ut-chamfer), var(--ut-chamfer), var(--ut-tab-cold), var(--ut-plate);
+  box-shadow: var(--ut-needs-item-shadow-cold);
+}
+
+/* The failure: a rose plate; the words say it too. */
+html[data-look="cyberpunk"] .ut-surface--detail {
+  background-color: var(--ut-detail-fill);
+  background-image: var(--ut-tab-hot), var(--ut-plate-rose);
+  border-color: var(--ut-detail-edge);
+}
+
+html[data-look="cyberpunk"] .ut-surface--failed {
+  box-shadow: inset 3px 0 0 var(--ut-danger-text), var(--ut-surface-edge);
+}
+
+/* The shield notice: the same rose plate, bevelled. It is also a detail, so it follows it. */
+html[data-look="cyberpunk"] .ut-surface--notice {
+  background-color: var(--ut-banner-bg);
+  background-image: var(--ut-chamfer-rose), var(--ut-chamfer-rose), var(--ut-tab-hot), var(--ut-plate-rose);
+  background-size: 13px 13px, 13px 13px, 48px 3px, 100% 100%;
+  background-position: right top, left bottom, left top, 0 0;
+  border: var(--ut-banner-border);
+  box-shadow: var(--ut-banner-relief);
+}
+
+/* Floating pieces: the top bar's plate, a magenta line above and a cyan stretch below. */
+html[data-look="cyberpunk"] .ut-surface--floating,
+html[data-look="cyberpunk"] .ut-dialog,
+html[data-look="cyberpunk"] .ut-menu,
+html[data-look="cyberpunk"] .ut-toast,
+html[data-look="cyberpunk"] .ut-tooltip {
+  background-color: var(--ut-surface-raised);
+  background-image: var(--ut-tab-cold), var(--ut-plate-bar);
+  background-size: min(160px, 30%) 2px, 100% 100%;
+  background-position: right bottom, 0 0;
+  background-repeat: no-repeat;
+  color: var(--ut-text);
+  box-shadow: var(--ut-elev-3);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Keys: a dark plate with a violet frame, bevelled, a cyan bracket in the lower right corner. */
+html[data-look="cyberpunk"] .ut-surface--action,
+html[data-look="cyberpunk"] .ut-surface--request-action,
+html[data-look="cyberpunk"] .ut-btn--secondary,
+html[data-look="cyberpunk"] .ut-btn--danger {
+  background-color: var(--ut-piece-control-fill);
+  background-image: var(--ut-chamfer), var(--ut-chamfer), var(--ut-tab-cold), var(--ut-tab-cold);
+  background-size: 9px 9px, 9px 9px, 10px 2px, 2px 10px;
+  background-position: right top, left bottom, right bottom, right bottom;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-control-relief);
+}
+
+html[data-look="cyberpunk"] .ut-surface--request-action,
+html[data-look="cyberpunk"] .ut-surface--action {
+  border: 1px solid var(--ut-border-strong);
+  border-radius: var(--ut-action-radius);
+}
+
+html[data-look="cyberpunk"] .ut-chip {
+  background-color: var(--ut-piece-control-fill);
+  border-color: var(--ut-border-strong);
+  color: var(--ut-text);
+}
+
+/* Embedded controls (tabs, toolbar toggles): flat, a violet frame. */
+html[data-look="cyberpunk"] .ut-surface--control {
+  background-color: var(--ut-piece-control-fill);
+  color: var(--ut-text);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-piece-control);
+}
+
+/* The destructive key: rose ink, rose frame and rose strokes. */
+html[data-look="cyberpunk"] .ut-btn--danger,
+html[data-look="cyberpunk"] .ut-surface--action:where(.ut-surface--danger) {
+  background-image: var(--ut-chamfer-danger), var(--ut-chamfer-danger), var(--ut-tab-cold), var(--ut-tab-cold);
+  color: var(--ut-danger-text);
+  border-color: var(--ut-danger-text);
+}
+
+/* A failure said in words (a task's status line) only takes the rose ink. */
+html[data-look="cyberpunk"] .ut-surface--danger {
+  color: var(--ut-danger-text);
+}
+
+html[data-look="cyberpunk"] .ut-btn--danger-ghost {
+  color: var(--ut-danger-text);
+}
+
+/* Labels: monospace-sized plates with a frame; the failure's is rose. */
+html[data-look="cyberpunk"] .ut-surface--badge,
+html[data-look="cyberpunk"] .ut-badge,
+html[data-look="cyberpunk"] .ut-kbd {
+  background-color: var(--ut-badge-fill);
+  color: var(--ut-text-muted);
+  box-shadow: var(--ut-segment-idle-shadow);
+}
+
+html[data-look="cyberpunk"] .ut-badge--danger {
+  background-color: var(--ut-danger-fill);
+  color: var(--ut-danger-text);
+  box-shadow: inset 0 0 0 1px var(--ut-danger-text);
+}
+
+/* Fields: a clean dark ground, nothing under what is typed. */
+html[data-look="cyberpunk"] .ut-surface--inset,
+html[data-look="cyberpunk"] .ut-field,
+html[data-look="cyberpunk"] .ut-select {
+  background-color: var(--ut-field-bg);
+  border-color: var(--ut-border-strong);
+  box-shadow: var(--ut-field-relief);
+}
+
+html[data-look="cyberpunk"] .ut-segmented {
+  background-color: var(--ut-field-bg);
+  border-color: var(--ut-border-strong);
+}
+
+/* The «what to do» box: a cyan frame with painted bevels and a brighter stretch above. */
+html[data-look="cyberpunk"] .ut-surface--well {
+  background-color: var(--ut-composer-bg);
+  background-image: var(--ut-well-corner-top), var(--ut-well-corner-bottom), var(--ut-tab-cold), var(--ut-well-edge), var(--ut-well-edge), var(--ut-well-edge), var(--ut-well-edge);
+  background-size: 13px 13px, 13px 13px, 140px 2px, calc(100% - 13px) 1px, 1px calc(100% - 13px), calc(100% - 13px) 1px, 1px calc(100% - 13px);
+  background-position: right top, left bottom, left top, left top, right bottom, right bottom, left top;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  border-color: var(--ut-composer-border);
+  box-shadow: var(--ut-composer-relief);
+}
+
+/* Small ancillary controls stay flat inside their owner. */
+html[data-look="cyberpunk"] .ut-surface--compact,
+html[data-look="cyberpunk"] .ut-icon-btn {
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html[data-look="cyberpunk"] .ut-switch {
+  box-shadow: inset 0 0 0 1px var(--ut-border-strong);
+}
+
+/* The record: blue-black, a cyan rail, bevelled, 4 px scanlines under its lines. It is also a
+   well, so it follows it. */
+html[data-look="cyberpunk"] .ut-surface--record {
+  background-color: var(--ut-record-bg);
+  background-image: var(--ut-chamfer-cold), var(--ut-chamfer-cold), var(--ut-scanlines);
+  background-size: 13px 13px, 13px 13px, auto;
+  background-position: right top, left bottom, 0 0;
+  background-repeat: no-repeat, no-repeat, repeat;
+  background-origin: border-box;
+  border-color: var(--ut-record-edge);
+  box-shadow: var(--ut-record-relief);
+}
+
+/* Selection: a plum plate with a magenta frame and line, and magenta ink. Never color alone. */
+html[data-look="cyberpunk"] .ut-surface--selected,
+html[data-look="cyberpunk"] .ut-surface--control:where([aria-selected="true"]),
+html[data-look="cyberpunk"] .ut-surface--control:where([aria-current="page"]),
+html[data-look="cyberpunk"] .ut-surface--control:where([aria-pressed="true"]),
+html[data-look="cyberpunk"] .ut-surface--panel:where([aria-pressed="true"]),
+html[data-look="cyberpunk"] .ut-surface--badge:where([aria-pressed="true"]),
+html[data-look="cyberpunk"] .ut-icon-btn:where([aria-pressed="true"]) {
+  background-color: var(--ut-segment-selected-bg);
+  color: var(--ut-accent-light);
+  border-color: var(--ut-accent);
+  box-shadow: var(--ut-selected-relief);
+}
+
+/* The selected row: the bevelled plum plate with its magenta rail. */
+html[data-look="cyberpunk"] .ut-surface--selected-row {
+  background-color: var(--ut-surface-selected);
+  background-image: var(--ut-chamfer-hot), var(--ut-chamfer-hot), var(--ut-plate-selected);
+  background-size: 13px 13px, 13px 13px, 100% 100%;
+  background-position: right top, left bottom, 0 0;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  box-shadow: var(--ut-row-selected-shadow);
+}
+
+/* Claude / Codex: two bevelled keys; the chosen one has the magenta frame, line and ink. */
+html[data-look="cyberpunk"] .ut-surface--segment {
+  background-color: var(--ut-piece-control-fill);
+  background-image: var(--ut-chamfer), var(--ut-chamfer);
+  background-size: 9px 9px, 9px 9px;
+  background-position: right top, left bottom;
+  background-repeat: no-repeat;
+  color: var(--ut-text);
+  box-shadow: var(--ut-segment-idle-shadow);
+}
+
+html[data-look="cyberpunk"] .ut-surface--segment:where(.selected) {
+  background-color: var(--ut-segment-selected-bg);
+  background-image: var(--ut-chamfer-hot), var(--ut-chamfer-hot);
+  color: var(--ut-segment-selected-ink);
+  box-shadow: var(--ut-segment-selected-shadow);
+}
+
+/* The main action: solid magenta with dark ink, bevelled, cyan along its lower right edge. It
+   follows the neutral paint so it is never erased. */
+html[data-look="cyberpunk"] .ut-surface--primary,
+html[data-look="cyberpunk"] .ut-btn--primary {
+  background-color: var(--ut-accent);
+  background-image: none;
+  color: var(--ut-text-on-accent);
+  border-color: var(--ut-accent);
+  box-shadow: var(--ut-primary-relief);
+}
+
+/* A request's and the notice's button are quiet keys in the recipe, even where the app marks
+   them as the row's main action. */
+html[data-look="cyberpunk"] .ut-surface--request-action {
+  background-color: var(--ut-needs-act-bg);
+  background-image: var(--ut-chamfer), var(--ut-chamfer), var(--ut-tab-cold), var(--ut-tab-cold);
+  color: var(--ut-needs-act-fg);
+  border-color: var(--ut-needs-act-border);
+  box-shadow: var(--ut-control-relief);
+}
+
+/* A sheet's own button (Cancel) is a key, not a sheet. */
+html[data-look="cyberpunk"] .ut-surface--floating:where(button) {
+  background-color: var(--ut-piece-control-fill);
+  background-image: none;
+  box-shadow: var(--ut-segment-idle-shadow);
+}
+
+@media (hover: hover) {
+  html[data-look="cyberpunk"] .ut-btn--secondary:hover:not(:disabled),
+  html[data-look="cyberpunk"] .ut-btn--danger:hover:not(:disabled),
+  html[data-look="cyberpunk"] .ut-surface--action:hover:not(:disabled),
+  html[data-look="cyberpunk"] .ut-surface--request-action:hover:not(:disabled),
+  html[data-look="cyberpunk"] .ut-surface--control:hover:not(:disabled) {
+    border-color: var(--ut-cold);
+    box-shadow: var(--ut-control-hover);
+  }
+  html[data-look="cyberpunk"] .ut-icon-btn:hover:not(:disabled),
+  html[data-look="cyberpunk"] .ut-menu-item:hover:not(:disabled) {
+    background-color: var(--ut-surface-hover);
+  }
+  html[data-look="cyberpunk"] .ut-btn--primary:hover:not(:disabled),
+  html[data-look="cyberpunk"] .ut-surface--primary:hover:not(:disabled) {
+    background-color: var(--ut-primary-hover);
+    border-color: var(--ut-primary-hover);
+    color: var(--ut-text-on-accent);
+    box-shadow: var(--ut-primary-relief);
+  }
+}
+
+/* Pressed: the light goes inside. */
+html[data-look="cyberpunk"] .ut-btn:active:not(:disabled),
+html[data-look="cyberpunk"] .ut-surface--action:active:not(:disabled),
+html[data-look="cyberpunk"] .ut-surface--request-action:active:not(:disabled) {
+  box-shadow: var(--ut-control-pressed);
+}
+
+/* Disabled: a dull plate with a dashed frame and no mark; the text stays legible. */
+html[data-look="cyberpunk"] .ut-btn:disabled,
+html[data-look="cyberpunk"] .ut-icon-btn:disabled,
+html[data-look="cyberpunk"] .ut-menu-item:disabled,
+html[data-look="cyberpunk"] .ut-field:disabled,
+html[data-look="cyberpunk"] .ut-surface--control:disabled,
+html[data-look="cyberpunk"] .ut-surface--action:disabled {
+  background-color: var(--ut-disabled-bg);
+  background-image: none;
+  color: var(--ut-disabled-ink);
+  border-color: var(--ut-border-strong);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+html[data-look="cyberpunk"] .ut-switch:disabled {
+  background-color: var(--ut-disabled-bg);
+  outline: 1px dashed var(--ut-border-strong);
+  outline-offset: -1px;
+}
+
+/* Focus: a solid cyan ring. On a bevelled key it goes inside, where the cut cannot take it. */
+html[data-look="cyberpunk"] .ut-icon-btn:focus-visible,
+html[data-look="cyberpunk"] .ut-chip:focus-visible,
+html[data-look="cyberpunk"] .ut-menu-item:focus-visible,
+html[data-look="cyberpunk"] .ut-switch:focus-visible,
+html[data-look="cyberpunk"] .ut-field:focus-visible,
+html[data-look="cyberpunk"] .ut-select:focus-visible,
+html[data-look="cyberpunk"] .ut-surface--control:focus-visible,
+html[data-look="cyberpunk"] .ut-surface--inset:focus-visible,
+html[data-look="cyberpunk"] .ut-surface--well:focus-within {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: 3px;
+}
+
+html[data-look="cyberpunk"] .ut-btn:focus-visible,
+html[data-look="cyberpunk"] .ut-surface--action:focus-visible,
+html[data-look="cyberpunk"] .ut-surface--request-action:focus-visible,
+html[data-look="cyberpunk"] .ut-surface--segment:focus-visible {
+  outline: 3px solid var(--ut-focus-ring);
+  outline-offset: -5px;
+}
+
+html[data-look="cyberpunk"] .ut-section-label {
+  color: var(--ut-text-muted);
+  text-shadow: none;
+}

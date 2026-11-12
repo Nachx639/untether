@@ -1,0 +1,139 @@
+# Rules of the public export (scripts/public-export.sh reads them from HEAD).
+#
+# One rule per line: a verb and its arguments; `#` starts a comment. Patterns are git pathspecs
+# with glob magic, from the repository root: `*` stays inside a folder, `**/` crosses folders.
+#
+#   exclude <pattern>            tracked here, left out of the public copy. A rule that matches
+#                                nothing fails the export: the list can only shrink.
+#   forbid <pattern>             must never be in the public copy; the export fails if one is.
+#   allow <pattern>              a file somebody read that a `forbid` pattern would catch.
+#   media-ok <pattern>           images and other media somebody LOOKED at (2026-11-11: every one
+#                                of them). A media file no rule covers fails the export: look at
+#                                it, then add it here or to `exclude`.
+#   secret-ok <path> <detector>  a trufflehog finding read and known to be no secret. A finding
+#                                no rule covers fails the export; so does a rule nothing uses.
+#   list-over-mb <n>             files above this size are listed.
+#   fail-over-mb <n>             a file above this size fails the export.
+
+list-over-mb 1
+fail-over-mb 5
+
+# --- Left out -------------------------------------------------------------------------------
+
+# The record of how each interface style was checked on one machine: internal notes, in Spanish,
+# that name private reference folders. Their captures were already out of the repository.
+exclude docs/verification/**
+
+# Artwork of the project this one was forked from (its tunnel icon and its banner, one of them
+# with that project's name written on it), referenced by nothing here; appicon-dark.png alone
+# is 15 MB and menu.psd carries Photoshop's edit history.
+exclude assets/appicon-2048.png
+exclude assets/appicon-borderless.png
+exclude assets/appicon-dark.png
+exclude assets/banner.png
+exclude assets/banner-green.png
+exclude assets/banner-notext.png
+exclude assets/menu.psd
+exclude assets/source.svg
+exclude assets/AppIcon.icon/**
+
+# GitHub Actions (2026-11-11): no workflow travels, nor what only workflows use (their actions,
+# their script, the notes on their secrets and permissions). claude.yml answers issues and
+# comments from anybody with `contents: write`, and all of them are switched off in the working
+# repository for their cost. The exporter also refuses any workflow on its own, whatever these
+# rules say.
+exclude .github/workflows/**
+exclude .github/actions/**
+exclude .github/scripts/**
+exclude .github/EXTERNAL_CONTRIBUTORS.md
+exclude .github/SLACK_SETUP.md
+
+# The working repository's push guard (2026-11-12): its rule is "only to the private working
+# repository", which is wrong in the copy. The copy gets its own hook from the exporter
+# (scripts/public-export.pre-push, written into the destination's .git/hooks on every export).
+exclude scripts/git-hooks/**
+
+# --- Never in a public copy -----------------------------------------------------------------
+
+# Configuration of one machine or one person.
+forbid **/.env
+forbid **/.env.*
+forbid **/*.local.json
+forbid **/Local.xcconfig
+forbid **/xcuserdata/**
+forbid **/.DS_Store
+forbid .claude/settings.local.json
+forbid .claude/worktrees/**
+forbid .untether/**
+
+# Keys, certificates and signing profiles.
+forbid **/*.p12
+forbid **/*.p8
+forbid **/*.pem
+forbid **/*.cer
+forbid **/*.mobileprovision
+forbid **/*.keychain
+forbid **/*.keychain-db
+
+# Anything under .github is read before it travels (dependabot, CODEOWNERS and FUNDING name
+# accounts; workflows run with the repository's permissions). The two issue forms are GitHub's
+# stock ones: no account, no permission.
+forbid **/.github/**
+allow .github/ISSUE_TEMPLATE/bug_report.md
+allow .github/ISSUE_TEMPLATE/feature_request.md
+
+# Verification galleries, audit and sweep reports, recordings of real sessions.
+forbid docs/verification/**
+forbid docs/ui-clay-*/**
+forbid **/gallery.html
+forbid **/*-report.html
+forbid **/*-report.json
+forbid **/*audit-report*
+forbid **/*.cast
+# Written by hand for a test (a made-up user at a made-up laptop), not a recording.
+allow web/src/test/fixtures/asciinema/claude-session-with-clears.cast
+
+# --- Media looked at ------------------------------------------------------------------------
+
+# The app icon (an orange tile with a prompt sign) at each size, and the menu bar glyph.
+media-ok mac/Untether/Assets.xcassets/AppIcon.appiconset/*.png
+media-ok mac/Untether/Assets.xcassets/menubar.imageset/menubar.svg
+media-ok ios/Untether/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+media-ok web/src/client/assets/*.png
+media-ok web/src/client/assets/favicon.ico
+media-ok web/src/client/assets/favicon.svg
+
+# Start-up screens of the web app: the icon alone on a black or a white field.
+media-ok web/src/client/assets/splash/*.png
+
+# Seamless textures of the interface styles (grain, paper, brushed metal, a clay rim).
+media-ok web/src/client/assets/looks/*/*.webp
+media-ok web/src/client/assets/looks/*/*.png
+
+# The disk image (mac/scripts/create-dmg.sh): the app icon at 512 px, and a dark field with an
+# orange glow, the icon's prompt sign as the arrow and two white plates under the labels.
+media-ok assets/appicon-512.png
+media-ok assets/dmg-background-small.png
+
+# The documentation site's logo and favicon: the app icon (web/src/client/assets/favicon.*).
+media-ok docs/images/favicon.ico
+media-ok docs/images/favicon.svg
+media-ok docs/images/untether-logo-dark.svg
+media-ok docs/images/untether-logo-light.svg
+
+# README captures: the twin's fictitious data (scripts/gemelo.sh, web/scripts/ui-shots.mjs).
+media-ok docs/readme/*.png
+# The README's moving picture, one per page colour of GitHub: the same twin, driven by
+# web/scripts/readme-media.mjs (a question answered from the chat, a task's states, three styles).
+# Looked at frame by frame on 2026-11-12; its master .mp4 stays outside the repository.
+media-ok docs/readme/untether-light.gif
+media-ok docs/readme/untether-dark.gif
+
+# --- Trufflehog findings that are no secrets ------------------------------------------------
+
+# A run of bytes inside the terminal's WebAssembly, embedded as base64.
+secret-ok ios/Untether/Resources/ghostty/ghostty-web.js Box
+# The made-up address with a user and a password in it that the remote-URL test reads.
+secret-ok web/src/server/server-remote-url.test.ts URI
+# The one-letter database address the security sweep's own test feeds it.
+secret-ok web/src/server/services/security-sweep.test.ts Postgres

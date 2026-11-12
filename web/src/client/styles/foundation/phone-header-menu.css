@@ -1,0 +1,128 @@
+/* Appearance panel (theme-toggle-icon.ts) */
+.appearance-panel {
+  position: fixed;
+  z-index: 1000;
+  width: 232px;
+  padding: 12px;
+  border-radius: var(--ut-r-xl);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--ut-drop-32-25);
+  font-family: var(--font-ui);
+  animation: scaleIn 140ms ease-out;
+}
+.appearance-modes {
+  /* Three equal segments; with a large system text size they wrap instead of clipping. */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--ut-r-lg);
+  background: var(--color-bg-tertiary);
+}
+.appearance-mode {
+  flex: 1 1 0;
+  min-width: max-content;
+  padding: 6px 8px;
+  border-radius: var(--ut-r-8);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+.appearance-mode.active {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-weight: var(--ut-fw-semibold);
+  box-shadow: var(--ut-drop-3-15);
+}
+.appearance-label {
+  margin: 12px 2px 8px;
+  font-size: 0.6875rem;
+  font-weight: var(--ut-fw-semibold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+.appearance-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  justify-items: center;
+}
+.appearance-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ut-r-circle);
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 2px var(--ut-hairline-light);
+  transition: transform 120ms ease;
+}
+.appearance-swatch:active {
+  transform: scale(0.92);
+}
+.appearance-swatch.active {
+  box-shadow: 0 0 0 2px var(--color-bg-elevated), 0 0 0 4px var(--swatch);
+}
+
+/* Phone header "more" menu (full-header.ts) */
+.phone-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 220px;
+  padding: 6px;
+  border-radius: var(--ut-r-xl);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--ut-drop-32-25);
+  font-family: var(--font-ui);
+  animation: scaleIn 140ms ease-out;
+}
+.phone-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: var(--ut-r-9);
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  text-align: start;
+}
+.phone-menu-item:active {
+  background: var(--color-surface-hover);
+}
+.phone-menu-icon {
+  width: 20px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.phone-menu-sep {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--color-border);
+}
+.phone-menu-user {
+  padding: 4px 12px 2px;
+  font-size: 0.75rem;
+  color: var(--color-text-dim);
+}
+
+/* Unread conversation (utils/unread-tracker.ts) */
+.psr-unread .psr-title {
+  font-weight: var(--ut-fw-bold);
+}
+.psr-unread .psr-preview {
+  color: var(--color-text);
+}
+.psr-unread .psr-time {
+  color: var(--color-primary-text);
+  font-weight: var(--ut-fw-semibold);
+}
+.psr-unread-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  border-radius: var(--ut-r-circle);
+  background: var(--color-primary);
+  align-self: center;
+}

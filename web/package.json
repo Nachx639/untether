@@ -1,0 +1,165 @@
+{
+  "name": "untether",
+  "version": "1.0.0-beta.18",
+  "description": "Terminal sharing server with web interface - supports macOS, Linux, and headless environments",
+  "main": "dist/server/server.js",
+  "bin": {
+    "untether": "./bin/untether"
+  },
+  "files": [
+    "dist/",
+    "public/",
+    "bin/",
+    "forwarders/",
+    "scripts/ensure-native-modules.js",
+    "scripts/postinstall-npm.js",
+    "scripts/install-ut-command.js",
+    "node-pty/lib/",
+    "node-pty/package.json",
+    "node-pty/binding.gyp",
+    "node-pty/src/",
+    "node-pty/tsconfig.json",
+    "prebuilds/",
+    "README.md"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "engines": {
+    "node": ">=22.12.0 <25"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nachx639/untether.git",
+    "directory": "web"
+  },
+  "homepage": "https://github.com/Nachx639/untether",
+  "bugs": {
+    "url": "https://github.com/Nachx639/untether/issues"
+  },
+  "scripts": {
+    "clean": "node scripts/clean.js",
+    "dev": "node scripts/dev.js",
+    "dev:server": "tsx watch src/cli.ts --no-auth",
+    "dev:client": "node scripts/dev.js --client-only",
+    "build": "node scripts/build.js",
+    "build:ci": "node scripts/build-ci.js",
+    "build:npm": "node scripts/build-npm.js",
+    "prepublishOnly": "npm run build:npm",
+    "postinstall": "node scripts/postinstall-npm.js",
+    "lint": "biome check src",
+    "lint:fix": "biome check src --write",
+    "lint:typeaware": "./scripts/lint-typeaware.sh",
+    "typecheck": "concurrently -n server,client,sw \"tsc6 --noEmit --project tsconfig.server.json\" \"tsc --noEmit --project tsconfig.client.json\" \"tsc --noEmit --project tsconfig.sw.json\"",
+    "test:prepare": "node scripts/ensure-native-modules.js && node scripts/ensure-test-cli.js",
+    "pretest": "pnpm run test:prepare",
+    "test": "vitest",
+    "pretest:ci": "pnpm run test:prepare",
+    "test:ci": "vitest run --reporter=verbose",
+    "pretest:fast": "pnpm run test:prepare",
+    "test:fast": "UNTETHER_TEST_LANE=fast vitest run",
+    "pretest:real": "pnpm run test:prepare",
+    "test:real": "UNTETHER_TEST_LANE=real vitest run",
+    "pretest:coverage": "pnpm run test:prepare",
+    "test:coverage": "vitest run --coverage",
+    "pretest:client": "pnpm run test:prepare",
+    "test:client": "vitest run --mode=client",
+    "pretest:server": "pnpm run test:prepare",
+    "test:server": "node scripts/copy-assets.js && vitest run --mode=server",
+    "pretest:client:coverage": "pnpm run test:prepare",
+    "test:client:coverage": "vitest run --mode=client --coverage",
+    "pretest:server:coverage": "pnpm run test:prepare",
+    "test:server:coverage": "node scripts/copy-assets.js && vitest run --mode=server --coverage",
+    "format": "biome format src --write",
+    "format:check": "biome format src",
+    "check": "./scripts/check-all.sh",
+    "check:fix": "./scripts/check-fix-sequential.sh",
+    "test:ut": "./scripts/test-ut-syntax.sh",
+    "test:ui-audits": "node --test scripts/ui-layout-audit.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
+    "test:npm-package": "node scripts/test-npm-package.js",
+    "test:npm-docker-package": "node scripts/test-npm-docker-package.js"
+  },
+  "pnpm": {
+    "overrides": {
+      "dompurify": "^3.4.17",
+      "esbuild": "^0.28.2",
+      "form-data": "^4.0.6",
+      "js-yaml": "^4.2.0",
+      "qs": "^6.15.2"
+    },
+    "onlyBuiltDependencies": [
+      "authenticate-pam",
+      "esbuild",
+      "node-pty"
+    ],
+    "patchedDependencies": {
+      "authenticate-pam@1.0.5": "patches/authenticate-pam@1.0.5.patch"
+    }
+  },
+  "dependencies": {
+    "bonjour-service": "^1.4.4",
+    "compression": "^1.8.2",
+    "express": "^5.3.0",
+    "ghostty-web": "^0.4.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "lit": "^3.3.3",
+    "mime-types": "^3.0.2",
+    "monaco-editor": "^0.55.1",
+    "multer": "^2.5.0",
+    "node-addon-api": "^8.9.2",
+    "node-pty": "file:node-pty",
+    "postject": "1.0.0-alpha.6",
+    "web-push": "^3.6.7",
+    "ws": "^8.22.0",
+    "zod": "^4.6.7"
+  },
+  "optionalDependencies": {
+    "authenticate-pam": "^1.0.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@open-wc/testing": "^4.0.0",
+    "@playwright/test": "^1.65.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mime-types": "^3.0.1",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^24.19.2",
+    "@types/supertest": "^7.2.1",
+    "@types/web-push": "^3.6.4",
+    "@types/ws": "^8.18.2",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^4.1.12",
+    "@vitest/ui": "^4.1.12",
+    "chokidar": "^5.0.0",
+    "concurrently": "^10.0.6",
+    "dompurify": "^3.4.17",
+    "esbuild": "^0.28.2",
+    "happy-dom": "^21.0.4",
+    "oxlint": "^1.89.0",
+    "postcss": "^8.5.31",
+    "supertest": "^7.3.1",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "vite": "8.1.6",
+    "vitest": "^4.1.12"
+  },
+  "keywords": [
+    "terminal",
+    "multiplexer",
+    "websocket",
+    "asciinema"
+  ],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
+}
