@@ -121,6 +121,9 @@ lint_output.txt
 native/
 forwarders/
 
+# An app build is at work in this checkout (mac/scripts/build-web-frontend.sh)
+.app-build-running
+
 # Custom Node.js builds
 .node-builds/
 

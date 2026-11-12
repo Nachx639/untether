@@ -8,6 +8,7 @@ import { html, LitElement } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { Session } from '../../shared/types.js';
 import { LocaleController, t } from '../i18n/index.js';
+import { midCutTitle } from '../utils/card-line.js';
 import { icon } from './icons.js';
 
 @customElement('git-status-badge')
@@ -27,20 +28,21 @@ export class GitStatusBadge extends LitElement {
     if (!this.session?.gitRepoPath) return null;
 
     // Branch chip, worktree chip, then the counts, inline after the path (design spec 5.2).
+    // No box of its own (2026-11-12): each piece is an item of the line that holds the badge
+    // (styles/session.css `.ut-session-header-line2`), which decides what gives way.
     return html`
-      <div class="inline-flex items-center gap-1.5 min-w-0 max-w-full text-caption">
-        ${this.renderBranchInfo()}
-        ${this.renderWorktreeChip()}
-        ${this.renderLocalChanges()}
-        ${this.renderLineChanges()}
-        ${this.renderRemoteChanges()}
-      </div>
+      ${this.renderBranchInfo()}
+      ${this.renderWorktreeChip()}
+      ${this.renderLocalChanges()}
+      ${this.renderLineChanges()}
+      ${this.renderRemoteChanges()}
     `;
   }
 
   /**
    * The branch as a mono chip. No branch name means a detached HEAD (a worktree checked out at
    * a commit, a rebase in progress): it says HEAD with a tooltip, never "[git]" (2026-10-12).
+   * A long branch is cut in its middle (`.ut-mid`): task branches differ at their end.
    */
   private renderBranchInfo() {
     const branch = this.session?.gitBranch || '';
@@ -48,21 +50,21 @@ export class GitStatusBadge extends LitElement {
     const tooltip = branch || t('git.detached');
     return html`
       <span
-        class="ut-chip ut-chip--mono min-w-0"
+        class="ut-chip ut-chip--mono ut-git-branch"
         data-testid="git-branch-chip"
         data-detached=${branch ? 'false' : 'true'}
         title=${tooltip}
         aria-label=${branch ? branch : t('git.detached')}
       >
         ${icon('gitBranch', 12)}
-        <span class="truncate min-w-0">${label}</span>
+        <span class="ut-mid" dir="ltr">${midCutTitle(label)}</span>
       </span>
     `;
   }
 
   private renderWorktreeChip() {
     if (!this.session?.gitIsWorktree) return null;
-    return html`<span class="ut-chip" data-testid="git-worktree-chip" title=${t('git.worktree')}
+    return html`<span class="ut-chip ut-git-extra" data-testid="git-worktree-chip" title=${t('git.worktree')}
       >${t('git.worktree')}</span
     >`;
   }
@@ -80,7 +82,7 @@ export class GitStatusBadge extends LitElement {
     if (this.detailed) {
       // Detailed view shows individual counts
       return html`
-        <span class="flex items-center gap-1">
+        <span class="ut-git-extra flex items-center gap-1">
           ${
             addedCount > 0
               ? html`
@@ -114,7 +116,7 @@ export class GitStatusBadge extends LitElement {
       // Compact view shows total with an indicator
       return html`
         <span
-          class="ut-data text-text-dim whitespace-nowrap"
+          class="ut-git-extra ut-data text-text-dim whitespace-nowrap"
           data-testid="git-changed-files"
           title=${t('gitBadge.summary', { added: addedCount, modified: modifiedCount, deleted: deletedCount })}
           >●${totalChanges}</span
@@ -132,7 +134,7 @@ export class GitStatusBadge extends LitElement {
     if (aheadCount === 0 && behindCount === 0) return null;
 
     return html`
-      <span class="ut-data inline-flex items-center gap-1 whitespace-nowrap">
+      <span class="ut-git-extra ut-data inline-flex items-center gap-1 whitespace-nowrap">
         ${
           aheadCount > 0
             ? html`
@@ -164,7 +166,7 @@ export class GitStatusBadge extends LitElement {
     if (insertionCount === 0 && deletionCount === 0) return null;
 
     return html`
-      <span class="ut-data inline-flex items-center gap-1 whitespace-nowrap" data-testid="git-line-changes">
+      <span class="ut-git-extra ut-data inline-flex items-center gap-1 whitespace-nowrap" data-testid="git-line-changes">
         ${
           insertionCount > 0
             ? html`

@@ -216,6 +216,58 @@ describe('SessionHeader', () => {
       expect(element.querySelector('.width-selector-button')).toBeNull();
     });
 
+    it('folds its controls by the room its title has, measured on the bar', async () => {
+      // 2026-11-12: a task's session beside the open sidebar; the window's width said "wide"
+      // while the controls left the title a stub and its pieces painted one over another.
+      const element = await desktop(
+        { gitRepoPath: '/r', gitBranch: 'main' },
+        { onShowChanges: () => {} }
+      );
+      const bar = element.querySelector<HTMLElement>('[data-testid="session-header-bar"]');
+      const title = bar?.querySelector<HTMLElement>('.ut-session-header-title');
+      if (!bar || !title) throw new Error('no desktop bar');
+      const controls = () =>
+        bar.querySelectorAll('.ut-session-header-actions [data-testid]').length;
+      const all = controls();
+      // The title's room: what is left of the bar, less with each thing folded.
+      let room = (_fold: number) => 600;
+      Object.defineProperty(bar, 'clientWidth', { get: () => 900 });
+      Object.defineProperty(title, 'clientWidth', {
+        get: () => room(Number(bar.dataset.fold ?? 0)),
+      });
+      const refit = async () => {
+        element.requestUpdate();
+        await element.updateComplete;
+        return bar.dataset.fold;
+      };
+      expect(await refit()).toBeUndefined();
+      room = (fold) => 120 + fold * 200;
+      expect(await refit()).toBe('1');
+      room = (fold) => 60 + fold * 100;
+      expect(await refit()).toBe('2');
+      // Folding hides with styles: the same controls stay in the bar.
+      expect(controls()).toBe(all);
+      room = () => 600;
+      expect(await refit()).toBeUndefined();
+
+      // What the second line cannot show of its git pieces is told to the ⋯ menu, which shows it.
+      const menu = element.querySelector('compact-menu') as HTMLElement & { gitFolded: boolean };
+      expect(menu.gitFolded).toBe(false);
+      const line = bar.querySelector('.ut-session-header-line2') as HTMLElement;
+      const chip = line.querySelector('[data-testid="git-branch-chip"]') as HTMLElement;
+      const at = (top: number) => () => ({ top, bottom: top + 20, height: 20 }) as DOMRect;
+      line.getBoundingClientRect = at(20);
+      // Wrapped under the line, out of sight.
+      chip.getBoundingClientRect = at(84);
+      await refit();
+      await element.updateComplete;
+      expect(menu.gitFolded).toBe(true);
+      chip.getBoundingClientRect = at(20);
+      await refit();
+      await element.updateComplete;
+      expect(menu.gitFolded).toBe(false);
+    });
+
     it('has no orange text, no mono outside data, and no bordered icon boxes', async () => {
       const element = await desktop(
         { gitRepoPath: '/r', gitBranch: 'main' },

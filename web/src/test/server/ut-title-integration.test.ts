@@ -18,11 +18,9 @@ function normalizeStderr(stderr: string): string {
     .split('\n')
     .map((line) => line.trimEnd())
     .filter((line) => line.length > 0)
-    .filter(
-      (line) =>
-        line !==
-        'Warning: authenticate-pam native module not found. PAM authentication will not work.'
-    );
+    // The CLI says when authenticate-pam does not load (a checkout whose module was built for
+    // another Node than the tests run on): nothing of `ut title`.
+    .filter((line) => !line.startsWith('Warning: authenticate-pam native module did not load'));
 
   return lines.join('\n');
 }

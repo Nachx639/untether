@@ -210,7 +210,10 @@ export function setupAppUpdate(ctx: AppContext) {
         logPath: path.join(dir, 'build.log'),
         run: async (cwd, logPath) =>
           runCheck({
-            command: './scripts/build.sh --configuration Release',
+            // The worktree is the build's own (prepareBuildWorktree refuses the server's
+            // checkout): the one place where the build may install dependencies
+            // (mac/scripts/custom-node-policy.sh untether_prepare_web_deps).
+            command: 'UNTETHER_BUILD_OWNS_CHECKOUT=1 ./scripts/build.sh --configuration Release',
             cwd,
             timeoutSec: BUILD_TIMEOUT_SEC,
             logPath,

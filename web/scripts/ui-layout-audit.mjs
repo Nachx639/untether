@@ -477,6 +477,54 @@ export function inspectUILayout({ safeArea } = {}) {
       }
     }
   }
+  // In a session's header no piece is painted over another, at any width (2026-11-12: in a
+  // task's session in Clay the branch chip sat on the path, the capture button on «worktree»,
+  // and both inside the room of the controls on the right; nothing here saw it, the pieces were
+  // not controls of one parent). A piece is a control, a chip, a text or a loose icon; what it
+  // paints is its box when it has a face of its own (a fill, an edge, a relief) and its words and
+  // icons when it has none, inside every box and clip-path of the bar that cuts it. Pieces one inside the
+  // other are one piece.
+  checks.headerPieces = 0;
+  const clipped = (box, el, bar) => {
+    const r = { ...box };
+    // Up to the bar: what holds a fixed bar does not cut it.
+    for (const p of ancestors(el).slice(0, ancestors(el).indexOf(bar) + 1)) {
+      const s = getComputedStyle(p);
+      if (s.display === 'contents') continue;
+      const b = rect(p);
+      if (/hidden|clip|auto|scroll/.test(s.overflowX)) { r.left = Math.max(r.left, b.left); r.right = Math.min(r.right, b.right); }
+      if (/hidden|clip|auto|scroll/.test(s.overflowY)) { r.top = Math.max(r.top, b.top); r.bottom = Math.min(r.bottom, b.bottom); }
+      const inset = /^inset\(([^)]*)\)/.exec(s.clipPath)?.[1].split(/\s+round\s+/)[0].trim().split(/\s+/).map(parseFloat);
+      if (inset?.length && inset.every(Number.isFinite)) {
+        const [top, right = top, bottom = top, left = right] = inset;
+        r.left = Math.max(r.left, b.left + left); r.right = Math.min(r.right, b.right - right);
+        r.top = Math.max(r.top, b.top + top); r.bottom = Math.min(r.bottom, b.bottom - bottom);
+      }
+    }
+    return r.right - r.left > 1 && r.bottom - r.top > 1 ? r : null;
+  };
+  const faced = el => { const s = getComputedStyle(el); return seen(s.backgroundColor) || s.backgroundImage !== 'none' || s.boxShadow !== 'none' || ['Top', 'Right', 'Bottom', 'Left'].some(side => parseFloat(s[`border${side}Width`]) > 0 && s[`border${side}Style`] !== 'none' && seen(s[`border${side}Color`])); };
+  const ownText = el => [...el.childNodes].some(node => node.nodeType === 3 && node.data.trim());
+  for (const bar of all.filter(el => el.matches('.session-header-container') && visible(el))) {
+    const inside = all.filter(el => el !== bar && bar.contains(el) && visible(el));
+    const pieces = inside.filter(el => el.matches(`${interactive},.ut-chip,.ut-dot,svg,img`) || ownText(el))
+      .filter((el, _, list) => !list.some(other => other !== el && other.contains(el)))
+      .map(el => {
+        // Of a line of text, its ink: the line box of a 13 px title is 18 px high, and the relief
+        // of a chip on the line below may reach into its empty top without touching a letter.
+        const size = parseFloat(getComputedStyle(el).fontSize);
+        const ink = box => { const spare = Math.max(0, (box.bottom - box.top - 0.8 * size) / 2); return { ...box, top: box.top + spare, bottom: box.bottom - spare }; };
+        const boxes = (faced(el) || el.matches('svg,img,.ut-dot') ? [rect(el)] : [...glyphs(el).map(ink), ...[...el.querySelectorAll('svg,img')].filter(visible).map(rect)]).map(box => clipped(box, el, bar)).filter(Boolean);
+        return { el, boxes };
+      }).filter(piece => piece.boxes.length);
+    checks.headerPieces += pieces.length;
+    pieces.forEach((piece, index) => {
+      for (const other of pieces.slice(index + 1)) {
+        const hit = piece.boxes.flatMap(a => other.boxes.map(b => ({ a, b }))).find(({ a, b }) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1);
+        if (hit) failures.push({ kind: 'header-pieces-overlap', element: label(piece.el), other: label(other.el), rect: hit.a, bounds: hit.b });
+      }
+    });
+  }
   return { look: document.documentElement.dataset.look || 'original', viewport: { width: innerWidth, height: innerHeight },
     bars: all.filter(el => el.matches('.ut-surface--bar,.ut-tabbar') && visible(el)).map(el => ({ element: label(el), rect: rect(el), paddingTop: getComputedStyle(el).paddingTop, parent: parent(el) ? { rect: rect(parent(el)), paddingTop: getComputedStyle(parent(el)).paddingTop } : null })),
     surfaces: all.filter(el => el.matches('.ut-surface--material') && visible(el)).map(el => ({ element: label(el), rect: rect(el) })),

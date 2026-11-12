@@ -14,7 +14,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAC_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/untether-release-test.XXXXXX")"
 WORK="$(cd "$WORK" && pwd)" # no "//" from a TMPDIR that ends in "/"
-trap 'rm -rf "$WORK"' EXIT
+# 2026-11-12: the toy bundles here were named Untether.app (the release scripts take no other
+# name), carried Untether's bundle identifier and stayed registered in LaunchServices; macOS
+# opened one in place of the installed app and told the user "Untether is damaged". They now
+# carry an identifier of their own (TOY_BUNDLE_ID), nothing is ever run from inside one, and
+# however this ends (a cut run too) they leave LaunchServices before the folder is removed.
+TOY_BUNDLE_ID="com.example.untether-test-toy"
+leave_nothing() {
+    untether_unregister_apps "$WORK" 2> /dev/null || true
+    rm -rf "$WORK"
+}
+trap leave_nothing EXIT
+trap 'exit 130' INT TERM
+
+source "$SCRIPT_DIR/release-lib.sh"
 
 FAILED=0
 pass() { echo "ok   - $1"; }
@@ -29,6 +42,7 @@ equals() { [[ "$1" == "$2" ]] || { echo "       expected '$2', got '$1'"; return
 # --- doubles -----------------------------------------------------------------
 BIN="$WORK/bin"
 export CALLS="$WORK/calls.log"
+export SERVER_RUNS="$WORK/server-runs.log"
 mkdir -p "$BIN"
 for tool in codesign xcrun ditto spctl xattr; do
     cat > "$BIN/$tool" <<DOUBLE
@@ -62,9 +76,6 @@ fake_app() {
     done
     printf '<plist/>' > "$app/Contents/Info.plist"
 }
-
-# --- release version ----------------------------------------------------------
-source "$SCRIPT_DIR/release-lib.sh"
 
 # A stand-in for a .p8 key: the shape the scripts ask for (a PRIVATE KEY block), no key in it.
 # Put together here so that this file holds nothing a secret scanner takes for a key.
@@ -206,6 +217,60 @@ check "web/package.json pins the pnpm the build asks for" \
 check "preflight-check.sh asks pnpm for its version from web/ too" \
     grep -q 'INSTALLED_PNPM_VERSION=$(cd "$PROJECT_ROOT/../web" && pnpm --version)' "$SCRIPT_DIR/preflight-check.sh"
 
+# --- the app's build writes nothing a running server loads (2026-11-12) -----------
+# The cases of the dependencies, with stand-ins for node (deps-in-sync.js) and pnpm, in a
+# folder that stands for web/.
+DEPS_BIN="$WORK/deps-bin"
+DEPS_WEB="$WORK/deps-web"
+mkdir -p "$DEPS_BIN" "$DEPS_WEB"
+cat > "$DEPS_BIN/node" <<'DOUBLE'
+#!/bin/bash
+echo "node $*" >> "$CALLS"
+if [[ -n "${FAKE_OUT_OF_SYNC:-}" ]]; then echo "$FAKE_OUT_OF_SYNC"; exit 1; fi
+echo "node_modules is what the lockfile asks for"
+DOUBLE
+cat > "$DEPS_BIN/pnpm" <<'DOUBLE'
+#!/bin/bash
+echo "pnpm $*" >> "$CALLS"
+DOUBLE
+chmod +x "$DEPS_BIN"/*
+web_deps() {
+    : > "$CALLS"
+    DEPS_STATUS=0
+    # PATH is set inside: zsh's startup files put the user's own node first.
+    DEPS_OUT="$(cd "$DEPS_WEB" && env -u UNTETHER_BUILD_OWNS_CHECKOUT "$@" zsh -c "PATH='$DEPS_BIN':\$PATH; source '$SCRIPT_DIR/custom-node-policy.sh'; untether_prepare_web_deps" 2>&1)" || DEPS_STATUS=$?
+}
+web_deps FAKE_OUT_OF_SYNC="node_modules holds no install (no .pnpm/lock.yaml)"
+check "dependencies: not even a checkout without node_modules is installed where the build was started" \
+    bash -c "[[ $DEPS_STATUS != 0 ]] && ! grep -q '^pnpm' '$CALLS'"
+mkdir "$DEPS_WEB/node_modules"
+web_deps
+check "dependencies in sync: nothing is installed" \
+    bash -c "[[ $DEPS_STATUS == 0 ]] && ! grep -q '^pnpm' '$CALLS' && grep -q 'pnpm install skipped' <<< \"\$1\"" _ "$DEPS_OUT"
+web_deps FAKE_OUT_OF_SYNC="pnpm-lock.yaml changed since the last install"
+check "dependencies out of sync in a checkout that is not the build's own: the build stops and installs nothing" \
+    bash -c "[[ $DEPS_STATUS != 0 ]] && ! grep -q '^pnpm' '$CALLS'"
+check "... and says why and what to do" \
+    bash -c "grep -q 'pnpm-lock.yaml changed since the last install' <<< \"\$1\" && grep -q 'installs nothing in a checkout that is not its own' <<< \"\$1\" && grep -q 'yourself, with the server stopped' <<< \"\$1\" && grep -q 'UNTETHER_BUILD_OWNS_CHECKOUT=1' <<< \"\$1\"" _ "$DEPS_OUT"
+web_deps FAKE_OUT_OF_SYNC="pnpm-lock.yaml changed since the last install" UNTETHER_BUILD_OWNS_CHECKOUT=0
+check "... whatever is in the variable, unless it says yes" \
+    bash -c "[[ $DEPS_STATUS != 0 ]] && ! grep -q '^pnpm' '$CALLS'"
+web_deps FAKE_OUT_OF_SYNC="pnpm-lock.yaml changed since the last install" UNTETHER_BUILD_OWNS_CHECKOUT=1
+check "dependencies out of sync in the build's own checkout: pnpm install --frozen-lockfile" \
+    bash -c "[[ $DEPS_STATUS == 0 ]] && grep -q -x 'pnpm install --frozen-lockfile' '$CALLS'"
+check "the build looks at no process to decide: it does not guess what runs from a tree" \
+    bash -c "! grep -nE '\\b(ps|lsof|pgrep)\\b' '$SCRIPT_DIR/custom-node-policy.sh' '$MAC_DIR/../web/scripts/deps-in-sync.js' | grep -v '^[^:]*:[0-9]*: *[#*/]' | grep -q ."
+check "the installed app's updater, which builds in a worktree of its own, says so" \
+    grep -q "UNTETHER_BUILD_OWNS_CHECKOUT=1 ./scripts/build.sh" "$MAC_DIR/../web/src/server/server-app-update.ts"
+check "release.sh does not declare the checkout it runs in the build's own" \
+    bash -c "! grep -q 'UNTETHER_BUILD_OWNS_CHECKOUT' '$SCRIPT_DIR/release.sh' '$SCRIPT_DIR/build.sh' '$SCRIPT_DIR/build-web-frontend.sh'"
+check "build-web-frontend.sh installs through that function only, and compiles nothing in node_modules" \
+    bash -c "grep -q '^untether_prepare_web_deps ' '$SCRIPT_DIR/build-web-frontend.sh' && ! grep -nE '^ *pnpm install|ensure-native-modules|(npm|pnpm) rebuild' '$SCRIPT_DIR/build-web-frontend.sh'"
+check "build-native.js builds the bundle's native modules out of node_modules, never in it" \
+    bash -c "grep -q \"buildNativeAddonIsolated('authenticate-pam'\" '$MAC_DIR/../web/build-native.js' && ! grep -nE 'buildNodePty|buildAuthenticatePam|(npm|pnpm) rebuild|node_modules/(node-pty|authenticate-pam)/build' '$MAC_DIR/../web/build-native.js'"
+check "build-native.js opens the modules with the Node it embeds before packing them" \
+    grep -q 'assertAddonsLoad(nodeExe' "$MAC_DIR/../web/build-native.js"
+
 # --- i18n-sync.sh: its build needs no signing team ------------------------------
 : > "$CALLS"
 PATH="$BIN:$PATH" HOME="$WORK/home" "$SCRIPT_DIR/i18n-sync.sh" >/dev/null 2>&1 || true # stops at "no Debug build found"
@@ -218,14 +283,30 @@ toy_app() {
     local app="$1" version="$2" build="$3"
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources/web/public"
     cp /usr/bin/true "$app/Contents/MacOS/Untether"
-    for file in untether untether-fwd pty.node web/public/ghostty-vt.wasm; do
+    for file in untether-fwd pty.node authenticate_pam.node spawn-helper web/public/ghostty-vt.wasm; do
         printf 'toy\n' > "$app/Contents/Resources/$file"
     done
+    # The server's stand-in: `check-native` answers as the real one, or as FAKE_NATIVE says,
+    # and writes down where it was run from (never from inside a bundle).
+    cat > "$app/Contents/Resources/untether" <<'SERVER'
+#!/bin/bash
+echo "untether $* (run from $(cd "$(dirname "$0")" && pwd))" >> "${SERVER_RUNS:-/dev/null}"
+[[ "$1" == "check-native" ]] || exit 0
+if [[ -n "${FAKE_NATIVE:-}" ]]; then
+    echo "ok pty.node: loads"
+    echo "FAILED authenticate_pam.node: $FAKE_NATIVE"
+    exit 1
+fi
+echo "ok pty.node: loads"
+echo "ok authenticate_pam.node: loads"
+echo "ok spawn-helper: executable"
+SERVER
+    chmod +x "$app/Contents/Resources/untether"
     cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleIdentifier</key><string>com.nachx639.untether</string>
+<key>CFBundleIdentifier</key><string>$TOY_BUNDLE_ID</string>
 <key>CFBundleExecutable</key><string>Untether</string>
 <key>CFBundleShortVersionString</key><string>$version</string>
 <key>CFBundleVersion</key><string>$build</string>
@@ -506,6 +587,48 @@ check "a real run with the key given as a path notarizes with that file, and lea
 toy_release FAKE_NOTARY_STATUS=Invalid stable --confirm v1.0.0
 check "a real run whose installer Apple does not notarize publishes nothing" \
     bash -c "[[ $RELEASE_STATUS != 0 ]] && grep -q 'notarytool submit' '$CALLS' && ! grep -qE '^git .*( push | tag )|^gh release|^public-export' '$CALLS'"
+
+# 2026-11-12: a module built for another Node than the embedded one must stop the release
+# before anything is signed.
+toy_release FAKE_NATIVE="was compiled against a different Node.js version using NODE_MODULE_VERSION 147. This version of Node.js requires NODE_MODULE_VERSION 137." stable --confirm v1.0.0
+check "a real run whose native module does not load with the embedded Node stops before signing" \
+    bash -c "[[ $RELEASE_STATUS != 0 ]] && grep -q '^build.sh ' '$CALLS' && ! grep -qE '^sign-and-notarize|notarytool|^public-export|^git .*( push | tag )|^gh release' '$CALLS'"
+check "... and says which module and why" \
+    bash -c "grep -q 'FAILED authenticate_pam.node: .*NODE_MODULE_VERSION 147' <<< \"\$1\"" _ "$RELEASE_OUT"
+NATIVE_APP="$WORK/native-check/Untether.app"
+toy_app "$NATIVE_APP" 1.0.0 300
+check "untether_check_native_modules accepts an app whose server loads its modules" \
+    bash -c "source '$SCRIPT_DIR/release-lib.sh'; [[ -z \"\$(untether_check_native_modules '$NATIVE_APP')\" ]]"
+rm "$NATIVE_APP/Contents/Resources/authenticate_pam.node"
+check "untether_check_native_modules refuses an app without authenticate_pam.node" \
+    bash -c "source '$SCRIPT_DIR/release-lib.sh'; ! untether_check_native_modules '$NATIVE_APP' | grep -v 'authenticate_pam.node is not in the app' | grep -q . && ! untether_check_native_modules '$NATIVE_APP' >/dev/null"
+toy_app "$NATIVE_APP" 1.0.0 300
+printf '#!/bin/bash\necho "ok pty.node: loads"\n' > "$NATIVE_APP/Contents/Resources/untether"
+check "untether_check_native_modules refuses a server that does not vouch for every module" \
+    bash -c "source '$SCRIPT_DIR/release-lib.sh'; ! untether_check_native_modules '$NATIVE_APP' >/dev/null"
+
+# --- nothing of a test or a build stays in LaunchServices as Untether -------------
+check "no toy bundle carries Untether's bundle identifier" \
+    bash -c "! grep -rl --include=Info.plist 'com.nachx639.untether' '$WORK' | grep -q ."
+check "the server's stand-in was never run from inside an app bundle" \
+    bash -c "grep -q '^untether check-native' '$WORK/server-runs.log' && ! grep -E '^untether .*\.app(/|\))' '$WORK/server-runs.log' | grep -q ."
+LS_CALLS="$WORK/lsregister.log"
+printf '#!/bin/bash\necho "lsregister $*" >> "%s"\n' "$LS_CALLS" > "$WORK/lsregister-double"
+chmod +x "$WORK/lsregister-double"
+mkdir -p "$WORK/ls/build/Products/Untether.app/Contents/Frameworks/Inner.app" "$WORK/ls/other dir/Toy.app" "$WORK/ls/not-an-app"
+UNTETHER_LSREGISTER="$WORK/lsregister-double" untether_unregister_apps "$WORK/ls" "$WORK/ls/missing"
+check "untether_unregister_apps unregisters every bundle under a folder, outermost only" \
+    equals "$(sort "$LS_CALLS")" "$(printf 'lsregister -u %s\nlsregister -u %s' "$WORK/ls/build/Products/Untether.app" "$WORK/ls/other dir/Toy.app")"
+check "build.sh and release.sh unregister their build products however they end" \
+    bash -c "grep -q '^trap unregister_build_products EXIT' '$SCRIPT_DIR/build.sh' && grep -q '^trap leave_no_app_behind EXIT' '$SCRIPT_DIR/release.sh'"
+: > "$LS_CALLS"
+toy_release UNTETHER_LSREGISTER="$WORK/lsregister-double" --dry-run --app "$WORK/given/Untether.app" stable
+check "dry run --app: its copy of the bundle is unregistered and removed when it ends" \
+    bash -c "[[ $RELEASE_STATUS == 0 ]] && grep -q 'lsregister -u .*/untether-release-dry\.[^/]*/app/Untether.app' '$LS_CALLS' && ! find '$WORK/tmp' -path '*untether-release-dry.*' -name '*.app' | grep -q ."
+check "... and the build folder's products are unregistered too" \
+    grep -q "lsregister -u $TOY/mac/build/" "$LS_CALLS"
+check "no script runs anything from inside an app bundle before it is signed" \
+    bash -c "! grep -nE 'APP_(RESOURCES|PATH)[^ ]*/untether. (version|check-native)' '$SCRIPT_DIR/build-web-frontend.sh' '$SCRIPT_DIR/release.sh' '$SCRIPT_DIR/release-lib.sh' '$SCRIPT_DIR/build.sh'"
 
 toy_release stable --confirm v1.0.0
 check "a real run with everything in place ends well" equals "$RELEASE_STATUS" 0

@@ -7,11 +7,17 @@ import './compact-menu.js';
 
 const running = { id: 's1', status: 'running', command: ['claude'] } as Session;
 
-async function openDesktop(extra: { onTalk?: () => void; onUploadImage?: () => void }) {
+async function openDesktop(extra: {
+  onTalk?: () => void;
+  onUploadImage?: () => void;
+  session?: Session;
+  gitFolded?: boolean;
+}) {
   const menu = await fixture<CompactMenu>(
     html`<compact-menu
       desktop
-      .session=${running}
+      .session=${extra.session ?? running}
+      .gitFolded=${extra.gitFolded ?? false}
       .onTalk=${extra.onTalk}
       .onUploadImage=${extra.onUploadImage}
       .onTerminateSession=${() => {}}
@@ -43,6 +49,39 @@ describe('compact menu on the desktop', () => {
     const menu = await openDesktop({ onUploadImage });
     menu.querySelector<HTMLElement>('[data-testid="compact-upload-image"]')?.click();
     expect(onUploadImage).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('what the header line had no room for (2026-11-12)', () => {
+  const task = {
+    ...running,
+    gitRepoPath: '/r',
+    gitBranch: 'ut/apps-con-servidor-por-defecto-y-vista-previa',
+    gitIsWorktree: true,
+    gitModifiedCount: 2,
+    gitInsertionCount: 40,
+    gitDeletionCount: 7,
+    gitAheadCount: 3,
+    gitBehindCount: 1,
+  } as Session;
+
+  it('is in the ⋯ menu: the branch, the worktree chip and every count', async () => {
+    const menu = await openDesktop({ session: task, gitFolded: true });
+    const summary = menu.querySelector('[data-testid="compact-git-summary"]');
+    await summary?.querySelector<CompactMenu>('git-status-badge')?.updateComplete;
+    expect(summary?.querySelector('[data-testid="git-branch-chip"]')?.getAttribute('title')).toBe(
+      task.gitBranch
+    );
+    expect(summary?.querySelector('[data-testid="git-worktree-chip"]')).not.toBeNull();
+    const text = summary?.textContent?.replace(/\s+/g, ' ') ?? '';
+    for (const count of ['●2', '+40', '−7', '↑3', '↓1']) expect(text).toContain(count);
+  });
+
+  it('is not repeated in the menu while the line shows all of it, or outside a repository', async () => {
+    const whole = await openDesktop({ session: task });
+    expect(whole.querySelector('[data-testid="compact-git-summary"]')).toBeNull();
+    const plain = await openDesktop({ gitFolded: true });
+    expect(plain.querySelector('[data-testid="compact-git-summary"]')).toBeNull();
   });
 });
 

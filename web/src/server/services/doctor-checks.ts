@@ -16,14 +16,17 @@ export {
   recentTranscriptTails,
 } from './doctor-checks-agents.js';
 export {
+  appBuildRunning,
   cachedBinaryBuild,
   cliBuildCheck,
   forwarderBuildCheck,
   forwarderSourceHash,
+  launchServices,
   nativePtyCheck,
   newestForwarderSource,
   readForwarderSourceHash,
   rebuildNativeModules,
+  registeredAppsCheck,
   rustToolchainFound,
 } from './doctor-checks-build.js';
 export {

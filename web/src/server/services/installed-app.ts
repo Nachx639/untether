@@ -265,6 +265,8 @@ export function nativeModulesLoadCheck(deps: {
   load: (file: string) => Promise<string | undefined>;
   rebuild: (name: string) => Promise<void>;
   fingerprint?: (file: string) => string | undefined;
+  /** An app build at work in this checkout: nothing is opened or rebuilt until it ends. */
+  building?: () => unknown;
 }): DoctorCheck {
   const fingerprint =
     deps.fingerprint ??
@@ -284,6 +286,8 @@ export function nativeModulesLoadCheck(deps: {
     id: 'native-modules-load',
     async run() {
       const findings: DoctorFinding[] = [];
+      // 2026-11-12: a module rebuilt here during a release would have raced its build.
+      if (deps.building?.()) return findings;
       for (const { name, file } of deps.modules()) {
         if (!file) continue;
         const print = fingerprint(file);
@@ -327,7 +331,7 @@ export function nativeModulesLoadCheck(deps: {
           if (after) loaded.set(file, after);
           findings.push({
             ...finding,
-            healed: `rebuilt ${name} with node-gyp under ${process.version}; the server loads it at its next restart`,
+            healed: `rebuilt ${name} with node-gyp under ${process.version}; the server loads it at the next login`,
           });
         }
       }

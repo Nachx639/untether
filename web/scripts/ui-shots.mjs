@@ -11,7 +11,8 @@
 // chat mode), chat-wide-1440, -2000 and -3440 (an agent's conversation with long text, wide code, a table and an
 // attached image at the default "Chat width", full; chat-comfortable-* is the 720 px choice), mobile-projects, -320 and -440 and desktop-projects (the project headers, with a crop
 // of each), mobile-320 and mobile-wide (the list on a narrow and a wide phone), mobile-folded, -320 and -440 and desktop-folded (one project folded, the others open), settings and create (390x844, Settings and the new-session form), settings-desktop
-// and create-desktop (the same at 1440x900), mobile-queue, -320 and -440 (a project's queued tasks). PNGs go to --out, by default $TMPDIR/ut-shots, named
+// and create-desktop (the same at 1440x900), mobile-queue, -320 and -440 (a project's queued tasks). session-header-task-800, -900, -1100, -1280 and -1600 (a task's session with a long title, path and branch
+// beside the open sidebar), session-header-task-900-menu (its ⋯ menu, with what the line had no room for), session-header-plain-900 (the same outside a repository) and session-header-task-phone and -phone-320: the audit's header views. PNGs go to --out, by default $TMPDIR/ut-shots, named
 // <browser>-<view>-<style>.png. To compare two folders: ui-shots-diff.mjs.
 //
 // --style takes anything the app can show today: a theme (light, dark, system) or an accent

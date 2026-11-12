@@ -15,6 +15,11 @@ const materialCss = fs.readFileSync(new URL('../src/client/styles/material.css',
 const stackPiece = materialCss.match(/:root \.ut-surface--bar\.ut-surface--bar-over,[^{]*\{[^}]*\}/)?.[0];
 assert.ok(stackPiece, 'styles/material.css keeps the piece .ut-surface--bar-over');
 
+// The app's own session header (styles/session.css), not a copy: its title and its two lines.
+const sessionCss = fs.readFileSync(new URL('../src/client/styles/session.css', import.meta.url), 'utf8');
+const headerPiece = sessionCss.slice(sessionCss.indexOf('  .ut-session-header {'), sessionCss.indexOf('  .ut-session-header-divider {'));
+assert.match(headerPiece, /\.ut-session-header-line2 > git-status-badge > \.ut-git-branch \{/);
+
 // The app's own measure of a two-line title (utils/card-line.ts titleLinesCut), not a copy.
 const { build } = await import('esbuild');
 const cardLine = (await build({
@@ -418,6 +423,41 @@ for (const [name, engine] of Object.entries({ webkit, chromium })) {
         // As it was: the phone's eyebrow with no styles, the chevron a block under its words.
         const bad = await inspect(`${css}<div><button data-testid="done-toggle" aria-expanded="false" style="font:400 13px sans-serif;background:none;text-align:left"><span>Hechas (20)</span><svg style="display:block"></svg></button></div>${shared('exited-section-toggle', 'Terminadas (38)')}`);
         assert.deepEqual(bad.failures.map(f => f.kind).sort(), ['section-chevron-off-its-line', 'section-headers-differ']);
+      });
+      // 2026-11-12, a task's session in Clay beside the open sidebar: the branch chip on the
+      // path, the capture button on «worktree», both inside the room of the controls.
+      await t.test('no piece of a session header is painted over another, at any width', async () => {
+        const chips = '.ut-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;background:#fec;box-shadow:0 3px 0 #c96;font:12px/16px monospace;white-space:nowrap}.act{flex:none;width:32px;height:32px;border-radius:16px;background:#fec}.ut-session-header-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}';
+        const branch = 'ut/apps-con-servidor-por-defecto-y-vista-previa-en-la-cabecera';
+        const header = (width, css, badge) => `<style>${pieces}${chips}${css}</style><div style="width:${width}px"><div class="ut-session-header session-header-container">
+          <div class="ut-session-header-title"><div class="ut-session-header-line1"><span class="ut-session-header-name">Servidor por defecto en apps</span></div>
+          <div class="ut-session-header-line2"><clickable-path class="ut-session-header-path"><div class="ut-path-middle"><span class="ut-path-head">~/Projects/.untether-worktrees/untether</span><span class="ut-path-tail">/apps-con-servidor-por-defecto</span></div></clickable-path>
+          <git-status-badge>${badge(`<span class="ut-chip ut-git-branch"><span class="ut-mid">${midParts(branch, branch.length - 18)}</span></span><span class="ut-chip ut-git-extra">worktree</span><span class="ut-git-extra">●16</span><span class="ut-git-extra">+1284 −367</span>`)}</git-status-badge></div></div>
+          <div class="ut-session-header-actions"><button class="act" aria-label="Captura"></button><button class="act" aria-label="Archivos"></button><button class="act" aria-label="Más"></button></div></div></div>`;
+        const overlaps = result => result.failures.filter(f => f.kind === 'header-pieces-overlap');
+        // As it was: the badge one box that could not shrink below its chips, the line open.
+        const before = '.ut-session-header{display:flex;align-items:center;gap:6px;height:44px}.ut-session-header-title{display:flex;flex:1 1 auto;flex-direction:column;min-width:0}.ut-session-header-line2{display:flex;align-items:center;gap:8px;min-width:0;height:20px}.ut-session-header-path{flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap}git-status-badge{min-width:0;flex-shrink:1}.box{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%}.ut-git-branch{min-width:0;overflow:hidden}.ut-session-header-actions{display:flex;flex:none;gap:2px}';
+        await page.setViewportSize({ width: 1400, height: 400 });
+        const bad = await inspect(header(260, before, inner => `<div class="box">${inner}</div>`));
+        assert.ok(overlaps(bad).some(f => /Captura/.test(`${f.element.text}${f.other.text}`)), JSON.stringify(bad.failures));
+        assert.ok(bad.checks.headerPieces >= 8);
+        // The app's own piece: from a window where all of it fits down to a stub.
+        for (const width of [1300, 900, 700, 520, 440, 360, 280, 200, 140]) {
+          const good = await inspect(header(width, headerPiece, inner => inner));
+          assert.deepEqual(good.failures, [], `at ${width}px: ${JSON.stringify(good.failures)}`);
+        }
+        // Who gave way: the path first, then the branch, the counts and the worktree chip last.
+        const shown = width => page.setContent(`<meta name="viewport" content="width=device-width"><style>body{margin:0}button{border:0;box-sizing:border-box}</style>${header(width, headerPiece, inner => inner)}`).then(() => page.evaluate(() => {
+          const line = document.querySelector('.ut-session-header-line2').getBoundingClientRect();
+          const on = el => el.getBoundingClientRect().top < line.bottom;
+          const cut = el => el.scrollWidth > el.clientWidth + 1;
+          return { path: cut(document.querySelector('.ut-path-head')), branch: cut(document.querySelector('.ut-mid-start')), extras: [...document.querySelectorAll('.ut-git-extra')].filter(on).length };
+        }));
+        assert.deepEqual(await shown(1300), { path: false, branch: false, extras: 3 });
+        assert.deepEqual(await shown(1000), { path: true, branch: false, extras: 3 });
+        assert.deepEqual(await shown(700), { path: true, branch: true, extras: 3 });
+        assert.equal((await shown(360)).extras < 3, true);
+        await page.setViewportSize({ width: 390, height: 844 });
       });
       await t.test('a title on two tight lines is not two halves on one', async () => {
         // WebKit's glyph boxes are taller than a 1.16 line and reach into the line above (here, 3 px).

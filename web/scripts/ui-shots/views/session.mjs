@@ -1,5 +1,5 @@
 // A session: its terminal on the phone, and in chat mode on the desktop.
-import { DESKTOP, PHONE, openSession } from './helpers.mjs';
+import { DESKTOP, PHONE, PHONE_NARROW, openSession, openSessionWithSidebar } from './helpers.mjs';
 
 // A fictitious agent conversation with what a wide desktop chat has to show (a user's 3440 px
 // screenshot, 2026-11-11): a long agent text that used to stop at 76 characters pinned left, a short
@@ -80,7 +80,81 @@ function wideChat(name, width, height, chatWidth, extra = {}) {
   };
 }
 
+/**
+ * A task's session with everything its header can carry, all of it long (2026-11-12, a user's
+ * screenshot in Clay: the branch chip painted over the path, the capture button over «worktree»
+ * and both inside the room of the controls on the right): a long title, a deep worktree path, a
+ * long `ut/…` branch, the worktree chip, the counts, the shield and a preview. Only what the
+ * browser receives changes, never the twin's state. `plain` is the same session outside any
+ * repository: a title and a path alone.
+ */
+const GIT_COUNTS = { gitModifiedCount: 12, gitAddedCount: 3, gitDeletedCount: 1, gitInsertionCount: 1284, gitDeletionCount: 367, gitAheadCount: 14, gitBehindCount: 2 };
+function longHeader(name, device, { plain = false, toggle } = {}) {
+  return {
+    name,
+    ...device,
+    audit: true,
+    patch(body, { rich }) {
+      const session = (Array.isArray(body) ? body : body.sessions ?? [body]).find((entry) => entry?.id === rich.sessionForDesktop);
+      if (!session) return;
+      const folder = 'apps-con-servidor-por-defecto-y-vista-previa-en-la-cabecera';
+      Object.assign(session, {
+        userTitle: 'Servidor por defecto en apps con vista previa y cabecera que no se pisa',
+        workingDir: `~/Projects/.untether-worktrees/untether/${folder}`,
+        shielded: true,
+        ...(plain
+          ? { gitRepoPath: undefined, gitBranch: undefined, gitIsWorktree: false }
+          : {
+              gitRepoPath: `~/Projects/.untether-worktrees/untether/${folder}`,
+              gitBranch: `ut/${folder}`,
+              gitIsWorktree: true,
+              previewPorts: [{ id: 'header', port: 4110, url: 'http://localhost:4110', source: 'output', at: Date.parse(rich.now), state: 'live', title: 'Apps' }],
+            }),
+      });
+    },
+    async open(page, ctx) {
+      await (device.phone ? openSession(page, ctx, toggle) : openSessionWithSidebar(page, ctx));
+      if (plain) return;
+      // The counts come on the session's own stream, never in the list, and the twin's folder
+      // is no repository (its stream says zero): whatever the view is given, it keeps these.
+      await page.evaluate((counts) => {
+        const view = document.querySelector('session-view');
+        const own = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(view), 'session');
+        Object.defineProperty(view, 'session', {
+          configurable: true,
+          get: () => own.get.call(view),
+          set: (value) => own.set.call(view, value ? { ...value, ...counts } : value),
+        });
+        view.session = own.get.call(view);
+        return view.updateComplete;
+      }, GIT_COUNTS);
+    },
+  };
+}
+const window_ = (width) => ({ viewport: { width, height: 800 }, phone: false });
+
 export default [
+  // The session header of a task, sidebar open, from a narrow window to a wide one, and on phones.
+  ...[800, 900, 1100, 1280, 1600].map((width) => longHeader(`session-header-task-${width}`, window_(width))),
+  // The ⋯ menu of a window whose line had no room for the worktree chip and the counts: they are in it.
+  (() => {
+    // Tall enough for the whole menu: one that has to scroll keeps its last items under its edge.
+    const view = longHeader('session-header-task-900-menu', { viewport: { width: 900, height: 1000 }, phone: false });
+    return {
+      ...view,
+      async open(page, ctx) {
+        await view.open(page, ctx);
+        await page.locator('.ut-session-header compact-menu button[data-menu-button]').click();
+        const summary = page.getByTestId('compact-git-summary');
+        await summary.waitFor({ state: 'visible' });
+        const text = (await summary.innerText()).replace(/\s+/g, ' ');
+        for (const piece of ['worktree', '●16', '+1284', '−367', '↑14', '↓2']) if (!text.includes(piece)) throw new Error(`the ⋯ menu lacks ${piece}: ${text}`);
+      },
+    };
+  })(),
+  longHeader('session-header-plain-900', window_(900), { plain: true }),
+  longHeader('session-header-task-phone', PHONE, { toggle: 'chat-mode-toggle-button-compact' }),
+  longHeader('session-header-task-phone-320', PHONE_NARROW, { toggle: 'chat-mode-toggle-button-compact' }),
   // 390x844, a session.
   {
     name: 'session',

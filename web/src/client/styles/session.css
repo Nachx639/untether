@@ -51,6 +51,10 @@
     font-weight: var(--ut-fw-semibold);
     color: var(--color-text-bright);
   }
+  .ut-session-header-line1 > .ut-chip {
+    flex: 0 3 auto;
+    min-width: 0;
+  }
   .ut-session-header-shield {
     display: inline-flex;
     flex: none;
@@ -74,16 +78,53 @@
   .ut-session-header .magic-button:focus-visible {
     opacity: 1;
   }
+  /* The second line never paints one piece over another (2026-11-12: in a task's session the
+     branch chip sat on the path, the capture button on «worktree», both inside the room of the
+     controls). Who gives way, in order: the path (its middle first), then the branch (its
+     middle too, `.ut-mid`), then the worktree chip and the counts, last one first: path and
+     branch ask the line for their least and grow with what is left, the branch before the
+     path; what still has no room wraps to a second line that is out of sight. No overflow:
+     hidden, which would cut the chips' relief: the clip leaves them their margin. */
   .ut-session-header-line2 {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    align-content: flex-start;
+    column-gap: 8px;
+    row-gap: 44px;
     min-width: 0;
     height: 20px;
+    clip-path: inset(-12px -6px);
+  }
+  /* The line is 20 px high whatever a style makes of a chip. */
+  .ut-session-header-line2::before {
+    content: '';
+    flex: none;
+    width: 0;
+    height: 20px;
+    margin-inline-end: -8px;
+  }
+  .ut-session-header-line2 > *,
+  .ut-session-header-line2 > git-status-badge > * {
+    flex: none;
+    margin-block: -8px;
+  }
+  .ut-session-header-line2 > git-status-badge {
+    display: contents;
   }
   /* Path: mono caption, folder name always visible, the middle cut (clickable-path middle). */
-  .ut-session-header-path {
+  .ut-session-header-line2 > .ut-session-header-path {
     display: block;
+    flex: 1 1 6em;
+    min-width: 0;
+    max-width: max-content;
+  }
+  .ut-session-header-line2 > git-status-badge > .ut-git-branch {
+    flex: 1000000 1 9em;
+    min-width: 0;
+    max-width: max-content;
+  }
+  .ut-git-branch > .ut-mid {
     flex: 0 1 auto;
     min-width: 0;
   }
@@ -100,13 +141,17 @@
     white-space: nowrap;
   }
   .ut-session-header-path .ut-path-head {
-    flex: 0 1 auto;
+    flex: 0 1000 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* The folder gives way after the head has: a long one is cut at its end, never painted on. */
   .ut-session-header-path .ut-path-tail {
-    flex: none;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .ut-session-header-path .ut-path-copy {
     flex: none;
@@ -160,23 +205,6 @@
     color: var(--color-status-error-text);
   }
 
-  /* A narrow desktop window (not a phone, which has its own header): the same controls, the
-     view switch as icons, the capture toggle and the counts dropped before the title. */
-  @media (max-width: 760px) {
-    .ut-session-header-actions > .ut-segmented > button {
-      font-size: 0;
-      gap: 0;
-      padding: 0 7px;
-    }
-    .ut-session-header-actions > .ut-segmented {
-      margin: 0 2px;
-    }
-    .ut-session-header-actions > keyboard-capture-indicator,
-    .ut-session-header-line2 git-status-badge {
-      display: none;
-    }
-  }
-
   /* ---------------------------------------------------------------------------------------
      Desktop ⋯ menu (compact-menu.ts desktop): a 280 px .ut-menu, fixed and clamped to the
      viewport by positionPopover. */
@@ -225,6 +253,22 @@
     height: 16px;
     flex: none;
     color: var(--color-text-muted);
+  }
+  /* What the header's line had no room for (session-header.ts fitDesktopBar): the branch whole
+     where it fits, the worktree chip and the counts, on as many lines as they need. */
+  .ut-session-menu-git {
+    padding: 6px 8px 2px;
+  }
+  .ut-session-menu-git > git-status-badge {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    min-width: 0;
+  }
+  .ut-session-menu-git .ut-git-branch {
+    min-width: 0;
+    max-width: 100%;
   }
   .ut-session-menu-swatches {
     display: flex;
@@ -1294,3 +1338,29 @@ html[data-look="clay"] .session-view-grid[data-mobile='true'][data-chat-surface=
   --ut-session-bar: var(--ut-status-bar-bg);
 }
 html[data-look="clay"] .ut-ph-header .ut-ph-icon { margin-inline: 6px; }
+
+/* The desktop toolbar with no room for its title (session-header.ts fitDesktopBar, measured on
+   the bar: the window's width says nothing with the sidebar open). `data-fold="1"`: the view
+   switch and the preview as icons, the capture toggle out. `data-fold="2"`: what the ⋯ menu
+   also offers (files, changes, preview) stays in the menu. The controls left keep their size.
+   Unlayered: the pieces' own rules and the styles' are. */
+.ut-session-header[data-fold] .ut-session-header-actions > .ut-segmented > button {
+  font-size: 0;
+  gap: 0;
+  padding: 0 7px;
+}
+.ut-session-header[data-fold] .ut-session-header-actions > .ut-segmented {
+  margin: 0 2px;
+}
+.ut-session-header[data-fold] .ut-session-header-actions > keyboard-capture-indicator {
+  display: none;
+}
+.ut-session-header[data-fold] .ut-preview-chip-icon {
+  display: block;
+}
+.ut-session-header[data-fold] .ut-preview-chip-label {
+  display: none;
+}
+.ut-session-header[data-fold='2'] .ut-session-header-actions > :is(.ut-preview-chip, [data-testid='header-files-button'], [data-testid='header-changes-button'], .ut-session-header-divider) {
+  display: none;
+}

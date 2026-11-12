@@ -197,6 +197,17 @@ echo "Using Node.js version: $NODE_VERSION"
 # Change to web directory
 cd "${WEB_DIR}"
 
+# A mark that an app build is at work in this checkout, for the doctor of a server that runs
+# from it (web/src/server/services/doctor-checks-build.ts appBuildRunning): "<pid> <epoch
+# seconds>", removed when this script ends however it ends.
+# 2026-11-12: the doctor found node-pty's spawn-helper missing in the middle of a release and
+# rebuilt it while the build was rebuilding it too. The build no longer writes there (see
+# below), and while the mark stands the doctor rebuilds nothing.
+APP_BUILD_MARK="${WEB_DIR}/.app-build-running"
+echo "$$ $(date +%s)" > "${APP_BUILD_MARK}"
+trap 'rm -f "${APP_BUILD_MARK}"' EXIT
+trap 'rm -f "${APP_BUILD_MARK}"; exit 130' INT TERM
+
 # Clean build artifacts
 echo "Cleaning build artifacts..."
 rm -rf dist public/bundle public/output.css native
@@ -253,8 +264,9 @@ filter_build_output() {
     grep -v -E "$pattern" || true
 }
 
-# Run pnpm install with filtered output
-pnpm install --frozen-lockfile 2>&1 | filter_build_output
+# Install only when node_modules is not what the lockfile asks for, and never under a running
+# server (custom-node-policy.sh untether_prepare_web_deps; 2026-11-12).
+untether_prepare_web_deps 2>&1 | filter_build_output
 
 # Determine build configuration
 BUILD_CONFIG="${CONFIGURATION:-Debug}"
@@ -512,19 +524,33 @@ if [ ${#MISSING_FILES[@]} -gt 0 ]; then
     exit 1
 fi
 
-# Verify the executable works
-echo "Verifying untether executable..."
-echo "Full path: ${APP_RESOURCES}/untether"
-if "${APP_RESOURCES}/untether" version &>/dev/null; then
-    VERSION_OUTPUT=$("${APP_RESOURCES}/untether" version 2>&1 | head -1)
-    echo "✓ Untether executable verified: $VERSION_OUTPUT"
+# Verify the executable works, and that it opens its native modules with the Node it embeds
+# (`untether check-native`). Both are asked of web/native, whose files are the ones just copied
+# into the bundle (compared below), never of the bundle.
+# 2026-11-12: a module built for another Node was only found out at the first login. And
+# running something from inside an unsigned Untether.app makes macOS show the user "Untether
+# is damaged and can't be opened": nothing is run from a bundle that is not signed yet.
+echo "Verifying untether executable (in ${NATIVE_DIR})..."
+for BUNDLED_FILE in untether pty.node spawn-helper authenticate_pam.node; do
+    if ! cmp -s "${NATIVE_DIR}/${BUNDLED_FILE}" "${APP_RESOURCES}/${BUNDLED_FILE}"; then
+        echo "error: ${BUNDLED_FILE} in the app bundle is not the one in ${NATIVE_DIR}"
+        exit 1
+    fi
+done
+if VERSION_OUTPUT="$("${NATIVE_DIR}/untether" version 2>&1)"; then
+    echo "✓ Untether executable verified: $(echo "$VERSION_OUTPUT" | head -1)"
 else
     echo "error: Untether executable failed verification (version command failed)"
-    echo "Full executable path: ${APP_RESOURCES}/untether"
-    echo "Checking if file exists and is executable:"
-    ls -la "${APP_RESOURCES}/untether" || echo "File not found!"
-    echo "Attempting to run with error output:"
-    "${APP_RESOURCES}/untether" version 2>&1 || true
+    ls -la "${NATIVE_DIR}/untether" || echo "File not found!"
+    echo "$VERSION_OUTPUT"
+    exit 1
+fi
+if NATIVE_CHECK="$("${NATIVE_DIR}/untether" check-native 2>&1)"; then
+    echo "$NATIVE_CHECK" | sed 's/^/  /'
+    echo "✓ Native modules load with the embedded Node.js"
+else
+    echo "error: a native module does not load with the Node.js the app embeds:"
+    echo "$NATIVE_CHECK"
     exit 1
 fi
 

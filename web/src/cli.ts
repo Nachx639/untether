@@ -6,7 +6,9 @@ import { existsSync } from 'fs';
 import { constants as osConstants } from 'os';
 import * as path from 'path';
 import { currentBuild, describeBuild } from './server/build-info.js';
+import { checkNativeMain, checkNativeModules } from './server/native-check.js';
 import { startUntetherServer } from './server/server.js';
+import { pamStatus } from './server/services/authenticate-pam-loader.js';
 import { guardHookMain } from './server/services/task-guard-hook.js';
 import {
   type CrashMark,
@@ -34,6 +36,22 @@ if (process.argv[2] === 'version') {
   process.exit(0);
 }
 
+// The native modules, opened by this very executable (native-check.ts): the build and the
+// release ask a built app this before it is signed.
+if (process.argv[2] === 'check-native') {
+  const bundleDir = process.env.UNTETHER_SEA ? path.dirname(process.execPath) : undefined;
+  const ptyFile = bundleDir
+    ? path.join(bundleDir, 'pty.node')
+    : path.join(__dirname, '..', 'node_modules', 'node-pty', 'build', 'Release', 'pty.node');
+  checkNativeMain(
+    checkNativeModules({
+      bundleDir,
+      pam: pamStatus,
+      openPty: () => process.dlopen({ exports: {} }, ptyFile),
+    })
+  );
+}
+
 // A task agent's command guard hook (task-guard-hook.ts): decides one tool call and exits,
 // before the logger (it must print nothing but its verdict).
 if (process.argv[2] === 'guard-hook') guardHookMain(process.argv.slice(3));
@@ -48,6 +66,7 @@ const debugMode = process.env.UNTETHER_DEBUG === '1' || process.env.UNTETHER_DEB
 // Client commands talk to a running server: they append to its log, never start it afresh.
 const CLIENT_COMMANDS = new Set([
   'version',
+  'check-native',
   'help',
   '--help',
   '-h',

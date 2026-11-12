@@ -10,11 +10,13 @@ describe('GitStatusBadge', () => {
     await import('./git-status-badge');
   });
 
-  it('renders branch info with truncation and title', async () => {
+  it('renders branch info cut in its middle, with its title', async () => {
     const session = {
       ...createMockSession(),
       gitRepoPath: '/tmp/repo',
       gitBranch: 'feature/super-long-branch-name',
+      gitIsWorktree: true,
+      gitModifiedCount: 2,
     } as Session;
 
     const element = await fixture<GitStatusBadge>(html`
@@ -27,9 +29,18 @@ describe('GitStatusBadge', () => {
     expect(chip).toBeTruthy();
     expect(chip?.classList.contains('ut-chip--mono')).toBe(true);
     expect(chip?.querySelector('svg')).toBeTruthy();
-    expect(chip?.querySelector('.truncate')?.textContent?.trim()).toBe(
-      'feature/super-long-branch-name'
-    );
+    // Two parts (`.ut-mid`): a task's branches differ at their end, which stays on screen.
+    const name = chip?.querySelector('.ut-mid');
+    expect(name?.textContent?.trim()).toBe('feature/super-long-branch-name');
+    expect(name?.querySelector('.ut-mid-start')?.textContent).toBe('feature/supe');
+    expect(name?.querySelector('.ut-mid-end')?.textContent).toBe('r-long-branch-name');
+    // Each piece is an item of the line that holds the badge, with no box around them: the
+    // header's second line decides which gives way (2026-11-12, pieces painted one on another).
+    expect([...element.children].map((el) => el.getAttribute('data-testid'))).toEqual([
+      'git-branch-chip',
+      'git-worktree-chip',
+      'git-changed-files',
+    ]);
     expect(chip?.getAttribute('title')).toBe('feature/super-long-branch-name');
     // Never the old bracketed form.
     expect(element.textContent).not.toContain('[');

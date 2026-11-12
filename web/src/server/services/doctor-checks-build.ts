@@ -18,6 +18,8 @@ export function nativePtyCheck(deps: {
   helperPath: () => string | null;
   rebuild: () => Promise<void>;
   exists?: (file: string) => boolean;
+  /** An app build at work in this checkout (appBuildRunning): nothing is rebuilt meanwhile. */
+  building?: () => AppBuildMark | undefined;
 }): DoctorCheck {
   const exists = deps.exists ?? fs.existsSync;
   return {
@@ -31,6 +33,16 @@ export function nativePtyCheck(deps: {
         severity: 'critical',
         problem: "node-pty's spawn-helper is missing: no new session can start",
       };
+      // 2026-11-12: rebuilt here in the middle of a release whose build was rebuilding it too.
+      const build = deps.building?.();
+      if (build) {
+        return [
+          {
+            ...finding,
+            problem: `${finding.problem}; an app build is at work in this checkout (pid ${build.pid}): not rebuilt until it ends`,
+          },
+        ];
+      }
       try {
         await deps.rebuild();
       } catch (error) {
@@ -39,6 +51,167 @@ export function nativePtyCheck(deps: {
       return exists(helper)
         ? [{ ...finding, healed: 'node-pty rebuilt' }]
         : [{ ...finding, problem: `${finding.problem}; a rebuild did not bring it back` }];
+    },
+  };
+}
+
+export interface AppBuildMark {
+  pid: number;
+  /** When the build started, epoch ms. */
+  since: number;
+}
+
+/** The mark mac/scripts/build-web-frontend.sh keeps in web/ while it runs: "<pid> <epoch s>". */
+export const APP_BUILD_MARK = '.app-build-running';
+/** A mark older than this is a leftover (a build takes minutes; with the custom Node, ~1 h). */
+export const APP_BUILD_MARK_MAX_MS = 3 * 60 * MINUTE;
+
+/**
+ * The app build at work in `webDir`, when its mark is there, its process lives and it is not
+ * a leftover. While one runs, the doctor rebuilds no native module of that checkout: the two
+ * would write the same files (2026-11-12).
+ */
+export function appBuildRunning(
+  webDir: string,
+  deps: { now?: () => number; alive?: (pid: number) => boolean } = {}
+): AppBuildMark | undefined {
+  let text: string;
+  try {
+    text = fs.readFileSync(path.join(webDir, APP_BUILD_MARK), 'utf8');
+  } catch {
+    return undefined;
+  }
+  const [pid, startedSeconds] = text.trim().split(/\s+/).map(Number);
+  if (!Number.isInteger(pid) || pid <= 1 || !Number.isFinite(startedSeconds)) return undefined;
+  const since = startedSeconds * 1000;
+  const age = (deps.now ?? Date.now)() - since;
+  if (age > APP_BUILD_MARK_MAX_MS || age < -MINUTE) return undefined;
+  return (deps.alive ?? processAlive)(pid) ? { pid, since } : undefined;
+}
+
+/** The bundle identifier of the released app (mac/Untether/version.xcconfig). */
+export const UNTETHER_BUNDLE_ID = 'com.nachx639.untether';
+/** Where the one Untether macOS should know lives. */
+export const INSTALLED_APP_PATHS = ['/Applications/Untether.app'];
+
+/** The paths of the bundles `lsregister -dump` lists under a bundle identifier. */
+export function registeredAppPaths(dump: string, identifier: string): string[] {
+  const paths = new Set<string>();
+  for (const block of dump.split(/^-{20,}$/m)) {
+    const id = block.match(/^identifier:\s+(\S+)/m)?.[1];
+    if (id !== identifier) continue;
+    const found = block.match(/^path:\s+(.+?)(?: \(0x[0-9a-f]+\))?\s*$/m)?.[1];
+    if (found) paths.add(found);
+  }
+  return [...paths];
+}
+
+/** A copy that is safe to take out of LaunchServices unasked: a build product or a leftover. */
+function disposableApp(appPath: string, exists: (file: string) => boolean): boolean {
+  return (
+    !exists(appPath) ||
+    /\/DerivedData\/|\/mac\/build\/|\/\.build\/|^\/(private\/)?(tmp|var\/folders)\//.test(appPath)
+  );
+}
+
+/**
+ * Untether registered in LaunchServices anywhere but /Applications (2026-11-12: macOS told the
+ * user "Untether is damaged and can't be opened" while the installed app was intact. Opened by
+ * bundle identifier, it had picked one of the other copies it knew: unsigned build products in
+ * mac/build and DerivedData, and the toy bundles of the release tests in the temporary
+ * folder). Build products and leftovers nothing runs from are unregistered here; any other
+ * copy (one the user keeps somewhere) is only told.
+ */
+export function registeredAppsCheck(deps: {
+  /** Paths registered under Untether's identifier (registeredAppPaths of a dump). */
+  registered: () => Promise<string[]>;
+  unregister: (appPath: string) => Promise<void>;
+  /** Whether a process runs from inside the bundle. */
+  runningFrom: (appPath: string) => Promise<boolean>;
+  installed?: string[];
+  exists?: (file: string) => boolean;
+  now?: () => number;
+  /** The dump is tens of megabytes: read this often at most. */
+  everyMs?: number;
+}): DoctorCheck {
+  const installed = new Set(deps.installed ?? INSTALLED_APP_PATHS);
+  const exists = deps.exists ?? fs.existsSync;
+  const now = deps.now ?? Date.now;
+  const everyMs = deps.everyMs ?? 30 * MINUTE;
+  let lastAt = Number.NEGATIVE_INFINITY;
+  let last: DoctorFinding[] = [];
+  return {
+    id: 'registered-apps',
+    async run() {
+      if (now() - lastAt < everyMs) return last.filter((finding) => !finding.healed);
+      lastAt = now();
+      const findings: DoctorFinding[] = [];
+      for (const appPath of await deps.registered()) {
+        if (installed.has(appPath)) continue;
+        const finding: DoctorFinding = {
+          key: `registered-apps:${appPath}`,
+          check: 'registered-apps',
+          severity: 'warning',
+          problem: `macOS (LaunchServices) knows another Untether at ${appPath}: it may open that one in place of the installed app ("Untether is damaged and can't be opened")`,
+        };
+        if (!disposableApp(appPath, exists)) {
+          findings.push({
+            ...finding,
+            problem: `${finding.problem}. It is not a build product: remove it, or unregister it with lsregister -u`,
+          });
+          continue;
+        }
+        if (exists(appPath) && (await deps.runningFrom(appPath))) {
+          findings.push({
+            ...finding,
+            problem: `${finding.problem}. Something runs from it: left as it is`,
+          });
+          continue;
+        }
+        try {
+          await deps.unregister(appPath);
+          findings.push({ ...finding, healed: 'unregistered from LaunchServices' });
+        } catch (error) {
+          findings.push({
+            ...finding,
+            problem: `${finding.problem}; unregistering it failed: ${error}`,
+          });
+        }
+      }
+      last = findings;
+      return findings;
+    },
+  };
+}
+
+export const LSREGISTER =
+  '/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister';
+
+/** The real dependencies of registeredAppsCheck (macOS only: nothing registered elsewhere). */
+export function launchServices(): Pick<
+  Parameters<typeof registeredAppsCheck>[0],
+  'registered' | 'unregister' | 'runningFrom'
+> {
+  return {
+    registered: async () => {
+      if (process.platform !== 'darwin' || !fs.existsSync(LSREGISTER)) return [];
+      const { stdout } = await execFileAsync(LSREGISTER, ['-dump'], {
+        timeout: 2 * MINUTE,
+        maxBuffer: 512 * 1024 * 1024,
+      });
+      return registeredAppPaths(String(stdout), UNTETHER_BUNDLE_ID);
+    },
+    unregister: async (appPath) => {
+      await execFileAsync(LSREGISTER, ['-u', appPath], { timeout: MINUTE });
+    },
+    runningFrom: async (appPath) => {
+      const { stdout } = await execFileAsync('ps', ['-axo', 'comm='], {
+        timeout: MINUTE,
+        maxBuffer: 16 * 1024 * 1024,
+      });
+      return String(stdout)
+        .split('\n')
+        .some((command) => command.trim().startsWith(`${appPath}/`));
     },
   };
 }

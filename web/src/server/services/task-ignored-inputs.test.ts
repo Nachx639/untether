@@ -184,6 +184,9 @@ describe('a check does not pass on files that do not travel with the merge', () 
     expect(isKnownArtifact('web/node_modules/')).toBe(true);
     expect(isKnownArtifact('mac/build/x.o')).toBe(true);
     expect(isKnownArtifact('web/.env.local')).toBe(true);
+    // The forwarder a test preparation builds, and the stamp of the sources it was built from.
+    expect(isKnownArtifact('web/bin/untether-fwd')).toBe(true);
+    expect(isKnownArtifact('web/bin/untether-fwd.source-hash')).toBe(true);
     expect(isKnownArtifact('web/src/test/fixtures/a.cast')).toBe(false);
   });
 });

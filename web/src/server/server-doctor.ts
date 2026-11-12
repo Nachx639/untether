@@ -20,6 +20,7 @@ import { connectorCheck } from './services/connector/connector-health.js';
 import { DiskGrowthWatch } from './services/disk-growth.js';
 import {
   agentEventsCheck,
+  appBuildRunning,
   backupdCpuCheck,
   backupExclusionCheck,
   bigCastsCheck,
@@ -39,6 +40,7 @@ import {
   flakyUnderLoadCheck,
   forwarderBuildCheck,
   githubRepoOf,
+  launchServices,
   logErrorsCheck,
   loopFailuresCheck,
   movedProjectsCheck,
@@ -49,6 +51,7 @@ import {
   publishGuardCheck,
   rebuildNativeModules,
   recentTranscriptTails,
+  registeredAppsCheck,
   replacedSessionsCheck,
   resourcesCheck,
   rustToolchainFound,
@@ -157,6 +160,7 @@ export function setupDoctor(ctx: AppContext) {
           }
         },
         rebuild: rebuildNativeModules(webDir),
+        building: () => appBuildRunning(webDir),
       }),
       stuckTasksCheck({
         tasks: () => ctx.taskScheduler?.list() ?? [],
@@ -331,6 +335,7 @@ export function setupDoctor(ctx: AppContext) {
               })
             : [],
         load: loadsInChild,
+        building: () => appBuildRunning(webDir),
         rebuild: async (name) => {
           const build = name === 'node-pty' ? 'buildNodePty' : 'buildAuthenticatePam';
           await promisify(execFile)(
@@ -340,6 +345,8 @@ export function setupDoctor(ctx: AppContext) {
           );
         },
       }),
+      // 2026-11-12: macOS opened an unsigned build product in place of the installed app.
+      registeredAppsCheck(launchServices()),
       cliBuildCheck({
         server: () => currentBuild({ help: TASK_CLI_HELP, version: VERSION }),
         installed: () => installedCliBinaries(),

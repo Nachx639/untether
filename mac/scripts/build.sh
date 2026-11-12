@@ -49,6 +49,18 @@ PROJECT_DIR="$(dirname "$MAC_DIR")"
 BUILD_DIR="$MAC_DIR/build"
 source "$SCRIPT_DIR/release-lib.sh"
 
+# However this script ends, its build products leave LaunchServices: the only Untether macOS
+# knows is the installed one (release-lib.sh untether_unregister_apps, 2026-11-12).
+unregister_build_products() {
+    local own_derived_data
+    untether_unregister_apps "$BUILD_DIR"
+    while IFS= read -r own_derived_data; do
+        [[ -n "$own_derived_data" ]] && untether_unregister_apps "$own_derived_data"
+    done < <(untether_own_derived_data "$PROJECT_DIR" 2> /dev/null || true)
+    return 0
+}
+trap unregister_build_products EXIT
+
 # Default values
 CONFIGURATION="Release"
 SIGN_APP=true

@@ -154,6 +154,73 @@ untether_release_automation() {
     fi
 }
 
+# The native modules a built app carries load with the Node its server embeds: the server
+# opens them itself (`untether check-native`, web/src/server/native-check.ts). Prints what is
+# wrong and fails; nothing and success when pty.node, authenticate_pam.node and spawn-helper
+# are there and good.
+#
+# The server and its modules are COPIED to a plain folder and run there. Nothing is ever run
+# from inside the bundle: before it is signed, macOS answers a program run from an
+# Untether.app with a dialog on the user's screen ("Untether is damaged and can't be opened",
+# 2026-11-12, during the tests of this very check).
+#
+# 2026-11-12: nothing checked this before signing. A module built for another Node
+# (authenticate-pam is one build per Node ABI) would have shipped and failed at the first
+# login; the check was made by hand with a Node of the same version.
+#
+#   untether_check_native_modules <Untether.app>
+untether_check_native_modules() {
+    local resources="$1/Contents/Resources" file said scratch status=0
+    for file in untether pty.node authenticate_pam.node spawn-helper; do
+        if [[ ! -f "$resources/$file" ]]; then
+            printf '%s\n' "$file is not in the app (Contents/Resources)"
+            status=1
+        fi
+    done
+    [[ "$status" == 0 ]] || return 1
+    scratch="$(mktemp -d "${TMPDIR:-/tmp}/untether-native-check.XXXXXX")"
+    for file in untether pty.node authenticate_pam.node spawn-helper; do
+        cp "$resources/$file" "$scratch/$file"
+    done
+    chmod +x "$scratch/untether" "$scratch/spawn-helper"
+    if ! said="$("$scratch/untether" check-native 2>&1)"; then
+        printf '%s\n' "the server cannot load its native modules:" "$said"
+        status=1
+    else
+        for file in pty.node authenticate_pam.node spawn-helper; do
+            if [[ "$said" != *"ok $file:"* ]]; then
+                printf '%s\n' "the server did not say $file is good:" "$said"
+                status=1
+                break
+            fi
+        done
+    fi
+    rm -rf "$scratch"
+    return "$status"
+}
+
+# Takes out of LaunchServices every app bundle given or found under the folders given, so that
+# the only Untether macOS knows is the installed one. Missing paths are skipped; never fails.
+#
+# 2026-11-12: macOS told the user "Untether is damaged and can't be opened". The installed app
+# was intact: LaunchServices also knew, under the same bundle identifier, the build products
+# (mac/build, DerivedData: unsigned or half-signed, and a higher version than the installed
+# one) and the toy bundles of the release tests, and opened one of those.
+#
+#   untether_unregister_apps <app bundle or folder>...
+untether_unregister_apps() {
+    local lsregister="${UNTETHER_LSREGISTER:-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister}"
+    local target app
+    [[ -x "$lsregister" ]] || return 0
+    for target in "$@"; do
+        [[ -d "$target" ]] || continue
+        while IFS= read -r -d '' app; do
+            "$lsregister" -u "$app" > /dev/null 2>&1 || true
+        done < <(find "$target" -type d -name '*.app' -prune -print0 2> /dev/null)
+    done
+    return 0
+}
+
 # What a release's installer must be: one package that installs Untether.app in /Applications,
 # stays there (not relocatable: PackageInfo lists under <relocate> the bundles Installer may
 # put elsewhere), installs whatever copy is already there, and runs no script. Prints what is

@@ -50,6 +50,10 @@ const KIND_SLOT = '\u0000';
 /** Changes (a file with + and −), drawn like components/icons.ts (Lucide geometry). */
 const DIFF_ICON = html`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M9 10h6M12 7v6M9 17h6"/>`}</svg>`;
 
+/** The room the desktop title keeps, in em of the bar's type, before the controls fold. */
+const DESKTOP_TITLE_MIN_EM = 18;
+const DESKTOP_FOLD_MAX = 2;
+
 @customElement('session-header')
 export class SessionHeader extends LitElement {
   // Disable shadow DOM to use Tailwind
@@ -126,6 +130,61 @@ export class SessionHeader extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     closeSessionSwitcher();
+    this.barWidths?.disconnect();
+    this.barWidths = undefined;
+    this.fittedBar = null;
+  }
+
+  /** The line under the title lost part of its git pieces: the ⋯ menu shows them. */
+  @state() private gitFolded = false;
+  private barWidths?: ResizeObserver;
+  private fittedBar: HTMLElement | null = null;
+
+  protected updated() {
+    const bar = this.isMobile ? null : this.querySelector<HTMLElement>('.ut-session-header');
+    if (bar !== this.fittedBar) {
+      if (this.fittedBar) this.barWidths?.unobserve(this.fittedBar);
+      this.fittedBar = bar;
+      if (bar && typeof ResizeObserver !== 'undefined') {
+        this.barWidths ??= new ResizeObserver(() => this.fitDesktopBar());
+        this.barWidths.observe(bar);
+      }
+    }
+    this.fitDesktopBar();
+  }
+
+  /**
+   * What the desktop toolbar folds when its title has no room (2026-11-12: in a task's session
+   * beside the open sidebar the controls left the title a stub and its pieces painted one over
+   * another). Measured on the bar itself, whatever the window, the sidebar or the style's type
+   * size: `data-fold="1"` leaves the view switch and the preview as icons and takes the capture
+   * toggle out; `data-fold="2"` leaves what the ⋯ menu also offers (files, changes, preview) to
+   * the menu. The same controls stay in the DOM; styles/session.css hides them. And what the
+   * second line could not show of its git pieces is shown, whole, at the top of the ⋯ menu.
+   */
+  private fitDesktopBar() {
+    const bar = this.fittedBar;
+    const title = bar?.querySelector<HTMLElement>('.ut-session-header-title');
+    if (!bar || !title || !bar.clientWidth) return;
+    const least = DESKTOP_TITLE_MIN_EM * (Number.parseFloat(getComputedStyle(bar).fontSize) || 13);
+    for (let fold = 0; ; fold++) {
+      if (fold) bar.dataset.fold = String(fold);
+      else delete bar.dataset.fold;
+      if (fold === DESKTOP_FOLD_MAX || title.clientWidth >= least) break;
+    }
+    // What the line could not show of the branch, the worktree chip and the counts goes to
+    // the ⋯ menu (2026-11-12 review: they left the line and were nowhere).
+    const line = bar.querySelector<HTMLElement>('.ut-session-header-line2');
+    const pieces = line ? [...line.querySelectorAll<HTMLElement>('git-status-badge > *')] : [];
+    const box = line?.getBoundingClientRect();
+    const bottom = box?.height ? box.bottom : Number.POSITIVE_INFINITY;
+    const cut = (el: Element | null) => !!el && el.scrollWidth > el.clientWidth + 1;
+    this.gitFolded = pieces.some(
+      (piece) =>
+        piece.getBoundingClientRect().top >= bottom ||
+        cut(piece.querySelector('.ut-mid-start')) ||
+        cut(piece.querySelector('.ut-mid'))
+    );
   }
 
   /** Other sessions waiting for you or with a reply you have not read. */
@@ -665,7 +724,7 @@ export class SessionHeader extends LitElement {
                     class="ut-chip ut-chip--mono"
                     data-testid="header-provider-badge"
                     title=${`${provider.id} · ${provider.model}`}
-                    >${provider.id} · ${provider.model}</span
+                    ><span class="truncate min-w-0">${provider.id} · ${provider.model}</span></span
                   >`
                 : nothing
             }
@@ -706,7 +765,7 @@ export class SessionHeader extends LitElement {
             ${
               session.gitRepoPath
                 ? html`<git-status-badge
-                    class="min-w-0 flex-shrink"
+                    class="text-caption"
                     .session=${session}
                     .detailed=${false}
                   ></git-status-badge>`
@@ -791,6 +850,7 @@ export class SessionHeader extends LitElement {
           <compact-menu
             desktop
             .session=${session}
+            .gitFolded=${this.gitFolded}
             .widthLabel=${this.widthLabel}
             .widthTooltip=${this.widthTooltip}
             .onOpenFileBrowser=${this.onOpenFileBrowser}

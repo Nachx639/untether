@@ -57,6 +57,9 @@ const ARTIFACT_FILES: RegExp[] = [
   /(^|\/)\.DS_Store$/,
   /(^|\/)\.env(\.[^/]*)?$/,
   /(^|\/)spawn-helper[^/]*$/,
+  // The stamp build-fwd-rust.js writes beside a forwarder binary (fwd-source-hash.js).
+  // 2026-11-12: a task whose test preparation rebuilt the forwarder could not merge over it.
+  /(^|\/)untether-fwd(\.source-hash)?$/,
   /(^|\/)public\/bundle(\/|$)/,
 ];
 

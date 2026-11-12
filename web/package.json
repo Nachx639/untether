@@ -1,6 +1,6 @@
 {
   "name": "untether",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Terminal sharing server with web interface - supports macOS, Linux, and headless environments",
   "main": "dist/server/server.js",
   "bin": {

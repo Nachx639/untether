@@ -489,7 +489,8 @@ describe('SessionView', () => {
       expect(header).toBeTruthy();
 
       // Desktop toolbar (session.css .ut-session-header*): the bar is capped at 100vw and the
-      // path and branch chip shrink (min-width: 0) instead of pushing the buttons out.
+      // path and branch chip are items of the second line, which makes them give way (first the
+      // path, then the branch, cut in the middle) instead of pushing the buttons out.
       const headerContainer = header?.querySelector('.session-header-container');
       expect(headerContainer?.classList.contains('ut-session-header')).toBe(true);
 
@@ -499,9 +500,12 @@ describe('SessionView', () => {
 
       const badge = header?.querySelector('git-status-badge');
       expect(badge).toBeTruthy();
-      expect(badge?.classList.contains('min-w-0')).toBe(true);
-      expect(badge?.classList.contains('flex-shrink')).toBe(true);
-      expect(badge?.querySelector('[data-testid="git-branch-chip"]')?.textContent?.trim()).toBe(
+      expect(badge?.parentElement?.classList.contains('ut-session-header-line2')).toBe(true);
+      expect(path?.parentElement).toBe(badge?.parentElement);
+      const chip = badge?.querySelector('[data-testid="git-branch-chip"]');
+      expect(chip?.parentElement).toBe(badge);
+      expect(chip?.classList.contains('ut-git-branch')).toBe(true);
+      expect(chip?.querySelector('.ut-mid')?.textContent?.trim()).toBe(
         'feature/super-long-branch-name'
       );
     });

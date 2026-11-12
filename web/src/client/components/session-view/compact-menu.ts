@@ -11,6 +11,7 @@
  */
 import { html, LitElement, nothing, render, svg, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import '../git-status-badge.js';
 import type { MacModeRequest } from '../../../shared/mac-sessions.js';
 import type { Session } from '../../../shared/types.js';
 import { LocaleController, type MessageKey, t } from '../../i18n/index.js';
@@ -93,6 +94,11 @@ export class CompactMenu extends LitElement {
   @property({ type: Function }) onWidthSelect?: (width: number) => void;
   /** Phones: the header shows its own Chat/Terminal toggle, so the sheet leaves it out. */
   @property({ type: Boolean }) chatToggleInHeader = false;
+  /**
+   * Desktop: the header's line had no room for all of the branch, the worktree chip or the
+   * counts (session-header.ts fitDesktopBar), so the menu shows them, whole.
+   */
+  @property({ type: Boolean }) gitFolded = false;
 
   @state() private showMenu = false;
   private detachMenuKeys?: () => void;
@@ -711,6 +717,14 @@ export class CompactMenu extends LitElement {
         style="z-index: ${Z_INDEX.WIDTH_SELECTOR_DROPDOWN};"
         @click=${(e: Event) => e.stopPropagation()}
       >
+        ${
+          this.gitFolded && session?.gitRepoPath
+            ? html`<div class="ut-session-menu-git" role="none" data-testid="compact-git-summary">
+                  <git-status-badge class="text-caption" .session=${session}></git-status-badge>
+                </div>
+                <div class="ut-menu-sep" role="separator"></div>`
+            : nothing
+        }
         <div class="ut-menu-label">${t('menu.group.view')}</div>
         <div class="ut-session-menu-row" role="none">
           ${icon(this.chatMode ? 'chat' : 'terminal')}

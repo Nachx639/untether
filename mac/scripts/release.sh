@@ -146,6 +146,25 @@ step() {
     echo -e "${BLUE}📋 $1${NC}"
 }
 
+# However this script ends: its build products leave LaunchServices (the only Untether macOS
+# knows is the installed one), and the copy of a bundle given with --app is removed.
+# 2026-11-12: 25 untether-release-dry.* folders, each with an Untether.app, had piled up in the
+# temporary folder, registered under Untether's identifier; macOS opened one of them.
+GIVEN_APP_COPY=""
+leave_no_app_behind() {
+    local own_derived_data
+    untether_unregister_apps "$MAC_DIR/build"
+    while IFS= read -r own_derived_data; do
+        [[ -n "$own_derived_data" ]] && untether_unregister_apps "$own_derived_data"
+    done < <(untether_own_derived_data "$REPO_ROOT" 2> /dev/null || true)
+    if [[ -n "$GIVEN_APP_COPY" && -d "$GIVEN_APP_COPY" ]]; then
+        untether_unregister_apps "$GIVEN_APP_COPY"
+        rm -rf "$GIVEN_APP_COPY"
+    fi
+    return 0
+}
+trap leave_no_app_behind EXIT
+
 cd "$MAC_DIR"
 
 echo -e "${BLUE}🚀 Untether release${NC}"
@@ -272,8 +291,10 @@ if [[ -n "$GIVEN_APP" ]]; then
     WORK="$(cd "$WORK" && pwd)"
     APP_PATH="$WORK/app/Untether.app"
     mkdir -p "$WORK/app"
+    GIVEN_APP_COPY="$WORK/app"
     ditto "$GIVEN_APP" "$APP_PATH"
     echo "   not building: packaging a copy of $GIVEN_APP"
+    echo "   (the copy is removed when this ends; the installer and the notes stay in $WORK)"
     echo "   a real run builds: $SCRIPT_DIR/build.sh --configuration Release --arch arm64 --no-sign"
 else
     rm -rf "$MAC_DIR/build" "$MAC_DIR/DerivedData"
@@ -336,6 +357,13 @@ else
             exit 1
         fi
     done
+    # Before anything is signed: every native module loads with the Node the app embeds.
+    if ! NATIVE_MODULES="$(untether_check_native_modules "$APP_PATH")"; then
+        echo -e "${RED}❌ The app's native modules do not load with its embedded Node.js:${NC}" >&2
+        echo "$NATIVE_MODULES" >&2
+        exit 1
+    fi
+    ok "native modules load with the embedded Node.js (pty.node, authenticate_pam.node, spawn-helper)"
     BUILD_INFO="$REPO_ROOT/web/native/untether-build.json"
     if ! node -e '
         const info = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));

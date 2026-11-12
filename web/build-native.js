@@ -27,7 +27,7 @@ const { execFileSync, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { createNativeRebuildEnv } = require('./scripts/native-rebuild-env.js');
-const { buildAuthenticatePam, buildNodePty } = require('./scripts/native-modules.js');
+const { assertAddonsLoad, buildNativeAddonIsolated } = require('./scripts/native-modules.js');
 
 // Parse command line arguments
 const includeSourcemaps = process.argv.includes('--sourcemap');
@@ -96,28 +96,6 @@ async function main() {
   try {
     // No patching needed - SEA support is built into our vendored node-pty
     console.log('Using vendored node-pty with built-in SEA support...');
-    
-    // Ensure native modules are built (in case postinstall didn't run)
-    const nativePtyFile = 'node_modules/node-pty/build/Release/pty.node';
-    const nativeAuthFile = 'node_modules/authenticate-pam/build/Release/authenticate_pam.node';
-
-    // 2026-10-12: check the .node files, not the Release directory (a half-finished build left
-    // the directory and skipped the rebuild), and build with node-gyp directly: with
-    // ignore-scripts=true in ~/.npmrc, `npm rebuild` / `pnpm rebuild` silently build nothing and
-    // the bundle shipped without PAM. See scripts/native-modules.js.
-    try {
-      if (!fs.existsSync(nativePtyFile)) {
-        console.log('Building node-pty native module (node-gyp)...');
-        buildNodePty();
-      }
-      if (!fs.existsSync(nativeAuthFile)) {
-        console.log('Building authenticate-pam native module (node-gyp)...');
-        buildAuthenticatePam();
-      }
-    } catch (error) {
-      console.error(`Error: native module build failed: ${error.message}`);
-      process.exit(1);
-    }
     
     // Create build directory
     if (!fs.existsSync('build')) {
@@ -189,39 +167,34 @@ async function main() {
     const nodeStats = fs.statSync(nodeExe);
     console.log(`Node.js binary size: ${(nodeStats.size / 1024 / 1024).toFixed(2)} MB`);
 
-    // 1. Rebuild native modules if using custom Node.js
-    if (customNodePath) {
-      console.log('\nCustom Node.js detected - rebuilding native modules...');
-      const customVersion = selectedNodeVersion;
-      console.log(`Custom Node.js version: ${customVersion}`);
-      
-      const cleanEnv = createNativeRebuildEnv(
-        process.env,
-        process.execPath,
-        customVersion,
-        process.arch
-      );
-      
-      console.log('Using clean PATH to avoid Homebrew dependencies during native module rebuild...');
-
-      // 2026-10-12: `pnpm rebuild node-pty authenticate-pam` was a silent no-op (pnpm 10 with
-      // ignore-scripts), so the existing system-ABI modules were shipped. Build with node-gyp
-      // against the custom Node and check that fresh .node files came out.
-      const rebuildStart = Date.now();
-      const gypOptions = {
-        extraArgs: [`--target=${customVersion.replace(/^v/, '')}`, '--dist-url=https://nodejs.org/dist'],
-        env: cleanEnv,
+    // 1. Build the native modules for the Node the executable embeds, out of node_modules.
+    // 2026-11-12: they were rebuilt in node_modules (`node-gyp rebuild --target=<custom Node>`),
+    // the tree a running development server loads them from: its authenticate-pam was left
+    // built for another ABI and node-pty's spawn-helper went missing while it compiled. Without
+    // a custom Node, whatever node_modules held was packed, built for whichever Node last
+    // touched it. Both cases now build a copy of the sources in build/native-addons for exactly
+    // the Node that is embedded (scripts/native-modules.js buildNativeAddonIsolated).
+    console.log(`\nBuilding native modules for Node.js ${selectedNodeVersion} (outside node_modules)...`);
+    const addonEnv = customNodePath
+      ? createNativeRebuildEnv(process.env, process.execPath, selectedNodeVersion, process.arch)
+      : process.env;
+    let addons;
+    try {
+      const options = {
+        outDir: path.join(__dirname, 'build', 'native-addons'),
+        target: selectedNodeVersion,
+        extraArgs: ['--dist-url=https://nodejs.org/dist', `--arch=${process.arch}`],
+        env: addonEnv,
       };
-      try {
-        for (const built of [buildNodePty(gypOptions), buildAuthenticatePam(gypOptions)]) {
-          if (fs.statSync(built).mtimeMs < rebuildStart - 1000) {
-            throw new Error(`${built} was not rebuilt for Node ${customVersion}`);
-          }
-        }
-      } catch (error) {
-        console.error(`Error: rebuilding native modules for custom Node failed: ${error.message}`);
-        process.exit(1);
-      }
+      addons = {
+        ...buildNativeAddonIsolated('node-pty', options),
+        ...buildNativeAddonIsolated('authenticate-pam', options),
+      };
+      assertAddonsLoad(nodeExe, [addons['pty.node'], addons['authenticate_pam.node']]);
+      console.log(`  - pty.node and authenticate_pam.node load with ${nodeExe}`);
+    } catch (error) {
+      console.error(`Error: building native modules for Node ${selectedNodeVersion} failed: ${error.message}`);
+      process.exit(1);
     }
 
     // 2. Bundle TypeScript with esbuild
@@ -371,49 +344,10 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
     // 9. Copy native modules
     console.log('\nCopying native modules...');
     
-    // Find the actual node-pty build directory (could be in .pnpm directory)
-    const nodePtyPath = require.resolve('node-pty/package.json');
-    const nodePtyBaseDir = path.dirname(nodePtyPath);
-    const nativeModulesDir = path.join(nodePtyBaseDir, 'build/Release');
-
-    // Check if native modules exist
-    if (!fs.existsSync(nativeModulesDir)) {
-      console.error(`Error: Native modules directory not found at ${nativeModulesDir}`);
-      console.error('This usually means the native module build failed.');
-      process.exit(1);
-    }
-
-    // Copy pty.node
-    const ptyNodePath = path.join(nativeModulesDir, 'pty.node');
-    if (!fs.existsSync(ptyNodePath)) {
-      console.error('Error: pty.node not found. Native module build may have failed.');
-      process.exit(1);
-    }
-    fs.copyFileSync(ptyNodePath, 'native/pty.node');
-    console.log('  - Copied pty.node');
-
-    // Copy spawn-helper (macOS only)
-    // Note: spawn-helper is only built and required on macOS where it's used for pty_posix_spawn()
-    // On Linux, node-pty uses forkpty() directly and doesn't need spawn-helper
-    if (process.platform === 'darwin') {
-      const spawnHelperPath = path.join(nativeModulesDir, 'spawn-helper');
-      if (!fs.existsSync(spawnHelperPath)) {
-        console.error('Error: spawn-helper not found. Native module build may have failed.');
-        process.exit(1);
-      }
-      fs.copyFileSync(spawnHelperPath, 'native/spawn-helper');
-      fs.chmodSync('native/spawn-helper', 0o755);
-      console.log('  - Copied spawn-helper');
-    }
-
-    // Copy authenticate_pam.node
-    const authPamPath = 'node_modules/authenticate-pam/build/Release/authenticate_pam.node';
-    if (fs.existsSync(authPamPath)) {
-      fs.copyFileSync(authPamPath, 'native/authenticate_pam.node');
-      console.log('  - Copied authenticate_pam.node');
-    } else {
-      console.error('Error: authenticate_pam.node not found. PAM authentication is required.');
-      process.exit(1);
+    for (const [file, from] of Object.entries(addons)) {
+      fs.copyFileSync(from, path.join('native', file));
+      if (file === 'spawn-helper') fs.chmodSync('native/spawn-helper', 0o755);
+      console.log(`  - Copied ${file}`);
     }
 
     const buildInfo = {

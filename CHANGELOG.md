@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.1] - 2026-11-12
+
+Fixes to the first stable version.
+
+### Fixed
+
+- **Session header in a task.** The path, the branch and the controls no longer paint over each other when the window is narrow: what does not fit moves to the ⋯ menu.
+- **App build.** Building the app no longer installs dependencies or writes files under a server that is running; it builds its native modules apart and checks that they load with the embedded Node before signing, and stops, saying what is running, when it cannot be sure.
+- **Tasks.** The forwarder's source stamp no longer blocks a task's merge.
+- **Doctor.** It now detects an Untether registered with macOS outside `/Applications` and unregisters it or tells you.
+
+### Internal
+
+- Tests for the isolated native build and the release scripts.
+
 ## [1.0.0] - 2026-11-12
 
 The first stable version of Untether, and the first public download: a signed and notarized
