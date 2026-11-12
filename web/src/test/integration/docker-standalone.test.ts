@@ -1,6 +1,9 @@
 import { spawnSync } from 'child_process';
-import { readFileSync } from 'fs';
+import { mkdtempSync, readFileSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import path from 'path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { RM_TEST_DIR } from '../helpers/rm-test-dir.js';
 
 function isDockerAvailable(): boolean {
   const result = spawnSync('docker', ['info'], { stdio: 'ignore' });
@@ -53,33 +56,55 @@ describe('Dockerfile.standalone install inputs', () => {
 });
 
 /**
- * The image fetches ut-fwd's sources from UT_FWD_REPOSITORY (or the default one) without
- * credentials. 2026-10-25: with the repository private, every build failed there: skip then.
+ * The image fetches ut-fwd's sources, at one exact commit, from UT_FWD_REPOSITORY (or the
+ * default one) without credentials. 2026-10-25: with the repository private, every build
+ * failed there: skip then.
+ *
+ * 2026-11-12: the default repository became public, so it could be read, and the build failed
+ * all the same ("upload-pack: not our ref"): it is a clean copy, and a commit of the working
+ * repository is never in it. What has to be there is the commit, so that is what is asked,
+ * with the fetch the image makes.
  */
-function canFetchUtFwdSources(): boolean {
+function canFetchUtFwdSources(commit: string | undefined): boolean {
   const fallback = /^ARG UT_FWD_REPOSITORY=(\S+)/m.exec(
     readFileSync('Dockerfile.standalone', 'utf8')
   )?.[1];
   const repository = process.env.UT_FWD_REPOSITORY || fallback;
-  if (!repository) return false;
-  const result = spawnSync('git', ['ls-remote', '--heads', repository], {
-    stdio: 'ignore',
-    timeout: 30_000,
-    env: {
-      ...process.env,
-      GIT_TERMINAL_PROMPT: '0',
-      GIT_ASKPASS: 'echo',
-      GIT_CONFIG_GLOBAL: '/dev/null',
-      GIT_CONFIG_NOSYSTEM: '1',
-    },
-  });
-  return result.status === 0;
+  if (!repository || !commit) return false;
+  const probe = mkdtempSync(path.join(tmpdir(), 'ut-fwd-probe-'));
+  const git = (...args: string[]) =>
+    spawnSync('git', args, {
+      cwd: probe,
+      stdio: 'ignore',
+      timeout: 120_000,
+      env: {
+        ...process.env,
+        GIT_TERMINAL_PROMPT: '0',
+        GIT_ASKPASS: 'echo',
+        GIT_CONFIG_GLOBAL: '/dev/null',
+        GIT_CONFIG_NOSYSTEM: '1',
+      },
+    }).status === 0;
+  try {
+    return (
+      git('init', '--quiet') &&
+      git('fetch', '--quiet', '--depth', '1', '--filter=blob:none', repository, commit)
+    );
+  } finally {
+    rmSync(probe, RM_TEST_DIR);
+  }
+}
+
+/** The commit whose ut-fwd sources the image is built with. */
+function utFwdCommit(): string | undefined {
+  return process.env.UT_FWD_COMMIT || process.env.GITHUB_SHA || currentGitCommit(process.cwd());
 }
 
 /** On every image and container this test makes, so they can all be removed. */
 const TEST_LABEL = 'dev.untether.test=docker-standalone';
 
-const describeDocker = isDockerAvailable() && canFetchUtFwdSources() ? describe : describe.skip;
+const describeDocker =
+  isDockerAvailable() && canFetchUtFwdSources(utFwdCommit()) ? describe : describe.skip;
 
 describeDocker('Dockerfile.standalone', () => {
   const projectRoot = process.cwd();
@@ -129,8 +154,7 @@ describeDocker('Dockerfile.standalone', () => {
         imageTag,
       ];
       const repository = process.env.UT_FWD_REPOSITORY;
-      const commit =
-        process.env.UT_FWD_COMMIT || process.env.GITHUB_SHA || currentGitCommit(projectRoot);
+      const commit = utFwdCommit();
 
       if (repository) {
         buildArgs.push('--build-arg', `UT_FWD_REPOSITORY=${repository}`);

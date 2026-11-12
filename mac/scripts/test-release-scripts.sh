@@ -65,6 +65,14 @@ fake_app() {
 
 # --- release version ----------------------------------------------------------
 source "$SCRIPT_DIR/release-lib.sh"
+
+# A stand-in for a .p8 key: the shape the scripts ask for (a PRIVATE KEY block), no key in it.
+# Put together here so that this file holds nothing a secret scanner takes for a key.
+TOY_KEY="-----BEGIN $(printf 'PRIV%s' 'ATE') KEY-----
+toy
+-----END $(printf 'PRIV%s' 'ATE') KEY-----"
+TOY_KEY_FILE="$WORK/AuthKey_TOY.p8"
+printf '%s\n' "$TOY_KEY" > "$TOY_KEY_FILE"
 check "stable from a beta version drops the suffix" \
     equals "$(untether_release_version stable "" 1.0.0-beta.18)" "1.0.0"
 check "stable from a plain version stays" \
@@ -81,6 +89,41 @@ check "release.sh takes its version from the function" \
     grep -q 'RELEASE_VERSION="$(untether_release_version ' "$SCRIPT_DIR/release.sh"
 check "release.sh has no --resume or --status" \
     bash -c "! grep -qE -- '--resume|--status|release-state' '$SCRIPT_DIR/release.sh'"
+
+# --- the branch a release is made from, and the notarization key -----------------
+check "the release branch is the working repository's main line" \
+    equals "$(untether_release_branch)" "untether"
+check "no release script names the branch itself: they ask untether_release_branch" \
+    bash -c "! grep -vE '^ *#' '$SCRIPT_DIR/release.sh' '$SCRIPT_DIR/preflight-check.sh' '$SCRIPT_DIR/release-checklist.sh' | grep -nE '(!=|==|=) *\"?main\"? *\]|origin/main|fetch origin'"
+notary_check() { # VAR=value... : what untether_check_notary_key says with only those set
+    env -u APP_STORE_CONNECT_API_KEY_P8 -u APP_STORE_CONNECT_API_KEY_PATH -u APP_STORE_CONNECT_KEY_ID \
+        -u APP_STORE_CONNECT_ISSUER_ID "$@" bash -c "source '$SCRIPT_DIR/release-lib.sh'; untether_check_notary_key" 2>&1
+}
+check "notarization key: the content of the .p8 is taken" \
+    equals "$(notary_check APP_STORE_CONNECT_KEY_ID=k APP_STORE_CONNECT_ISSUER_ID=i APP_STORE_CONNECT_API_KEY_P8="$TOY_KEY")" ""
+check "notarization key: the path of the .p8 is taken" \
+    equals "$(notary_check APP_STORE_CONNECT_KEY_ID=k APP_STORE_CONNECT_ISSUER_ID=i APP_STORE_CONNECT_API_KEY_PATH="$TOY_KEY_FILE")" ""
+check "notarization key: a path in the content variable is named as such" \
+    bash -c "grep -q 'APP_STORE_CONNECT_API_KEY_P8 holds a path' <<< \"\$1\"" _ \
+    "$(notary_check APP_STORE_CONNECT_KEY_ID=k APP_STORE_CONNECT_ISSUER_ID=i APP_STORE_CONNECT_API_KEY_P8="$TOY_KEY_FILE")"
+check "notarization key: a path that is not a file is refused" \
+    bash -c "grep -q 'APP_STORE_CONNECT_API_KEY_PATH is not a readable file' <<< \"\$1\"" _ \
+    "$(notary_check APP_STORE_CONNECT_KEY_ID=k APP_STORE_CONNECT_ISSUER_ID=i APP_STORE_CONNECT_API_KEY_PATH="$WORK/no-such.p8")"
+check "notarization key: a file that is not a key is refused" \
+    bash -c "grep -q 'is not a .p8 key' <<< \"\$1\"" _ \
+    "$(notary_check APP_STORE_CONNECT_KEY_ID=k APP_STORE_CONNECT_ISSUER_ID=i APP_STORE_CONNECT_API_KEY_PATH="$MAC_DIR/Untether/version.xcconfig")"
+check "notarization key: everything missing is named, one thing per line" \
+    equals "$(notary_check | wc -l | tr -d ' ')" 3
+check "notarization key: a path is handed to notarytool as it is" \
+    equals "$(APP_STORE_CONNECT_API_KEY_PATH="$TOY_KEY_FILE" APP_STORE_CONNECT_API_KEY_P8=ignored untether_notary_key_file "$WORK/scratch.p8")" "$TOY_KEY_FILE"
+check "... and nothing is written beside it" test ! -e "$WORK/scratch.p8"
+KEY_FILE_GIVEN="$(env -u APP_STORE_CONNECT_API_KEY_PATH APP_STORE_CONNECT_API_KEY_P8='-----BEGIN X-----\ntoy\n-----END X-----' \
+    bash -c "source '$SCRIPT_DIR/release-lib.sh'; untether_notary_key_file '$WORK/scratch.p8'")"
+check "notarization key: content goes to the scratch file, \"\\n\" made line breaks" \
+    bash -c "[[ '$KEY_FILE_GIVEN' == '$WORK/scratch.p8' ]] && [[ \$(wc -l < '$WORK/scratch.p8' | tr -d ' ') == 3 ]]"
+
+check "version.sh leaves no backup copy beside version.xcconfig" \
+    bash -c "! grep -vE '^ *#' '$SCRIPT_DIR/version.sh' | grep -nE 'xcconfig\.bak|cp .*version\.xcconfig'"
 
 # --- only this checkout's DerivedData -----------------------------------------
 DD="$WORK/home/Library/Developer/Xcode/DerivedData"
@@ -131,7 +174,7 @@ APP="$WORK/notarize/Untether.app"
 fake_app "$APP"
 : > "$CALLS"
 NOTARIZE_OUT="$(cd "$MAC_DIR" && PATH="$BIN:$PATH" HOME="$WORK/home" SIGN_IDENTITY="Test Identity" \
-    APP_STORE_CONNECT_API_KEY_P8=x APP_STORE_CONNECT_KEY_ID=x APP_STORE_CONNECT_ISSUER_ID=x \
+    APP_STORE_CONNECT_API_KEY_P8="$TOY_KEY" APP_STORE_CONNECT_KEY_ID=x APP_STORE_CONNECT_ISSUER_ID=x \
     "$SCRIPT_DIR/notarize-app.sh" "$APP" 2>&1)" && NOTARIZE_STATUS=0 || NOTARIZE_STATUS=$?
 check "notarize-app.sh goes on without Contents/Frameworks" \
     bash -c "[[ $NOTARIZE_STATUS == 0 ]] && grep -q 'xcrun notarytool submit' '$CALLS'"
@@ -144,6 +187,13 @@ for server in untether untether-fwd; do
 done
 check "notarize-app.sh signs the other helpers with the app's entitlements" \
     bash -c "grep -E 'Resources/helper-tool\$' '$CALLS' | grep -q 'main_entitlements'"
+# 2026-11-12: the key can be given as a path; the cleanup removes its own scratch file only.
+: > "$CALLS"
+(cd "$MAC_DIR" && env -u APP_STORE_CONNECT_API_KEY_P8 PATH="$BIN:$PATH" HOME="$WORK/home" SIGN_IDENTITY="Test Identity" \
+    APP_STORE_CONNECT_API_KEY_PATH="$TOY_KEY_FILE" APP_STORE_CONNECT_KEY_ID=x APP_STORE_CONNECT_ISSUER_ID=x \
+    "$SCRIPT_DIR/notarize-app.sh" "$APP" > /dev/null 2>&1) || true
+check "notarize-app.sh hands notarytool the key file given as a path, and leaves it there" \
+    bash -c "grep -q 'notarytool submit .*--key \"*$TOY_KEY_FILE' '$CALLS' && [[ -s '$TOY_KEY_FILE' ]]"
 check "untether-binary.entitlements grants allow-jit" \
     bash -c "/usr/libexec/PlistBuddy -c 'Print :com.apple.security.cs.allow-jit' '$MAC_DIR/Untether/untether-binary.entitlements' | grep -q true"
 
@@ -334,7 +384,8 @@ fi
 exec "$(command -v pkgutil)" "\$@"
 DOUBLE
 chmod +x "$RBIN"/*
-"$REAL_GIT" -C "$TOY" init --quiet --initial-branch=main
+# The working repository's main line is not "main" (that is the public copy's branch).
+"$REAL_GIT" -C "$TOY" init --quiet --initial-branch="$(untether_release_branch)"
 "$REAL_GIT" -C "$TOY" add -A
 "$REAL_GIT" -C "$TOY" -c user.name=toy -c user.email=toy@example.invalid commit --quiet -m "toy checkout"
 
@@ -353,7 +404,7 @@ toy_release() {
     RELEASE_OUT="$(cd "$TOY" && env -u CI -u GITHUB_ACTIONS -u UNTETHER_TASK_ID -u GIT_EXEC_PATH -u GIT_INDEX_FILE \
         -u GIT_DIR -u GIT_WORK_TREE -u SIGN_IDENTITY \
         PATH="$RBIN:$PATH" HOME="$WORK/home" TMPDIR="$WORK/tmp" GIT_CONFIG_GLOBAL=/dev/null FAKE_IDENTITIES="$TOY_IDENTITIES" \
-        APP_STORE_CONNECT_API_KEY_P8=x APP_STORE_CONNECT_KEY_ID=x APP_STORE_CONNECT_ISSUER_ID=x \
+        APP_STORE_CONNECT_API_KEY_P8="$TOY_KEY" APP_STORE_CONNECT_KEY_ID=x APP_STORE_CONNECT_ISSUER_ID=x \
         ${vars[@]+"${vars[@]}"} "$TOY/mac/scripts/release.sh" "$@" 2>&1)" || RELEASE_STATUS=$?
 }
 # Nothing left this Mac: no push, no tag, no release, no notarization.
@@ -381,6 +432,16 @@ check "dry run: says what a real run would do" \
     bash -c "grep -q 'gh release create v1.0.0 --repo toy-owner/toy --verify-tag' <<< \"\$1\" && grep -q 'push origin refs/tags/v1.0.0' <<< \"\$1\"" _ "$RELEASE_OUT"
 check "dry run: tells how to publish, with the tag written out" \
     bash -c "grep -q 'release.sh stable --confirm v1.0.0' <<< \"\$1\"" _ "$RELEASE_OUT"
+
+check "dry run: says it is on the working repository's main line" \
+    bash -c "grep -q 'on untether, the working repository' <<< \"\$1\"" _ "$RELEASE_OUT"
+
+toy_release APP_STORE_CONNECT_API_KEY_P8= APP_STORE_CONNECT_API_KEY_PATH="$TOY_KEY_FILE" --dry-run stable
+check "dry run: the notarization key can be the path of the .p8" \
+    bash -c "[[ $RELEASE_STATUS == 0 ]] && grep -q 'Nothing would stop a real run' <<< \"\$1\"" _ "$RELEASE_OUT"
+toy_release APP_STORE_CONNECT_API_KEY_P8="$TOY_KEY_FILE" --dry-run stable
+check "dry run: a path in APP_STORE_CONNECT_API_KEY_P8 would stop a real run, and it says why" \
+    bash -c "grep -q 'APP_STORE_CONNECT_API_KEY_P8 holds a path' <<< \"\$1\"" _ "$RELEASE_OUT"
 
 toy_release FAKE_VISIBILITY=PRIVATE FAKE_RULES="not protected yet" FAKE_IDENTITIES= APP_STORE_CONNECT_KEY_ID= --dry-run beta 2
 check "dry run: lists everything that would stop a real run, and still ends well" \
@@ -428,6 +489,19 @@ check "a real run stops when the public repository is not public" \
 toy_release FAKE_IDENTITIES='  1) 0123456789ABCDEF "Developer ID Application: Toy Person (TEAM123456)"' stable --confirm v1.0.0
 check "a real run stops without the Developer ID Installer certificate" \
     bash -c "[[ $RELEASE_STATUS == 1 ]] && grep -q 'no \"Developer ID Installer\" certificate' <<< \"\$1\" && ! grep -q '^build.sh' '$CALLS'" _ "$RELEASE_OUT"
+
+# 2026-11-12: release.sh asked for "main", which the working repository does not have.
+"$REAL_GIT" -C "$TOY" checkout --quiet -b main
+toy_release stable --confirm v1.0.0
+check "a real run stops on a branch that is not the working repository's main line, before building" \
+    bash -c "[[ $RELEASE_STATUS == 1 ]] && grep -q 'not on untether (on main)' <<< \"\$1\" && ! grep -q '^build.sh' '$CALLS'" _ "$RELEASE_OUT"
+"$REAL_GIT" -C "$TOY" checkout --quiet "$(untether_release_branch)"
+"$REAL_GIT" -C "$TOY" branch --quiet -D main
+
+toy_release APP_STORE_CONNECT_API_KEY_P8= APP_STORE_CONNECT_API_KEY_PATH="$TOY_KEY_FILE" stable --confirm v1.0.0
+check "a real run with the key given as a path notarizes with that file, and leaves it there" \
+    bash -c "[[ $RELEASE_STATUS == 0 ]] && grep -q 'notarytool submit .*--key $TOY_KEY_FILE ' '$CALLS' && [[ -s '$TOY_KEY_FILE' ]]"
+[[ "$RELEASE_STATUS" == 0 ]] || echo "$RELEASE_OUT" | tail -15
 
 toy_release FAKE_NOTARY_STATUS=Invalid stable --confirm v1.0.0
 check "a real run whose installer Apple does not notarize publishes nothing" \

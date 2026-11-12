@@ -20,7 +20,12 @@ All commands run from `mac/` unless stated otherwise.
 
 ## Release flow
 
-1. **Version + changelog**, committed on `main` before anything else (the script changes neither):
+1. **Version + changelog**, committed on the working repository's main line before anything else
+   (the script changes neither). That line is the branch `untether`, where every task is merged,
+   and a release is made from it: the script stops on any other branch. One place names it,
+   `untether_release_branch` in `scripts/release-lib.sh`. The working repository has no `main`,
+   and its `origin` is a private backup that plays no part in a release. `main` is the PUBLIC
+   repository's branch: the clean copy is one commit on top of it.
    - `Untether/version.xcconfig`: `MARKETING_VERSION` is the version to publish, and
      `CURRENT_PROJECT_VERSION` goes up.
    - `../web/package.json` `version` is the same.
@@ -123,14 +128,23 @@ the rulesets.
   Application** (signs the app) and **Developer ID Installer** (signs the `.pkg`).
   `security find-identity -v` lists both.
 - The public repository is public, with its rulesets (`../scripts/public-repo-rules.sh --check`)
-- Notarization credentials, in the environment of the shell that runs the release:
+- Notarization credentials (an App Store Connect API key, from Users and Access → Integrations),
+  in the environment of the shell that runs the release:
   ```bash
-  export APP_STORE_CONNECT_KEY_ID="YOUR_KEY_ID"
-  export APP_STORE_CONNECT_ISSUER_ID="YOUR_ISSUER_ID"
-  export APP_STORE_CONNECT_API_KEY_P8="-----BEGIN PRIVATE KEY-----
-  YOUR_PRIVATE_KEY_CONTENT
-  -----END PRIVATE KEY-----"
+  export APP_STORE_CONNECT_KEY_ID="YOUR_KEY_ID"            # the key's ID, 10 characters
+  export APP_STORE_CONNECT_ISSUER_ID="YOUR_ISSUER_ID"      # the issuer ID, a UUID
+  export APP_STORE_CONNECT_API_KEY_PATH="$HOME/keys/AuthKey_YOUR_KEY_ID.p8"   # the .p8 file
   ```
+  The key itself is given one of two ways, and the path wins when both are set:
+  - `APP_STORE_CONNECT_API_KEY_PATH`: the **path** of the `.p8` file Apple gave. Preferred: the
+    secret stays in its file, which is read where it is and never copied or removed.
+  - `APP_STORE_CONNECT_API_KEY_P8`: the **content** of that file, the whole
+    `-----BEGIN PRIVATE KEY-----` block (real line breaks or `\n`), not a path. It is written
+    to a temporary file for as long as `notarytool` reads it.
+
+  Note the names: the ID is `APP_STORE_CONNECT_KEY_ID`, without `API`. The checks of a dry run
+  say which of them is missing or not what it should be (a path in the content variable, a file
+  that is not a key); whether Apple accepts the key is known at the first notarization only.
 
 ## Version Rules
 

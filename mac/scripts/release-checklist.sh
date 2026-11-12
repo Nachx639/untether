@@ -11,6 +11,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/release-lib.sh"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Color codes
@@ -85,10 +86,10 @@ get_current_build() {
     grep "CURRENT_PROJECT_VERSION" "$PROJECT_ROOT/Untether/version.xcconfig" | cut -d'=' -f2 | tr -d ' '
 }
 
-# Function to check if on main branch
-check_main_branch() {
+# On the working repository's main line (untether_release_branch, release-lib.sh)?
+check_release_branch() {
     local current_branch=$(git branch --show-current)
-    [ "$current_branch" = "main" ]
+    [ "$current_branch" = "$(untether_release_branch)" ]
 }
 
 # Function to check for uncommitted changes
@@ -212,11 +213,11 @@ main() {
     
     # Check branch
     ((total_checks++))
-    if check_main_branch; then
-        print_success "On main branch"
+    if check_release_branch; then
+        print_success "On $(untether_release_branch), the working repository's main line"
         ((checks_passed++))
     else
-        print_error "Not on main branch (current: $(git branch --show-current))"
+        print_error "Not on $(untether_release_branch), the working repository's main line (current: $(git branch --show-current))"
     fi
     
     # Check for uncommitted changes
@@ -316,24 +317,14 @@ main() {
     
     # Check notarization credentials
     ((total_checks++))
-    local notary_ok=true
-    if [ -z "${APP_STORE_CONNECT_KEY_ID:-}" ]; then
-        print_warning "APP_STORE_CONNECT_KEY_ID not set"
-        notary_ok=false
-    fi
-    if [ -z "${APP_STORE_CONNECT_ISSUER_ID:-}" ]; then
-        print_warning "APP_STORE_CONNECT_ISSUER_ID not set"
-        notary_ok=false
-    fi
-    if [ -z "${APP_STORE_CONNECT_API_KEY_P8:-}" ]; then
-        print_warning "APP_STORE_CONNECT_API_KEY_P8 not set"
-        notary_ok=false
-    fi
-    
-    if [ "$notary_ok" = true ]; then
+    local notary_problem
+    if notary_problem="$(untether_check_notary_key)"; then
         print_success "Notarization credentials are set"
         ((checks_passed++))
     else
+        while IFS= read -r line; do
+            print_warning "$line"
+        done <<< "$notary_problem"
         print_error "Missing notarization credentials"
     fi
     

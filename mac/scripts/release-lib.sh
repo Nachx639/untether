@@ -21,6 +21,76 @@ untether_release_version() {
     fi
 }
 
+# The branch of the WORKING repository a release is made from: its main line, where every task
+# is merged. The one place that names it (release.sh, preflight-check.sh and
+# release-checklist.sh ask here).
+#
+# 2026-11-12: the three of them asked for "main". The working repository's main line is
+# `untether`: it has no local `main`, and its origin/main is a backup hundreds of commits
+# behind, so the first stable release could not have been made. The PUBLIC repository's branch
+# is another matter and stays `main`: the clean copy is one commit on top of it.
+untether_release_branch() {
+    printf '%s\n' "untether"
+}
+
+# The notarization key (App Store Connect API key): what is missing or wrong with it, one
+# thing per line, and a failure; nothing and success when it can be handed to notarytool.
+#
+#   APP_STORE_CONNECT_KEY_ID        the key's ID (10 characters)
+#   APP_STORE_CONNECT_ISSUER_ID     the issuer ID (a UUID)
+#   APP_STORE_CONNECT_API_KEY_PATH  the path of the AuthKey_<id>.p8 file, or
+#   APP_STORE_CONNECT_API_KEY_P8    the CONTENT of that file (with real line breaks or "\n")
+#
+# 2026-11-12: only the content was taken, so the secret had to sit in a shell variable, and a
+# path put in APP_STORE_CONNECT_API_KEY_P8 was written to a file as if it were the key:
+# notarytool refused it after the 15-minute build. The path wins when both are set.
+untether_check_notary_key() {
+    local bad=0 key_path="${APP_STORE_CONNECT_API_KEY_PATH:-}" key="${APP_STORE_CONNECT_API_KEY_P8:-}"
+    key_path="${key_path/#\~/$HOME}"
+    if [[ -z "${APP_STORE_CONNECT_KEY_ID:-}" ]]; then
+        printf '%s\n' "APP_STORE_CONNECT_KEY_ID is not set (the key's ID)"
+        bad=1
+    fi
+    if [[ -z "${APP_STORE_CONNECT_ISSUER_ID:-}" ]]; then
+        printf '%s\n' "APP_STORE_CONNECT_ISSUER_ID is not set (the issuer ID)"
+        bad=1
+    fi
+    if [[ -n "$key_path" ]]; then
+        if [[ ! -r "$key_path" || ! -f "$key_path" ]]; then
+            printf '%s\n' "APP_STORE_CONNECT_API_KEY_PATH is not a readable file ($key_path)"
+            bad=1
+        elif [[ "$(< "$key_path")" != *"PRIVATE KEY-----"* ]]; then
+            printf '%s\n' "APP_STORE_CONNECT_API_KEY_PATH is not a .p8 key ($key_path has no PRIVATE KEY block)"
+            bad=1
+        fi
+    elif [[ -z "$key" ]]; then
+        printf '%s\n' "neither APP_STORE_CONNECT_API_KEY_PATH (the .p8 file) nor APP_STORE_CONNECT_API_KEY_P8 (its content) is set"
+        bad=1
+    elif [[ "$key" != *"PRIVATE KEY-----"* ]]; then
+        if [[ "$key" != *$'\n'* && -f "${key/#\~/$HOME}" ]]; then
+            printf '%s\n' "APP_STORE_CONNECT_API_KEY_P8 holds a path: it takes the content of the .p8; a path goes in APP_STORE_CONNECT_API_KEY_PATH"
+        else
+            printf '%s\n' "APP_STORE_CONNECT_API_KEY_P8 is not the content of a .p8 key (no PRIVATE KEY block); a path goes in APP_STORE_CONNECT_API_KEY_PATH"
+        fi
+        bad=1
+    fi
+    return "$bad"
+}
+
+# The file to hand to `notarytool --key`: the .p8 itself when its path was given, otherwise
+# the content written to <scratch file> (the caller made it with mktemp and removes it).
+#
+#   untether_notary_key_file <scratch file>
+untether_notary_key_file() {
+    local key_path="${APP_STORE_CONNECT_API_KEY_PATH:-}" key="${APP_STORE_CONNECT_API_KEY_P8:-}"
+    if [[ -n "$key_path" ]]; then
+        printf '%s\n' "${key_path/#\~/$HOME}"
+    else
+        printf '%s\n' "${key//\\n/$'\n'}" > "$1"
+        printf '%s\n' "$1"
+    fi
+}
+
 # The DerivedData folders Xcode keeps for one checkout, one per line.
 #
 # 2026-11-11: release.sh and clean.sh removed ~/Library/Developer/Xcode/DerivedData/Untether-*,

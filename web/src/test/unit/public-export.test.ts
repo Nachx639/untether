@@ -3,7 +3,7 @@ import { generateKeyPairSync } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RM_TEST_DIR } from '../helpers/rm-test-dir';
 
 /**
@@ -34,6 +34,11 @@ Copyright (c) 2025 Amantus Machina
 
 Permission is hereby granted.
 `;
+
+// Every test here runs the real exporter (git, trufflehog) one to three times: 3-5 s on an idle
+// Mac. 2026-11-12: with the Mac at load 108 one of them passed the default 10 s and the check of
+// a task failed on it.
+vi.setConfig({ testTimeout: 120_000 });
 
 describe.skipIf(process.platform === 'win32')('scripts/public-export.sh', () => {
   let dir: string;
@@ -66,7 +71,10 @@ describe.skipIf(process.platform === 'win32')('scripts/public-export.sh', () => 
     git(repo, 'commit', '--quiet', '-m', message);
   };
   const exportTo = (target = dest) => {
-    const run = spawnSync('bash', [SCRIPT, '--source', repo, target], { env, encoding: 'utf8' });
+    const run = spawnSync('bash', [SCRIPT, '--source', repo, target], {
+      env,
+      encoding: 'utf8',
+    });
     return { status: run.status, output: `${run.stdout}${run.stderr}` };
   };
   /** What the export left next to the destination: its temporary folder must never stay. */
@@ -305,7 +313,9 @@ describe.skipIf(process.platform === 'win32')('scripts/public-export.sh', () => 
       const bare = path.join(dir, `${remote}.git`);
       if (!fs.existsSync(bare)) git(dir, 'init', '--quiet', '--bare', bare);
       const ssh = path.join(dir, `ssh-${remote}`);
-      fs.writeFileSync(ssh, `#!/bin/sh\nexec git-receive-pack '${bare}'\n`, { mode: 0o755 });
+      fs.writeFileSync(ssh, `#!/bin/sh\nexec git-receive-pack '${bare}'\n`, {
+        mode: 0o755,
+      });
       const run = spawnSync('git', ['push', url, ref], {
         cwd: dest,
         env: { ...env, GIT_SSH_COMMAND: ssh, GIT_SSH_VARIANT: 'simple' },
@@ -314,7 +324,11 @@ describe.skipIf(process.platform === 'win32')('scripts/public-export.sh', () => 
       const landed =
         spawnSync('git', ['rev-parse', '--verify', '--quiet', `refs/heads/${ref}`], { cwd: bare })
           .status === 0;
-      return { status: run.status, output: `${run.stdout}${run.stderr}`, landed };
+      return {
+        status: run.status,
+        output: `${run.stdout}${run.stderr}`,
+        landed,
+      };
     };
 
     it('is written on the first export and lets only the exporter out, only to the public repository', () => {

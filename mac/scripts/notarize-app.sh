@@ -17,7 +17,8 @@
 #
 # ENVIRONMENT VARIABLES:
 #   SIGN_IDENTITY                     Developer ID identity (optional)
-#   APP_STORE_CONNECT_API_KEY_P8      App Store Connect API key
+#   APP_STORE_CONNECT_API_KEY_PATH    App Store Connect API key: its .p8 file, or
+#   APP_STORE_CONNECT_API_KEY_P8      the content of that file
 #   APP_STORE_CONNECT_KEY_ID          API Key ID
 #   APP_STORE_CONNECT_ISSUER_ID       API Issuer ID
 #
@@ -28,6 +29,7 @@ set -eo pipefail
 # Source common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [[ -f "$SCRIPT_DIR/common.sh" ]] && source "$SCRIPT_DIR/common.sh"
+source "$SCRIPT_DIR/release-lib.sh"
 
 # ============================================================================
 # Configuration
@@ -72,16 +74,17 @@ fi
 log "Starting complete notarization process for $APP_BUNDLE"
 
 # Check required environment variables for notarization
-if [ -z "$APP_STORE_CONNECT_API_KEY_P8" ] || [ -z "$APP_STORE_CONNECT_KEY_ID" ] || [ -z "$APP_STORE_CONNECT_ISSUER_ID" ]; then
-    error "Required environment variables not set. Need APP_STORE_CONNECT_API_KEY_P8, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID"
+if ! NOTARY_KEY_PROBLEM="$(untether_check_notary_key)"; then
+    error "No notarization key in the environment: $(tr '\n' ' ' <<< "$NOTARY_KEY_PROBLEM")"
 fi
 
-# Create temporary API key file
-API_KEY_FILE=$(mktemp)
-echo "$APP_STORE_CONNECT_API_KEY_P8" | sed 's/\\n/\n/g' > "$API_KEY_FILE"
+# A key given as content goes to a temporary file; a key given as a path
+# (APP_STORE_CONNECT_API_KEY_PATH) is read where it is and never removed.
+API_KEY_SCRATCH=$(mktemp)
+API_KEY_FILE="$(untether_notary_key_file "$API_KEY_SCRATCH")"
 
 cleanup() {
-    rm -f "$API_KEY_FILE" "/tmp/Untether_notarize.zip"
+    rm -f "$API_KEY_SCRATCH" "/tmp/Untether_notarize.zip"
 }
 trap cleanup EXIT
 

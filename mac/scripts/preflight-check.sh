@@ -12,7 +12,7 @@
 #   ./scripts/preflight-check.sh
 #
 # VALIDATION CHECKS:
-#   - Git repository status (clean working tree, main branch, synced)
+#   - Git repository status (clean working tree, the working repository's main line)
 #   - Version information and build number validation
 #   - Required development tools (Rust, Node.js, pnpm, GitHub CLI)
 #   - Code signing certificates and notarization credentials
@@ -30,9 +30,10 @@
 #   - security (keychain access for certificates)
 #
 # ENVIRONMENT VARIABLES:
-#   APP_STORE_CONNECT_API_KEY_P8    App Store Connect API key (for notarization)
-#   APP_STORE_CONNECT_KEY_ID        API Key ID
+#   APP_STORE_CONNECT_KEY_ID        API Key ID (for notarization)
 #   APP_STORE_CONNECT_ISSUER_ID     API Key Issuer ID
+#   APP_STORE_CONNECT_API_KEY_PATH  the key's .p8 file, or
+#   APP_STORE_CONNECT_API_KEY_P8    the content of that file
 #
 # EXAMPLES:
 #   ./scripts/preflight-check.sh
@@ -43,6 +44,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+source "$SCRIPT_DIR/release-lib.sh"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -82,22 +85,17 @@ else
     git status --short
 fi
 
-# Check if on main branch
+# The working repository's main line (untether_release_branch), where every task is merged.
+# 2026-11-12: this asked for "main" and for HEAD to be origin/main. The working repository has
+# no local main, and its origin is a private backup that plays no part in a release: what is
+# published is the clean copy of HEAD, pushed to the public repository by release.sh. With
+# origin/main hundreds of commits behind, the check failed every release.
+RELEASE_BRANCH="$(untether_release_branch)"
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [[ "$CURRENT_BRANCH" == "main" ]]; then
-    check_pass "On main branch"
+if [[ "$CURRENT_BRANCH" == "$RELEASE_BRANCH" ]]; then
+    check_pass "On $RELEASE_BRANCH, the working repository's main line"
 else
-    check_warn "Not on main branch (current: $CURRENT_BRANCH)"
-fi
-
-# Check if up to date with remote
-git fetch origin main --quiet
-LOCAL=$(git rev-parse HEAD)
-REMOTE=$(git rev-parse origin/main)
-if [[ "$LOCAL" == "$REMOTE" ]]; then
-    check_pass "Up to date with origin/main"
-else
-    check_fail "Not synced with origin/main"
+    check_warn "Not on $RELEASE_BRANCH, the working repository's main line (current: $CURRENT_BRANCH)"
 fi
 
 echo ""
@@ -261,10 +259,11 @@ else
 fi
 
 # Check for notarization credentials
-if [[ -n "${APP_STORE_CONNECT_API_KEY_P8:-}" ]]; then
+if NOTARY_KEY_PROBLEM="$(untether_check_notary_key)"; then
     check_pass "Notarization API key configured"
 else
-    check_warn "Notarization API key not in environment"
+    check_warn "Notarization API key not in environment:"
+    sed 's/^/   /' <<< "$NOTARY_KEY_PROBLEM"
 fi
 
 echo ""

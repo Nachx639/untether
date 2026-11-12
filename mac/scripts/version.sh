@@ -53,8 +53,9 @@ update_project_version() {
     local new_version="$1"
     local new_build="$2"
     
-    # Create backup
-    cp "$PROJECT_ROOT/Untether/version.xcconfig" "$PROJECT_ROOT/Untether/version.xcconfig.bak"
+    # No backup copy: the file is versioned, `git diff` shows the change and `git checkout`
+    # undoes it. 2026-11-12: a version.xcconfig.bak was left beside it, ignored by git, and a
+    # task that had bumped the version did not merge because of it.
     
     # Update marketing version
     sed -i '' "s/MARKETING_VERSION = .*/MARKETING_VERSION = $new_version/" "$PROJECT_ROOT/Untether/version.xcconfig"

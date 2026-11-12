@@ -11,6 +11,7 @@ set -euo pipefail
 
 # Get script directory and ensure we're in the right location
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+source "$SCRIPT_DIR/release-lib.sh"
 APP_DIR="$(cd "$SCRIPT_DIR/.." &> /dev/null && pwd)" 
 cd "$APP_DIR" || { echo "Error: Failed to change directory to $APP_DIR"; exit 1; }
 
@@ -160,7 +161,7 @@ read_credentials() {
     export SIGN_IDENTITY="$sign_identity"
     
     # If notarization credentials are available and no explicit flags were set, enable notarization
-    if [ -n "$api_key_p8" ] && [ -n "$api_key_id" ] && [ -n "$api_key_issuer" ]; then
+    if untether_check_notary_key > /dev/null; then
         # Only auto-enable notarization if no explicit process control flag was provided
         local explicit_flag_provided=false
         for arg in "${original_args[@]}"; do
@@ -238,15 +239,12 @@ perform_notarization() {
     log "Starting notarization process for Untether..."
     
     # Check for authentication requirements
-    MISSING_VARS=()
-    [ -z "${APP_STORE_CONNECT_API_KEY_P8:-}" ] && MISSING_VARS+=("APP_STORE_CONNECT_API_KEY_P8")
-    [ -z "${APP_STORE_CONNECT_KEY_ID:-}" ] && MISSING_VARS+=("APP_STORE_CONNECT_KEY_ID")
-    [ -z "${APP_STORE_CONNECT_ISSUER_ID:-}" ] && MISSING_VARS+=("APP_STORE_CONNECT_ISSUER_ID")
-    
-    if [ ${#MISSING_VARS[@]} -gt 0 ]; then
-        error "Missing required variables for notarization: ${MISSING_VARS[*]}"
-        log "Please provide --api-key-p8, --api-key-id, and --api-key-issuer options"
-        log "or set the corresponding environment variables."
+    local notary_key_problem
+    if ! notary_key_problem="$(untether_check_notary_key)"; then
+        error "No notarization key: $(tr '\n' ' ' <<< "$notary_key_problem")"
+        log "Set APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID and APP_STORE_CONNECT_API_KEY_PATH"
+        log "(the .p8 file) or APP_STORE_CONNECT_API_KEY_P8 (its content), or pass --api-key-id,"
+        log "--api-key-issuer and --api-key-p8."
         exit 1
     fi
     

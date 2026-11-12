@@ -86,7 +86,7 @@ Untether deployment encompasses macOS app distribution and CLI tool installation
 ### Environment Variables
 ```bash
 # Required for notarization
-APP_STORE_CONNECT_API_KEY_P8    # App Store Connect API key content
+APP_STORE_CONNECT_API_KEY_P8    # App Store Connect API key content (or APP_STORE_CONNECT_API_KEY_PATH: the .p8 file)
 APP_STORE_CONNECT_KEY_ID         # API Key ID
 APP_STORE_CONNECT_ISSUER_ID      # API Issuer ID
 

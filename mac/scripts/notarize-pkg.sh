@@ -5,8 +5,11 @@
 #
 # Usage: ./scripts/notarize-pkg.sh <file.pkg>
 #
-# Environment: APP_STORE_CONNECT_API_KEY_P8, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID.
+# Environment: APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, and the key as
+# APP_STORE_CONNECT_API_KEY_PATH (the .p8 file) or APP_STORE_CONNECT_API_KEY_P8 (its content).
 set -euo pipefail
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/release-lib.sh"
 
 if [[ $# -ne 1 ]]; then
     echo "Usage: $0 <file.pkg>"
@@ -20,22 +23,21 @@ if [[ ! -f "$PKG_PATH" ]]; then
     exit 1
 fi
 
-if [[ -z "${APP_STORE_CONNECT_API_KEY_P8:-}" ]] ||
-    [[ -z "${APP_STORE_CONNECT_KEY_ID:-}" ]] ||
-    [[ -z "${APP_STORE_CONNECT_ISSUER_ID:-}" ]]; then
-    echo "Error: Missing required environment variables for notarization"
-    echo "Please set: APP_STORE_CONNECT_API_KEY_P8, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID"
+if ! NOTARY_KEY_PROBLEM="$(untether_check_notary_key)"; then
+    echo "Error: no notarization key in the environment:"
+    echo "$NOTARY_KEY_PROBLEM"
     exit 1
 fi
 
-# The key lives in a file only while notarytool reads it.
+# A key given as content lives in a file only while notarytool reads it; a key given as a
+# path (APP_STORE_CONNECT_API_KEY_PATH) is read where it is and never removed.
 TEMP_KEY=$(mktemp)
 trap 'rm -f "$TEMP_KEY"' EXIT
-echo "$APP_STORE_CONNECT_API_KEY_P8" | sed 's/\\n/\n/g' > "$TEMP_KEY"
+NOTARY_KEY_FILE="$(untether_notary_key_file "$TEMP_KEY")"
 
 echo "Submitting $PKG_PATH for notarization..."
 SUBMISSION_OUTPUT=$(xcrun notarytool submit "$PKG_PATH" \
-    --key "$TEMP_KEY" \
+    --key "$NOTARY_KEY_FILE" \
     --key-id "$APP_STORE_CONNECT_KEY_ID" \
     --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
     --wait \

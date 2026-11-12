@@ -1,6 +1,6 @@
 {
   "name": "untether",
-  "version": "1.0.0-beta.18",
+  "version": "1.0.0",
   "description": "Terminal sharing server with web interface - run terminals in your browser, with ngrok tunnel support for remote access",
   "main": "lib/cli.js",
   "bin": {

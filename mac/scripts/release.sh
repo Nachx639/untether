@@ -36,7 +36,7 @@
 #
 # WHAT A REAL RUN DOES, in this order (it stops at the first failure; nothing is published
 # before step 6):
-#   1. checks: main, clean, the version, the certificates, the notarization key, the public
+#   1. checks: the working repository's main line (untether_release_branch), clean, the version, the certificates, the notarization key, the public
 #      repository (visible, its rulesets in place, tag and release not there yet)
 #   2. builds the app (Release, Apple Silicon)
 #   3. signs it (Developer ID Application, hardened runtime), notarizes and staples it
@@ -46,8 +46,9 @@
 #      temporary folder outside this repository
 #   6. pushes the copy, tags that commit there, creates the release with the .pkg
 #
-# ENVIRONMENT (notarization): APP_STORE_CONNECT_API_KEY_P8, APP_STORE_CONNECT_KEY_ID,
-# APP_STORE_CONNECT_ISSUER_ID.
+# ENVIRONMENT (notarization): APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, and the
+# key itself as APP_STORE_CONNECT_API_KEY_PATH (the .p8 file) or APP_STORE_CONNECT_API_KEY_P8
+# (the content of that file).
 #
 # It cannot resume. It takes 20-30 minutes (two notarizations): run it in tmux, never under a
 # tool's timeout.
@@ -200,9 +201,13 @@ else
     stop "CHANGELOG.md has no closed section \"## [$RELEASE_VERSION] - <date>\" (the release notes are taken from it)"
 fi
 
+# The working repository's main line, not "main": that is the public repository's branch.
+RELEASE_BRANCH="$(untether_release_branch)"
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-if [[ "$CURRENT_BRANCH" != "main" ]]; then
-    stop "not on main (on $CURRENT_BRANCH): a release is made from main"
+if [[ "$CURRENT_BRANCH" != "$RELEASE_BRANCH" ]]; then
+    stop "not on $RELEASE_BRANCH (on $CURRENT_BRANCH): a release is made from $RELEASE_BRANCH, the working repository's main line"
+else
+    ok "on $RELEASE_BRANCH, the working repository's main line"
 fi
 if [[ -n "$(git status --porcelain)" ]]; then
     stop "uncommitted changes: only what is committed is built and published"
@@ -225,10 +230,10 @@ if [[ -n "$PKG_IDENTITY" ]]; then
 else
     stop "no \"Developer ID Installer\" certificate in the keychain (it signs the .pkg; it is another certificate than the app's, made in the same Apple developer account)"
 fi
-if [[ -n "${APP_STORE_CONNECT_API_KEY_P8:-}" && -n "${APP_STORE_CONNECT_KEY_ID:-}" && -n "${APP_STORE_CONNECT_ISSUER_ID:-}" ]]; then
+if NOTARY_KEY_PROBLEM="$(untether_check_notary_key)"; then
     ok "notarization key in the environment"
 else
-    stop "no notarization key in the environment (APP_STORE_CONNECT_API_KEY_P8, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID)"
+    stop "no notarization key in the environment: $(paste -sd ';' - <<< "$NOTARY_KEY_PROBLEM" | sed 's/;/; /g')"
 fi
 
 # The public repository: visible, protected, and without this tag or release.

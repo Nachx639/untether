@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B%20%C2%B7%20Apple%20Silicon-lightgrey" alt="macOS 14 or later, Apple Silicon">
-  <img src="https://img.shields.io/badge/status-beta-orange" alt="Status: beta">
+  <img src="https://img.shields.io/badge/version-1.0.0-brightgreen" alt="Version 1.0.0">
 </p>
 
 <p align="center">
@@ -152,10 +152,14 @@ To report a vulnerability, see [SECURITY.md](SECURITY.md). Please do not open a 
 
 ## Status
 
-Beta (`1.0.0-beta`), built for and used daily by a very small number of people on Apple Silicon
-Macs. Expect rough edges, changes without notice and no compatibility between versions: the Mac
-app and its server always ship together. The iOS app and the npm package get far less use than
-the Mac app and the web interface.
+`1.0.0` is the first stable version: the Mac app, its server and the web interface, on Apple
+Silicon Macs with macOS 14 or later. It has been used daily, by a very small number of people, so
+expect rough edges on setups other than theirs. Versions do not talk to each other: the Mac app
+and its server always ship together, and a new version is a new installer (nothing updates
+itself).
+
+Still work in progress: the iOS app in `ios/` is not published anywhere and has to be built from
+source, and the npm package (Linux, headless) gets far less use than the Mac app.
 
 ## Documentation
 
