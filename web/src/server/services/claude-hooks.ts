@@ -73,7 +73,7 @@ export function shellQuote(value: string): string {
 }
 
 /** The hook script: one event (named by $1) into the mailbox of $UNTETHER_SESSION_ID. */
-export function hookScript(eventsDir: string): string {
+export function hookScript(eventsDir: string, source = 'claude'): string {
   return `#!/bin/sh
 # Untether: one Claude Code hook event into this session's mailbox (claude-hooks.ts).
 # Never fails, never prints: Claude goes on exactly as without it.
@@ -86,7 +86,7 @@ umask 077
 if mkdir -p "$dir" 2>/dev/null; then
   tmp="$dir/.$$.tmp"
   { head -c ${HOOK_INPUT_MAX_BYTES} >"$tmp"; cat >/dev/null; } 2>/dev/null
-  mv -f "$tmp" "$dir/$(date +%s)-$$-$event.json" 2>/dev/null || rm -f "$tmp" 2>/dev/null
+  mv -f "$tmp" "$dir/$(date +%s)-$$-${source}-$event.json" 2>/dev/null || rm -f "$tmp" 2>/dev/null
 else
   cat >/dev/null 2>&1
 fi
@@ -131,12 +131,13 @@ function writeIfChanged(file: string, content: string, mode: number): void {
  */
 export function ensureClaudeHookFiles(
   files: ClaudeHookFiles = claudeHookFiles(),
-  log?: (message: string) => void
+  log?: (message: string) => void,
+  source = 'claude'
 ): ClaudeHookFiles | null {
   try {
     fs.mkdirSync(path.dirname(files.script), { recursive: true, mode: 0o700 });
     fs.mkdirSync(files.eventsDir, { recursive: true, mode: 0o700 });
-    writeIfChanged(files.script, hookScript(files.eventsDir), 0o700);
+    writeIfChanged(files.script, hookScript(files.eventsDir, source), 0o700);
     writeIfChanged(
       files.settings,
       `${JSON.stringify(hookSettings(files.script), null, 2)}\n`,
@@ -150,7 +151,6 @@ export function ensureClaudeHookFiles(
 }
 
 const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'fish']);
-const CLAUDE_WORD = /^(\s*(?:exec\s+)?(?:\S*\/)?claude)(?=\s|$)/;
 
 function namesSettings(args: string[]): boolean {
   return args.some((arg) => arg === '--settings' || arg.startsWith('--settings='));
@@ -161,9 +161,20 @@ function namesSettings(args: string[]): boolean {
  * to it), or a shell running `claude …` (`zsh -ilc 'claude …'`, how an alias resolves). Any
  * other command, or one naming its own `--settings`, comes back as it was.
  */
-export function withClaudeHooks(command: string[], settingsPath: string): string[] {
+export function withClaudeHooks(
+  command: string[],
+  settingsPath: string,
+  executable = 'claude'
+): string[] {
   if (command.length === 0) return command;
-  if (path.basename(command[0]) === 'claude') {
+  if (path.basename(command[0]) === 'env') {
+    let index = 1;
+    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(command[index] ?? '')) index++;
+    const args = command.slice(index);
+    const rewritten = withClaudeHooks(args, settingsPath, executable);
+    return rewritten === args ? command : [...command.slice(0, index), ...rewritten];
+  }
+  if (path.basename(command[0]) === executable) {
     const args = command.slice(1);
     const own = args.slice(0, args.indexOf('--') < 0 ? undefined : args.indexOf('--'));
     if (namesSettings(own)) {
@@ -179,7 +190,7 @@ export function withClaudeHooks(command: string[], settingsPath: string): string
   const flag = command.findIndex((arg, index) => index > 0 && /^-[a-z]*c[a-z]*$/.test(arg));
   if (flag < 0 || flag + 1 >= command.length) return command;
   const script = command[flag + 1];
-  const match = CLAUDE_WORD.exec(script);
+  const match = new RegExp(`^(\\s*(?:exec\\s+)?(?:\\S*/)?${executable})(?=\\s|$)`).exec(script);
   // Its own --settings in the script or in the words passed to it (`claude "$@"` -- …).
   if (!match || /(?:^|\s)--settings(?:[\s=]|$)/.test(script)) return command;
   if (namesSettings(command.slice(flag + 2))) return command;

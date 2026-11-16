@@ -3,7 +3,7 @@ import { createRequire } from 'module';
 import * as os from 'os';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TaskRecord } from '../../shared/tasks.js';
+import type { TaskRecord, TaskState, TaskWaitFor } from '../../shared/tasks.js';
 import { RM_TEST_DIR } from '../../test/helpers/rm-test-dir.js';
 import { builtForwarder } from '../../test/utils/built-forwarder.js';
 import { turnEndSeen } from './claude-chat.js';
@@ -264,6 +264,76 @@ describe("Untether's doctor (2026-10-20)", () => {
         now += 11 * 60_000;
         const [problem] = keys(task, () => open, check);
         expect(problem).toContain('admission open for 11 min, but has not started');
+      });
+    });
+
+    describe('stuck-tasks: a task started after others (--after, a zone) (2026-11-12)', () => {
+      const base = Date.parse('2026-11-12T21:00:00Z');
+      let now = base;
+      const at = (minAgo: number) => new Date(now - minAgo * 60_000).toISOString();
+      const open: AdmissionVerdict = { ok: true, short: [], detail: 'room' };
+      // 41cd3e1f: first in its project's line, a slot free, the admission open — but it waits
+      // for e2621132 (--after). While that one is open, waiting is correct; once it merges, the
+      // task should start by itself and not starting is worth telling.
+      const waiter = (waitsFor: TaskWaitFor[]) =>
+        ({
+          id: '41cd3e1f1111',
+          name: 'After',
+          state: 'queued',
+          stateSince: at(40),
+          runAt: at(40),
+          after: ['e26211321111'],
+          queued: {
+            repoPath: '/repo',
+            since: at(40),
+            order: 1,
+            position: 1,
+            active: 1,
+            limit: 8,
+            waitsFor,
+          },
+        }) as TaskRecord;
+      const waited = (state: TaskState) =>
+        ({
+          id: 'e26211321111',
+          name: 'First',
+          state,
+          stateSince: at(60),
+          runAt: at(60),
+        }) as TaskRecord;
+      const wait = (state: TaskState): TaskWaitFor => ({
+        taskId: 'e26211321111',
+        name: 'First',
+        why: 'after',
+        state,
+      });
+
+      it('does not warn while the task it waits for is still open', () => {
+        now = base;
+        const task = waiter([wait('working')]);
+        const check = stuckTasksCheck({
+          now: () => now,
+          tasks: () => [task, waited('working')],
+          admission: () => open,
+        });
+        expect(check.run()).toEqual([]);
+        now += 11 * 60_000;
+        expect(check.run()).toEqual([]);
+      });
+
+      it('warns once the task it waits for has merged and it still has not started', () => {
+        now = base;
+        const task = waiter([wait('merged')]);
+        const check = stuckTasksCheck({
+          now: () => now,
+          tasks: () => [task, waited('merged')],
+          admission: () => open,
+        });
+        expect(check.run()).toEqual([]);
+        now += 11 * 60_000;
+        const findings = check.run() as DoctorFinding[];
+        expect(findings.map((entry) => entry.key)).toEqual(['stuck-queued:41cd3e1f1111']);
+        expect(findings[0].problem).toContain('but has not started');
       });
     });
 

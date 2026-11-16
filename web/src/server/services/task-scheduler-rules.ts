@@ -1,4 +1,5 @@
 /** The scheduler's constants and pure helpers (no state). */
+import { AGENTS } from '../../shared/agents.js';
 import type { TaskBudgetKey } from '../../shared/task-budget.js';
 import {
   countReview,
@@ -167,10 +168,9 @@ export const SETUP_RETRY_MS = 30_000;
 export const TASK_START_CUTS_MAX = 3;
 /**
  * A finished task's session is stopped this long after (`ut task done` runs in it and gets its
- * answer, the agent ends its turn); while its agent still works, up to FINISHED_SESSION_BUSY_MS.
+ * answer, the agent ends its turn). An active turn postpones the stop without a time limit.
  */
 export const FINISHED_SESSION_GRACE_MS = 30_000;
-export const FINISHED_SESSION_BUSY_MS = 10 * 60_000;
 /** The doctor stops a finished task's session still running this long after it finished. */
 export const FINISHED_SESSION_LINGER_MS = 15 * 60_000;
 /**
@@ -232,7 +232,7 @@ export function limitKeyOf(task: Pick<TaskRecord, 'agent' | 'runner' | 'modelPro
 
 /** "Codex (gpt-5)", "claude-work (sonnet)". */
 export function runnerLabel(ref: TaskRunnerRef): string {
-  const name = ref.runner === ref.agent ? (ref.agent === 'codex' ? 'Codex' : 'Claude') : ref.runner;
+  const name = ref.runner === ref.agent ? AGENTS[ref.agent].label : ref.runner;
   return ref.model ? `${name} (${ref.model})` : name;
 }
 

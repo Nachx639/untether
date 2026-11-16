@@ -13,7 +13,8 @@
  *                    version is published by hand, on the owner's order)
  *   git-base         switching branches, writing the base branch (branch -f/-d, update-ref,
  *                    reset --hard onto it), git writes in another checkout, worktree remove/move/prune,
- *                    files written in the repository's main checkout (Write/Edit, apply_patch, cp…)
+ *                    files written in the repository's main checkout (Write/Edit, apply_patch, cp…),
+ *                    modules installed or native addons rebuilt there (npm rebuild, node-gyp…)
  *   git-rebase-skip  git rebase --skip (it drops commits)
  *   private-paths    ~/.untether and ~/.claude written to, credentials read or written (~/.ssh,
  *                    ~/.aws, auth files, the keychain and `security`'s password commands)
@@ -1284,6 +1285,69 @@ function checkBaseShell(cmd: SimpleCommand, ctx: RuleContext): Finding {
     const finding = baseWrite(pathCandidates(word, cmd.cwd, ctx), ctx, `\`${name}\` would change`);
     if (finding) return finding;
   }
+  return checkBaseBuild(cmd, ctx);
+}
+
+/** What of a package manager installs, removes or rebuilds modules. */
+const MODULE_WRITES =
+  /^(rebuild|rb|install|i|ci|add|remove|rm|uninstall|un|update|up|upgrade|prune|dedupe|link)$/;
+const PACKAGE_MANAGERS = new Set(['npm', 'pnpm', 'yarn', 'bun']);
+/** Options of theirs (and of node-gyp) that name the folder they work in. */
+const FOLDER_FLAGS = ['-C', '--dir', '--prefix', '--cwd', '--directory'];
+/** Scripts that build the native addons of the checkout they are in (web/scripts). */
+const NATIVE_BUILD_SCRIPT =
+  /(^|[/'"`(\s])(ensure-native-modules|native-modules|build-native)\.js\b/;
+
+/**
+ * git-base: modules installed or native addons rebuilt in the main checkout.
+ *
+ * 2026-11-14: every `ut` of a task printed that the main checkout's authenticate-pam "was
+ * compiled against a different Node.js version … Please try re-compiling" (it was right for
+ * the Node 26 of the server running from there; the task's Node was 24). An agent obeying it
+ * (`npm rebuild`, node-gyp, ensure-native-modules.js there) would have left the running server
+ * without password login, as the app's build did on 2026-11-11 and 12. The warning is gone
+ * (authenticate-pam-loader.ts); this is the net under it.
+ */
+function checkBaseBuild(cmd: SimpleCommand, ctx: RuleContext): Finding {
+  const texts = cmd.words.map((w) => w.text);
+  const names = texts.map((t) => path.basename(t));
+  const name = names[0] ?? '';
+  let what: string | undefined;
+  if (PACKAGE_MANAGERS.has(name)) {
+    // Its subcommand: the first word that is neither an option nor a folder option's value.
+    const sub = texts.find(
+      (text, i) => i > 0 && !text.startsWith('-') && !FOLDER_FLAGS.includes(texts[i - 1])
+    );
+    if (sub && MODULE_WRITES.test(sub)) what = `${name} ${sub}`;
+  }
+  const gyp = names.indexOf('node-gyp');
+  if (!what && gyp >= 0 && /^(rebuild|build|configure|clean)$/.test(texts[gyp + 1] ?? '')) {
+    what = `node-gyp ${texts[gyp + 1]}`;
+  }
+  const script = cmd.words.find((w) => NATIVE_BUILD_SCRIPT.test(w.text));
+  if (!what && script && /^(node|bun|tsx)$/.test(name)) what = `${name} ${script.text}`;
+  if (!what) return null;
+  const folders = [cmd.cwd];
+  cmd.words.forEach((w, i) => {
+    if (FOLDER_FLAGS.includes(w.text) && cmd.words[i + 1]) {
+      folders.push(...pathCandidates(cmd.words[i + 1], cmd.cwd, ctx));
+    }
+    const eq = /^--(?:dir|prefix|cwd|directory)=/.test(w.text);
+    if (eq) folders.push(...pathCandidates(w, cmd.cwd, ctx));
+  });
+  // A script named by its path builds the checkout it is in, wherever it is run from.
+  if (script && !script.dynamic && /^[~/.\w-]+$/.test(script.text)) {
+    folders.push(...pathCandidates(script, cmd.cwd, ctx));
+  }
+  for (const folder of folders) {
+    if (inside(folder, ctx.root)) continue;
+    const base = ctx.baseRoots.find((dir) => inside(folder, dir));
+    if (!base) continue;
+    return block(
+      'git-base',
+      `\`${what}\` would install or rebuild modules in the repository's main checkout (${displayPath(base, ctx.policy.home)}). They are built for the Node of whatever runs from there (a server may be running on them right now), not for your session's Node: a "compiled against a different Node.js version" about them is not yours to fix. Build only in your worktree ${ctx.root}.`
+    );
+  }
   return null;
 }
 
@@ -1449,7 +1513,10 @@ function agentOf(
     ancestors.add(at);
     const entry = table.get(at);
     if (!entry) break;
-    if (!agent && /(^|\/)(claude|codex)(\s|$)|claude-code|@openai\/codex/.test(entry.command)) {
+    if (
+      !agent &&
+      /(^|\/)(claude|codex|qodercli)(\s|$)|claude-code|@openai\/codex/.test(entry.command)
+    ) {
       agent = at;
     }
     at = entry.ppid;

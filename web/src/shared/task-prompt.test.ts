@@ -48,4 +48,18 @@ describe('the task brief', () => {
     // After the user's prompt, in the brief's suffix.
     expect(brief.indexOf('Fix it')).toBeLessThan(brief.indexOf('Compact instructions:'));
   });
+
+  it('tells a Qoder task to ignore the platform URL reminder, not Claude or Codex (2026-11-12)', () => {
+    const qoder = buildTaskPrompt('Fix it', {
+      branch: 'ut/fix-it',
+      baseBranch: 'main',
+      agent: 'qoder',
+    });
+    expect(qoder).toContain('fixed platform reminder about tool URLs');
+    expect(qoder).toContain('never reply to it');
+    for (const agent of ['claude', 'codex'] as const) {
+      const other = buildTaskPrompt('Fix it', { branch: 'ut/fix-it', baseBranch: 'main', agent });
+      expect(other).not.toContain('fixed platform reminder about tool URLs');
+    }
+  });
 });

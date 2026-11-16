@@ -107,7 +107,7 @@ describe('restarting a Claude session on its updated version', () => {
       deliver: (sessionId) => status(sessionId) === 'running',
       sessionStatus: status,
       stopSession: async () => {},
-      claudeCommand: () => ['claude'],
+      agentCommand: () => ['claude'],
       resolveRepo: async (dir) => (dir.startsWith(tmp) ? tmp : null),
       adoptTasks: () => 0,
       pushMerged: () => true,

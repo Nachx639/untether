@@ -14,6 +14,7 @@ import {
   claudeHookEvent,
 } from './agent-events.js';
 import { HOOK_INPUT_MAX_BYTES } from './claude-hooks.js';
+import { qoderHookEvent } from './qoder-hooks.js';
 
 /** Event files read per session and look: a backlog drains over a few looks. */
 const MAX_FILES_PER_LOOK = 2000;
@@ -69,6 +70,7 @@ export interface AgentEventServiceOptions {
   codexRollout?: (sessionId: string) => string | null;
   log?: (message: string) => void;
   now?: () => number;
+  onQoderSession?: (sessionId: string, binding: { id: string; transcriptPath: string }) => void;
 }
 
 export class AgentEventService {
@@ -273,7 +275,22 @@ export class AgentEventService {
       }
       // The event is the one the hook was registered for, whatever the file says.
       input.hook_event_name = eventName;
-      const event = claudeHookEvent(input, Math.round(at));
+      const qoder = /-qoder-[A-Za-z]+\.json$/.test(name);
+      const event = qoder
+        ? qoderHookEvent(input, Math.round(at))
+        : claudeHookEvent(input, Math.round(at));
+      if (
+        qoder &&
+        typeof input.session_id === 'string' &&
+        typeof input.transcript_path === 'string' &&
+        path.isAbsolute(input.transcript_path) &&
+        input.transcript_path.endsWith('.jsonl')
+      ) {
+        this.options.onQoderSession?.(sessionId, {
+          id: input.session_id,
+          transcriptPath: input.transcript_path,
+        });
+      }
       if (event) this.apply(sessionId, event);
     }
   }

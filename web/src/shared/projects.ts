@@ -208,6 +208,19 @@ export interface ProjectSettings extends SecuritySweepSettings {
   orchestratorSessionId?: string;
   /** The orchestrator is a session the user made one (adopt): stopping it leaves it open. */
   orchestratorAdopted?: boolean;
+  /**
+   * The agent a new orchestrator of the project runs on (default claude). The running one keeps
+   * its agent until it is migrated (`ut project orchestrator migrate`, the «Cambiar agente»
+   * button); this setting is what the next start and every migration target read.
+   */
+  orchestratorAgent?: TaskAgent;
+  /** Its model, when the agent takes one (unset: the quick start's, else the agent's default). */
+  orchestratorModel?: string;
+  /**
+   * The orchestrator's agent hit its usage limit: migrate it to another configured agent by
+   * itself (default off: the user is told and offered the migration with one tap).
+   */
+  orchestratorAutoMigrate?: boolean;
   /** Pinned on top of the home (2026-10-18), and when; a project folder without git too. */
   pinnedAt?: string;
   /**

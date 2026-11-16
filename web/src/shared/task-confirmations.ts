@@ -47,6 +47,11 @@ export type ConfirmationKind =
    */
   | 'project-orchestrate'
   /**
+   * Migrate a project's orchestrator to another agent (`ut project orchestrator migrate` from
+   * an agent or a script; 2026-11-12): the old session is kept, never killed.
+   */
+  | 'project-orchestrator-migrate'
+  /**
    * Forget a project: its record (settings, pin, orchestrator) goes, its folder is never
    * touched (`ut project forget` from an agent or a script; 2026-10-24).
    */
@@ -80,6 +85,7 @@ export const CONFIRMATION_KINDS: readonly ConfirmationKind[] = [
   'project-set',
   'start',
   'project-orchestrate',
+  'project-orchestrator-migrate',
   'project-forget',
   'project-new',
   'auto-approve',

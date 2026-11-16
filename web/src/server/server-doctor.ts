@@ -83,6 +83,7 @@ import {
   recentTranscriptModels,
   sessionModelChanged,
   tailLines,
+  taskModelUse,
   unexpectedModelsCheck,
 } from './services/model-observations.js';
 import { providerModels } from './services/model-providers.js';
@@ -485,21 +486,7 @@ export function setupDoctor(ctx: AppContext) {
             const session = sessions.find((candidate) => candidate.id === task.sessionId);
             // Changed by hand inside the task's session: not unexpected (2026-11-09).
             if (session && (await changedInside(session))) continue;
-            const requested =
-              task.model ??
-              (task.agent === 'claude' ? session?.claudeStartSettings?.model : undefined);
-            const tier = task.modelChoice?.tier;
-            uses.push({
-              label: `task "${task.name}" (${task.id})`,
-              ...(requested ? { requested } : {}),
-              requestedFrom: !task.model
-                ? '"model" in ~/.claude/settings.json'
-                : tier && task.modelChoice?.by !== 'user'
-                  ? `taskModels.${task.agent}.${tier}`
-                  : '--model',
-              actual: last.model,
-              at: last.at,
-            });
+            uses.push(taskModelUse(task, last, session?.claudeStartSettings?.model));
           }
           // Sessions that are not a task's: their transcript's newest assistant message, and
           // what the session itself asked for and talked to (2026-11-08: a claude-ablit session

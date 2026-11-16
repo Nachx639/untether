@@ -449,6 +449,36 @@ describe('review 2: writes into the main checkout (git-base)', () => {
     expect(sh(`cat ${MAIN}/src/app.ts > src/copy.ts`)).toBeNull();
   });
 
+  // 2026-11-14: `ut` told every task that the main checkout's authenticate-pam was built for
+  // another Node and to re-compile it; rebuilt there, the running server loses password login.
+  it('modules are never installed or rebuilt in the main checkout', () => {
+    const sh = (command: string, cwd = ROOT) => bash(command, withBase, cwd);
+    expect(sh(`cd ${MAIN}/web && npm rebuild authenticate-pam`)?.rule).toBe('git-base');
+    expect(sh(`cd ${MAIN}/web && pnpm rebuild`)?.rule).toBe('git-base');
+    expect(sh(`pnpm -C ${MAIN}/web install`)?.rule).toBe('git-base');
+    expect(sh(`npm --prefix ${MAIN}/web rebuild`)?.rule).toBe('git-base');
+    expect(sh(`pnpm --dir=${MAIN}/web rebuild authenticate-pam`)?.rule).toBe('git-base');
+    expect(sh(`cd ${MAIN}/web/node_modules/authenticate-pam && npx node-gyp rebuild`)?.rule).toBe(
+      'git-base'
+    );
+    expect(sh(`node ${MAIN}/web/scripts/ensure-native-modules.js`)?.rule).toBe('git-base');
+    expect(
+      sh(`node -e "require('./scripts/native-modules.js').buildAuthenticatePam()"`, `${MAIN}/web`)
+        ?.rule
+    ).toBe('git-base');
+    expect(sh(`cd ${MAIN}/web && npm rebuild`)?.reason).toContain('not yours to fix');
+    // The same in its own worktree, and looking at the main checkout, are the task's business.
+    expect(sh('cd web && npm rebuild authenticate-pam')).toBeNull();
+    expect(sh('pnpm install')).toBeNull();
+    expect(sh('node scripts/ensure-native-modules.js')).toBeNull();
+    expect(sh('cd web/node_modules/authenticate-pam && npx node-gyp rebuild')).toBeNull();
+    expect(sh(`cd ${MAIN}/web && pnpm list authenticate-pam`)).toBeNull();
+    expect(sh(`cd ${MAIN}/web && pnpm run typecheck`)).toBeNull();
+    expect(sh(`cat ${MAIN}/web/scripts/native-modules.js`)).toBeNull();
+    // Without a main checkout there is nothing to protect.
+    expect(bash(`cd ${MAIN}/web && npm rebuild`)).toBeNull();
+  });
+
   it('without a main checkout (worktree-less task) nothing changes', () => {
     expect(bash(`echo x > ${MAIN}/src/app.ts`)).toBeNull();
   });

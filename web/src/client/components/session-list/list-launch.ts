@@ -4,6 +4,13 @@
  */
 import { html, nothing, render } from 'lit';
 import { state } from 'lit/decorators.js';
+import {
+  AGENTS,
+  agentForExecutable,
+  isTaskAgent,
+  TASK_AGENTS,
+  type TaskAgent,
+} from '../../../shared/agents.js';
 import { DEFAULT_REPOSITORY_BASE_PATH } from '../../../shared/constants.js';
 import { quickStartProgram } from '../../../shared/quick-start.js';
 import type { Session } from '../../../shared/types.js';
@@ -308,21 +315,19 @@ export abstract class SessionListLaunch extends SessionListProjects {
   }
 
   /** The quick start that runs Claude Code (your configured command and flags), or plain claude. */
-  protected claudeQuickStart(): QuickStartCommand {
+  protected agentQuickStart(agent: TaskAgent): QuickStartCommand {
     return (
-      this.quickStartList().find((entry) =>
-        /(^|\/)claude$/.test(parseCommand(entry.command.trim())[0] ?? '')
-      ) ?? { command: 'claude' }
+      this.quickStartList().find(
+        (entry) => agentForExecutable(parseCommand(entry.command.trim())[0] ?? '') === agent
+      ) ?? { command: AGENTS[agent].executable }
     );
   }
 
-  /** The quick start that runs Codex (your configured command and flags), or plain codex. */
-  protected codexQuickStart(): QuickStartCommand {
-    return (
-      this.quickStartList().find((entry) =>
-        /(^|\/)codex$/.test(parseCommand(entry.command.trim())[0] ?? '')
-      ) ?? { command: 'codex' }
-    );
+  protected claudeQuickStart() {
+    return this.agentQuickStart('claude');
+  }
+  protected codexQuickStart() {
+    return this.agentQuickStart('codex');
   }
 
   protected isClaudeCommand(command: string): boolean {
@@ -360,6 +365,7 @@ export abstract class SessionListLaunch extends SessionListProjects {
       .folder=${folder}
       .repo=${Boolean(this.askRepoOf(folder))}
       .busy=${this.asking}
+      .availability=${this.quickStartAvailability}
       .tasks=${true}
       @ask-claude=${this.handleAskClaude}
       @ask-pick-folder=${this.openAskFolderSheet}
@@ -412,7 +418,7 @@ export abstract class SessionListLaunch extends SessionListProjects {
 
   /** The agents a task can run: your Claude and Codex quick starts (names and flags). */
   protected composeAgents(): Array<{
-    agent: 'claude' | 'codex';
+    agent: TaskAgent;
     label: string;
     command: string[];
   }> {
@@ -420,18 +426,20 @@ export abstract class SessionListLaunch extends SessionListProjects {
       .map((entry) => {
         const command = parseCommand(entry.command.trim());
         const program = (command[0] ?? '').split('/').pop() ?? '';
-        const agent = program === 'claude' ? 'claude' : program === 'codex' ? 'codex' : null;
+        const found = agentForExecutable(program);
+        const agent = isTaskAgent(found) ? found : null;
         return agent ? { agent, label: this.quickStartDisplay(entry), command } : null;
       })
-      .filter((entry): entry is { agent: 'claude' | 'codex'; label: string; command: string[] } =>
+      .filter((entry): entry is { agent: TaskAgent; label: string; command: string[] } =>
         Boolean(entry)
       );
     return agents.length
       ? agents
-      : [
-          { agent: 'claude', label: 'Claude', command: ['claude'] },
-          { agent: 'codex', label: 'Codex', command: ['codex'] },
-        ];
+      : TASK_AGENTS.map((agent) => ({
+          agent,
+          label: AGENTS[agent].label,
+          command: [AGENTS[agent].executable],
+        }));
   }
 
   protected openTaskSheetIn(folder?: string) {
@@ -451,10 +459,9 @@ export abstract class SessionListLaunch extends SessionListProjects {
           seen.add(key);
           return true;
         }),
-        commands: {
-          claude: parseCommand(this.claudeQuickStart().command.trim()),
-          codex: parseCommand(this.codexQuickStart().command.trim()),
-        },
+        commands: Object.fromEntries(
+          TASK_AGENTS.map((id) => [id, parseCommand(this.agentQuickStart(id).command.trim())])
+        ) as Record<TaskAgent, string[]>,
         agent: readAskAgent(),
         shielded: this.newShielded,
         onStarted: (sessionId) => {
@@ -647,7 +654,7 @@ export abstract class SessionListLaunch extends SessionListProjects {
           e.target as AskClaudeBox,
           repoPath,
           e.detail.text,
-          e.detail.agent === 'codex' ? 'codex' : 'claude'
+          e.detail.agent ?? 'claude'
         );
       } finally {
         this.asking = false;
@@ -657,8 +664,8 @@ export abstract class SessionListLaunch extends SessionListProjects {
     // A question is a conversation: open it in chat mode.
     preferPhoneChatMode();
     try {
-      const agent = e.detail.agent === 'codex' ? 'codex' : 'claude';
-      const entry = agent === 'codex' ? this.codexQuickStart() : this.claudeQuickStart();
+      const agent = e.detail.agent ?? 'claude';
+      const entry = this.agentQuickStart(agent);
       const started = await this.startSession(entry, folder, e.detail.text, agent);
       // Not started: give the question back instead of losing it.
       if (!started) (e.target as AskClaudeBox).restore(e.detail.text);

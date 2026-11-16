@@ -23,6 +23,7 @@ import {
 import { parseResumeAt } from './agent-halt.js';
 import type { ClaudeStatus } from './claude-chat.js';
 import type { NotificationPayload } from './push-notification-service.js';
+import { qoderHookEvent, qoderSightings } from './qoder-hooks.js';
 import type { PipelineOptions } from './task-merge.js';
 import {
   CODEX_IDLE_MS,
@@ -108,7 +109,11 @@ describe('TaskScheduler: decided from the agents’ events', () => {
   let tracker: AgentStateTracker;
   let schedulers: TaskScheduler[];
 
-  const make = (options: { events: boolean; signals?: SignalLedger }) => {
+  const make = (options: {
+    events: boolean;
+    signals?: SignalLedger;
+    deps?: Partial<TaskSchedulerDeps>;
+  }) => {
     const scheduler = new TaskScheduler({
       storePath: path.join(dir, `tasks-${schedulers.length}.json`),
       launch: launch as unknown as TaskSchedulerDeps['launch'],
@@ -125,6 +130,7 @@ describe('TaskScheduler: decided from the agents’ events', () => {
       logDir: path.join(dir, 'logs'),
       inputWaitMs: 10,
       now: () => Date.now(),
+      ...options.deps,
     });
     schedulers.push(scheduler);
     return scheduler;
@@ -187,6 +193,204 @@ describe('TaskScheduler: decided from the agents’ events', () => {
     for (const scheduler of schedulers) scheduler.stop();
     vi.useRealTimers();
     fs.rmSync(dir, RM_TEST_DIR);
+  });
+
+  it.each(['claude', 'codex', 'qoder'] as const)(
+    '%s: new work after done revokes completion even if already idle again',
+    async (agent) => {
+      const scheduler = make({ events: true });
+      await scheduler.start(0);
+      const task = await created(scheduler, { agent });
+      commits = 1;
+      tracker.apply('s1', { source: 'claude-hook', kind: 'turn-start', at: Date.now() });
+      tracker.apply('s1', {
+        source: 'claude-hook',
+        kind: 'tool-start',
+        at: Date.now(),
+        callId: 'done',
+      });
+      let finishCheck!: () => void;
+      const checking = new Promise<void>((resolve) => {
+        finishCheck = resolve;
+      });
+      pipeline.mockImplementation(async (_task, options: PipelineOptions) => {
+        await checking;
+        expect(options.agentWorking?.()).toBe(true);
+        return { state: 'ready', agentWorking: true };
+      });
+      await scheduler.markDone('s1', 'Reported');
+      await vi.advanceTimersByTimeAsync(1);
+      // Returning from `ut task done` itself must not revoke its report.
+      tracker.apply('s1', {
+        source: 'claude-hook',
+        kind: 'tool-end',
+        at: Date.now(),
+        callId: 'done',
+      });
+      await scheduler.checkExited();
+      expect(scheduler.get(task.id)?.reportRequired).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(1);
+      tracker.apply('s1', {
+        source: 'claude-hook',
+        kind: 'tool-start',
+        at: Date.now(),
+        callId: 'more',
+      });
+      tracker.apply('s1', {
+        source: 'claude-hook',
+        kind: 'tool-end',
+        at: Date.now(),
+        callId: 'more',
+      });
+      tracker.apply('s1', { source: 'claude-hook', kind: 'turn-end', at: Date.now() });
+      finishCheck();
+      await scheduler.settled();
+      expect(scheduler.get(task.id)).toMatchObject({ state: 'working', reportRequired: true });
+      expect(deliver).toHaveBeenCalledWith(
+        's1',
+        expect.stringContaining('merge was cancelled'),
+        agent,
+        { trustFolder: true }
+      );
+      await tick(scheduler, IDLE_HOLD_MS * 2);
+      expect(pipeline).toHaveBeenCalledTimes(1);
+      pipeline.mockResolvedValue({ state: 'merged', mergedSha: 'new' });
+      await scheduler.markDone('s1', 'Finished the extra work');
+      await scheduler.settled();
+      expect(scheduler.get(task.id)?.state).toBe('merged');
+    }
+  );
+
+  describe('a Qoder task, from its hooks (2026-11-12)', () => {
+    const SESSION = 's1';
+    let last: string | undefined;
+    /** One hook of Qoder's, then what the status notifier makes of it for the scheduler. */
+    const hook = (scheduler: TaskScheduler, event: string, extra: Record<string, unknown> = {}) => {
+      const input = { session_id: 'q1', hook_event_name: event, ...extra };
+      const parsed = qoderHookEvent(input, Date.now());
+      if (parsed) tracker.apply(SESSION, parsed);
+      const seen = qoderSightings([{ id: SESSION }], {
+        snapshot: (id) => tracker.get(id),
+      }).get(SESSION);
+      if (!seen || seen.status.status === last) return;
+      scheduler.onClaudeTransition(SESSION, last, seen.status.status, seen.status);
+      last = seen.status.status;
+    };
+    const qoderTask = (scheduler: TaskScheduler) =>
+      created(scheduler, { command: ['qodercli'], agent: 'qoder' });
+
+    beforeEach(() => {
+      last = undefined;
+    });
+
+    it('needs you on its question, works again once answered, and requires its completion report', async () => {
+      const scheduler = make({ events: true });
+      await scheduler.start(0);
+      const task = await qoderTask(scheduler);
+      hook(scheduler, 'SessionStart');
+      hook(scheduler, 'UserPromptSubmit');
+      expect(scheduler.get(task.id)?.state).toBe('working');
+      hook(scheduler, 'PreToolUse', { tool_name: 'AskUserQuestion', tool_use_id: 'ask' });
+      expect(scheduler.get(task.id)).toMatchObject({
+        state: 'needs_you',
+        blocker: { kind: 'question', fromPrompt: true },
+      });
+      hook(scheduler, 'PostToolUse', { tool_name: 'AskUserQuestion', tool_use_id: 'ask' });
+      expect(scheduler.get(task.id)?.state).toBe('working');
+      // A quiet screen and an intermediate Stop are neither a task report.
+      await tick(scheduler, IDLE_HOLD_MS * 2);
+      expect(scheduler.get(task.id)?.state).toBe('working');
+      hook(scheduler, 'Stop', { last_assistant_message: 'Hecho: el cambio está en su commit.' });
+      await tick(scheduler, IDLE_HOLD_MS + 1000);
+      expect(scheduler.get(task.id)?.state).toBe('working');
+      await scheduler.markDone(SESSION, 'Hecho: el cambio está en su commit.');
+      expect(scheduler.get(task.id)?.state).toBe('done');
+      expect(screenText).not.toHaveBeenCalled();
+    });
+
+    it('with commits an intermediate Stop never checks; only ut task done starts the pipeline', async () => {
+      const scheduler = make({ events: true });
+      await scheduler.start(0);
+      const task = await qoderTask(scheduler);
+      hook(scheduler, 'SessionStart');
+      hook(scheduler, 'UserPromptSubmit');
+      commits = 1;
+      hook(scheduler, 'Stop', { last_assistant_message: 'Listo.' });
+      await tick(scheduler, IDLE_HOLD_MS + 1000);
+      expect(pipeline).not.toHaveBeenCalled();
+      expect(scheduler.get(task.id)?.state).toBe('working');
+      hook(scheduler, 'UserPromptSubmit');
+      await tick(scheduler, IDLE_HOLD_MS * 2);
+      expect(pipeline).not.toHaveBeenCalled();
+      hook(scheduler, 'Stop', { last_assistant_message: 'Now finished.' });
+      await scheduler.markDone(SESSION, 'Now finished.');
+      await vi.waitFor(() => expect(pipeline).toHaveBeenCalledTimes(1));
+      await vi.waitFor(() => expect(scheduler.get(task.id)?.state).toBe('merged'));
+    });
+
+    it('its usage limit (StopFailure) pauses the task until the reset it names', async () => {
+      const scheduler = make({ events: true });
+      await scheduler.start(0);
+      const task = await qoderTask(scheduler);
+      hook(scheduler, 'SessionStart');
+      hook(scheduler, 'UserPromptSubmit');
+      hook(scheduler, 'StopFailure', {
+        error_type: 'rate_limit',
+        error: 'Usage limit reached. Try again in 2 hours.',
+      });
+      await tick(scheduler, IDLE_HOLD_MS + 1000);
+      await vi.waitFor(() =>
+        expect(scheduler.get(task.id)).toMatchObject({
+          state: 'paused',
+          halt: { kind: 'usage-limit' },
+        })
+      );
+      expect(pipeline).not.toHaveBeenCalled();
+    });
+
+    it.each([false, true])(
+      'resumes after a usage limit with its conversation preserved (session gone: %s)',
+      async (gone) => {
+        let running = true;
+        const resume = vi.fn(async () => ({ sessionId: 'resumed' }));
+        const scheduler = make({
+          events: true,
+          deps: {
+            sessionStatus: () => (running ? 'running' : 'exited'),
+            qoderConversation: () => 'q1',
+            resume,
+          },
+        });
+        await scheduler.start(0);
+        const task = await qoderTask(scheduler);
+        hook(scheduler, 'UserPromptSubmit');
+        hook(scheduler, 'StopFailure', {
+          error_type: 'rate_limit',
+          error: 'Usage limit reached. Try again in 2 hours.',
+        });
+        await tick(scheduler, IDLE_HOLD_MS + 1000);
+        expect(scheduler.get(task.id)?.state).toBe('paused');
+        running = !gone;
+        expect(await scheduler.retry(task.id)).toMatchObject({ ok: true });
+        await scheduler.settled();
+        expect(scheduler.get(task.id)?.state).toBe('working');
+        if (gone)
+          expect(resume).toHaveBeenCalledWith(
+            expect.objectContaining({ agent: 'qoder' }),
+            'q1',
+            expect.any(String),
+            expect.any(String)
+          );
+        else
+          expect(deliver).toHaveBeenCalledWith(
+            's1',
+            expect.stringContaining('Continue the task'),
+            'qoder',
+            { trustFolder: true }
+          );
+        expect(pipeline).not.toHaveBeenCalled();
+      }
+    );
   });
 
   it('Codex cut by its usage limit (the recorded rollout): paused at once with its reset, no quiet spell, no screen', async () => {

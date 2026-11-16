@@ -4,7 +4,9 @@
  * Storage while online (utils/offline-page.ts) and the worker rebuilds the title and body
  * from the raw fields the server sends (`data.where`, `data.detail`). English otherwise.
  */
+
 import { agentPush, namedForAgent } from '../shared/agent-push.js';
+import { AGENTS, isAgentId } from '../shared/agents.js';
 import { type ClaudeWaitingReason, claudeWaitingReason } from '../shared/claude-waiting-reason.js';
 import type { ConfirmationKind } from '../shared/task-confirmations.js';
 import type { TaskBlockerKind } from '../shared/tasks.js';
@@ -507,7 +509,7 @@ export function localizeClaudeNotification<T extends ClaudeNotification>(
   } else if (type === 'task-agent-changed') {
     title = fill(strings.taskAgentChanged);
     const data = payload.data ?? {};
-    const name = (agent: unknown) => (agent === 'codex' ? 'Codex' : 'Claude');
+    const name = (agent: unknown) => (isAgentId(agent) ? AGENTS[agent].label : 'Claude');
     const to = data.toModel ? `${name(data.toAgent)} (${data.toModel})` : name(data.toAgent);
     body = data.toAgent
       ? fillIn(fillIn(strings.taskAgentChangedBody, 'from', name(data.fromAgent)), 'to', to)
@@ -677,14 +679,15 @@ export function defaultNotificationActions(
  * the user, the longer. Decision 2026-11-11: applied to every notification.
  */
 export function vibrationPattern(notificationType: string): number[] {
-  switch (notificationType) {
+  // Any agent's own push feels like Claude's of the same kind.
+  const own = agentPush(notificationType);
+  switch (own ? `claude-${own.kind}` : notificationType) {
     case 'session-error':
     case 'command-error':
       return [200, 100, 200, 100, 200]; // urgent
     case 'task-failed':
       return [150, 75, 150, 75, 150]; // something to look at
     case 'claude-waiting':
-    case 'codex-waiting':
     case 'task-needs-you':
     case 'task-confirm':
       return [120, 60, 120, 60, 120]; // needs an answer
@@ -693,7 +696,6 @@ export function vibrationPattern(notificationType: string): number[] {
     case 'command-finished':
     case 'claude-finished':
     case 'claude-replied':
-    case 'codex-finished':
     case 'task-ready':
     case 'task-merged':
     case 'task-done':

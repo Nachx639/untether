@@ -3,6 +3,7 @@ import {
   agentMayNotAnswer,
   approveOption,
   denyOption,
+  optionApproves,
   promptDeletes,
   promptLines,
   promptWhole,
@@ -35,6 +36,29 @@ describe("a prompt of the agent's own on a task's screen (2026-11-10)", () => {
     expect(approveOption(["Yes, and don't ask again", 'No'])).toBe(0);
     expect(approveOption(['Rojo', 'Verde'])).toBe(0);
     expect(denyOption(['Rojo', 'Verde'])).toBe(0);
+  });
+
+  it('deny rejects Qoder’s dialog and any agent’s negative option, however it is named (2026-11-12)', () => {
+    // Qoder: Approve / Always approve / Reject. `ut task answer … deny` must press Reject (3);
+    // before, none of these begins with "no", so deny found nothing and said "no such option".
+    const qoder = ['Approve', 'Always approve', 'Reject'];
+    expect(denyOption(qoder)).toBe(3);
+    // Approve is still the plain Approve (1), never "Always approve" (2, it widens).
+    expect(approveOption(qoder)).toBe(1);
+    // Reject is a refusal, not an approval: an agent may always give it, even for a deletion.
+    expect(optionApproves('Reject')).toBe(false);
+    expect(
+      agentMayNotAnswer(prompt({ options: qoder, detail: ['Bash command', 'rm -rf /'] }), 'Reject')
+    ).toBeNull();
+    // Other agents' negative labels, none of them "no" or "deny".
+    for (const negative of ['Decline', 'Cancel', 'Disallow', 'Refuse', 'Block', 'Abort', 'Never']) {
+      expect(denyOption(['Allow', negative]), negative).toBe(2);
+      expect(optionApproves(negative), negative).toBe(false);
+      expect(approveOption(['Allow', negative]), negative).toBe(1);
+    }
+    // A menu with no negative still has no deny; a widening yes is still not an approve.
+    expect(denyOption(['Approve', 'Always approve'])).toBe(0);
+    expect(approveOption(['Always approve', 'Reject'])).toBe(0);
   });
 
   it('knows a command that deletes from one that does not', () => {

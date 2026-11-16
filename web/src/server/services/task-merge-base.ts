@@ -23,6 +23,18 @@ import {
   unsavedChanges,
 } from './task-worktree.js';
 
+export function agentWorkingResult(): PipelineResult {
+  return {
+    state: 'ready',
+    agentWorking: true,
+    blocker: {
+      kind: 'merge-error',
+      message:
+        'The agent is working: merge and session cleanup cancelled; report again when finished',
+    },
+  };
+}
+
 /**
  * The branch's tip `tip` is work of its own that is in the base already (merged before a
  * restart cut the cleanup short). 2026-10-20: a task that changed nothing had its baseSha
@@ -143,7 +155,8 @@ export async function moveBase(
   base: string,
   baseRef: string,
   expected: string,
-  head: string
+  head: string,
+  agentWorking?: () => boolean
 ): Promise<MoveResult> {
   const blocked = (kind: 'dirty-base' | 'merge-error', message: string, detail?: string[]) => ({
     kind: 'blocked' as const,
@@ -183,6 +196,7 @@ export async function moveBase(
     }
     // Its reflog entry says the files changed by Untether's merge: the dev server batches the
     // restarts those cause (scripts/server-watch.js mergeSignal, 2026-11-02).
+    if (agentWorking?.()) return { kind: 'blocked', result: agentWorkingResult() };
     const ff = await log.git(checkedOut.path, ['merge', '--ff-only', head], COMMIT_TIMEOUT_MS, {
       GIT_REFLOG_ACTION: MERGE_REFLOG_ACTION,
     });
@@ -195,6 +209,7 @@ export async function moveBase(
         : blocked('merge-error', `Could not fast-forward ${base}`, lastLines(text));
     }
   } else {
+    if (agentWorking?.()) return { kind: 'blocked', result: agentWorkingResult() };
     const updated = await log.git(repoPath, [
       'update-ref',
       '-m',
@@ -293,10 +308,19 @@ export async function finishMerged(
   };
   const before = await leftBehind(task, options, log, artifacts);
   if (before) return kept(before);
-  await options.beforeCleanup?.().catch((error) => log.write(`# before cleanup: ${error}`));
+  if (options.agentWorking?.()) {
+    log.write('# cleanup deferred: agent working; session, worktree and branch kept');
+    return { ...agentWorkingResult(), mergedSha };
+  }
+  try {
+    await options.beforeCleanup?.();
+  } catch (error) {
+    return kept([`Session cleanup refused or failed: ${error}`]);
+  }
   // The agent may have written something until its session ended.
   const after = await leftBehind(task, options, log, artifacts);
   if (after) return kept(after);
+  if (options.agentWorking?.()) return { ...agentWorkingResult(), mergedSha };
   const cleanupError = await cleanup(task, log);
   return {
     state: 'merged',

@@ -3,8 +3,16 @@
 
 import * as path from 'path';
 import { partyLabel } from '../shared/agent-messages.js';
+import {
+  agentForExecutable,
+  commandAgent,
+  isTaskAgent,
+  TASK_AGENTS,
+  type TaskAgent,
+} from '../shared/agents.js';
 import { sumUsage } from '../shared/task-metrics.js';
 import type { TaskRecord } from '../shared/tasks.js';
+import { cellsToText } from '../shared/terminal-text-formatter.js';
 import { apiSocketServer } from './api-socket-server.js';
 import { currentBuild } from './build-info.js';
 import type { TaskResponse } from './pty/socket-protocol.js';
@@ -286,6 +294,7 @@ export function setupTasks(ctx: AppContext) {
         providerEnv: taskProviderEnv,
       }),
       claudeConversation: (sessionId) => ptyManager.getSession(sessionId)?.claudeSessionId,
+      qoderConversation: (sessionId) => ptyManager.getSession(sessionId)?.qoderSession?.id,
       finalReply: async (sessionId) => {
         const session = ptyManager.getSession(sessionId);
         const pid = session ? ptyManager.programRootPid(session) : undefined;
@@ -452,11 +461,11 @@ export function setupTasks(ctx: AppContext) {
   }
   const sweepAgentsAvailability = new QuickStartAvailability();
   /** The user's quick start for an agent as argv (its flags included), else the bare agent. */
-  const agentCommand = (agent: 'claude' | 'codex') => {
+  const agentCommand = (agent: TaskAgent) => {
     const quickStart = configService
       .getConfig()
-      .quickStartCommands.find((entry) =>
-        new RegExp(`(^|/)${agent}$`).test(quickStartArgv(entry.command, agent)[0] ?? '')
+      .quickStartCommands.find(
+        (entry) => agentForExecutable(quickStartArgv(entry.command, agent)[0] ?? '') === agent
       );
     return quickStartArgv(quickStart?.command, agent);
   };
@@ -734,13 +743,26 @@ export function setupOrchestrator(ctx: AppContext) {
     wakeSuspended,
   } = ctx;
   if (!config.isHQMode) {
+    // The agent a session runs: its own events first (Qoder's hooks, Codex's rollout), else its
+    // command line. The orchestrator's delivery and rights read it (2026-11-12).
+    const sessionAgent = (sessionId: string): TaskAgent | undefined => {
+      const snapshot = ctx.agentEvents.snapshot(sessionId);
+      if (snapshot?.source === 'qoder-hook') return 'qoder';
+      if (snapshot?.source === 'codex-rollout') return 'codex';
+      const agent = commandAgent(ptyManager.getSession(sessionId)?.command);
+      return agent && isTaskAgent(agent) ? agent : undefined;
+    };
     const deliverToOrchestrator = createOrchestratorDelivery({
       sessionStatus: (sessionId) => ptyManager.getSession(sessionId)?.status,
+      agentOf: sessionAgent,
       claudeStatus: async (sessionId) => {
         const session = ptyManager.getSession(sessionId);
         const pid = session ? ptyManager.programRootPid(session) : undefined;
         return pid ? promptStatus((await readClaudeStatuses([pid])).get(pid)) : undefined;
       },
+      agentSnapshot: (sessionId) => ctx.agentEvents.snapshot(sessionId),
+      screenText: async (sessionId) =>
+        cellsToText((await ctx.terminalManager.getBufferSnapshot(sessionId)).cells, false),
       readChoices: (sessionId) => shareMenu.read(sessionId),
       sendInput: (sessionId, input) => ptyManager.sendInput(sessionId, input),
       // A new orchestrator's folder is trusted like a task's (its start was the user's OK).
@@ -775,7 +797,38 @@ export function setupOrchestrator(ctx: AppContext) {
         ),
       sessionStatus: statusSeenByRoles,
       stopSession: (sessionId) => ptyManager.killSession(sessionId),
-      claudeCommand: () => agentCommand('claude'),
+      agentCommand: (agent) => agentCommand(agent),
+      agentOf: sessionAgent,
+      // Migration leaves the old orchestrator suspended (Claude) or running idle (another
+      // agent), never killed: still the user's to open and resume (session-suspender.ts).
+      suspendSession: async (sessionId) =>
+        (await ctx.sessionSuspender?.suspendByUser(sessionId))?.ok === true,
+      // The fallback handoff reads the old orchestrator's conversation (the user's own turns
+      // and its replies), as `ut project tell --user-decision` does.
+      conversation: async (sessionId) => {
+        const session = ptyManager.getSession(sessionId);
+        if (!session?.pid || session.status !== 'running') return [];
+        const programPid = ptyManager.programRootPid(session) ?? session.pid;
+        return (await readSessionChat({ ...session, pid: session.pid }, programPid)).messages;
+      },
+      openMessages: (repoPath) => taskCommands.messages.list({ repoPath, open: true }),
+      repointTasks: (oldSessionId, newSessionId, repoPath) =>
+        ctx.taskScheduler?.repointOrchestratorTasks(oldSessionId, newSessionId, repoPath) ?? 0,
+      // The agent a usage-limit migration offers: another one with a quick start configured,
+      // else the first other agent of the registry (the user may pick any from the menu).
+      migrateTarget: (_repoPath, fromAgent) => {
+        const configured = new Set(
+          configService
+            .getConfig()
+            .quickStartCommands.map((entry) =>
+              agentForExecutable(quickStartArgv(entry.command, 'claude')[0] ?? '')
+            )
+        );
+        return (
+          TASK_AGENTS.find((agent) => agent !== fromAgent && configured.has(agent)) ??
+          TASK_AGENTS.find((agent) => agent !== fromAgent)
+        );
+      },
       // The configured external providers, so the brief lists them (model-providers.ts).
       providers: () =>
         (configService.getConfig().modelProviders ?? []).map((provider) => ({

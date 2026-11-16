@@ -11,6 +11,7 @@ import {
   orchestratorAdoptPrompt,
   orchestratorEventMessage,
   orchestratorManualUpdates,
+  orchestratorMigratePrompt,
   orchestratorPrompt,
   orchestratorRelayMessage,
 } from './orchestrator-prompt.js';
@@ -34,6 +35,36 @@ describe('orchestrator prompt', () => {
     expect(orchestratorPrompt({ goal: 'x', repoPath: '/r', repoName: 'r', providers: [] })).toBe(
       prompt
     );
+  });
+
+  it('tells a Qoder orchestrator to ignore the platform URL reminder, in every brief (2026-11-12)', () => {
+    const note = 'fixed platform reminder about tool URLs';
+    const start = orchestratorPrompt({ goal: 'x', repoPath: '/r', repoName: 'r', agent: 'qoder' });
+    const adopt = orchestratorAdoptPrompt({
+      goal: 'x',
+      repoPath: '/r',
+      repoName: 'r',
+      adoptedTasks: 0,
+      agent: 'qoder',
+    });
+    const migrate = orchestratorMigratePrompt({
+      repoPath: '/r',
+      repoName: 'r',
+      handoff: 'h',
+      agent: 'qoder',
+    });
+    for (const brief of [start, adopt, migrate]) {
+      expect(brief).toContain(note);
+      expect(brief).toContain('never reply to it');
+    }
+    // Claude and Codex briefs say nothing of it; the default (no agent) is unchanged.
+    expect(
+      orchestratorPrompt({ goal: 'x', repoPath: '/r', repoName: 'r', agent: 'claude' })
+    ).not.toContain(note);
+    expect(
+      orchestratorPrompt({ goal: 'x', repoPath: '/r', repoName: 'r', agent: 'codex' })
+    ).not.toContain(note);
+    expect(orchestratorPrompt({ goal: 'x', repoPath: '/r', repoName: 'r' })).not.toContain(note);
   });
 
   it('lists the configured providers and how to launch a task against one', () => {

@@ -73,10 +73,14 @@ final class ConfigManager {
 
     /// Default commands matching web/src/types/config.ts
     private let defaultCommands = [
-        QuickStartCommand(name: "✨ codex", command: "codex"),
-        QuickStartCommand(name: "✨ claude", command: "claude"),
+        // BEGIN GENERATED AGENTS
+        // web/src/shared/agents.ts — run web/scripts/sync-agent-registry.mjs
+        QuickStartCommand(name: "Claude", command: "claude"),
+        QuickStartCommand(name: "Codex", command: "codex"),
+        QuickStartCommand(name: "Gemini", command: "gemini"),
+        QuickStartCommand(name: "Qoder", command: "qodercli"),
+        // END GENERATED AGENTS
         QuickStartCommand(name: "✨ auggie", command: "auggie"),
-        QuickStartCommand(name: nil, command: "gemini3"),
         QuickStartCommand(name: nil, command: "opencode 4"),
         QuickStartCommand(name: nil, command: "zsh"),
         QuickStartCommand(name: nil, command: "node"),

@@ -10,10 +10,11 @@
  * write that fails is no change, so the next observation tries again. Each event carries the
  * session's repository (`project`), also for a worktree outside it, so `--project` finds it.
  */
+import type { AgentId } from '../../shared/agents.js';
 import type { AgentStateName } from './agent-events.js';
 import type { EventInput, UntetherEvent } from './event-log.js';
 
-export type SessionAgent = 'claude' | 'codex' | 'gemini';
+export type SessionAgent = AgentId;
 export type SessionState = 'busy' | 'waiting' | 'idle';
 
 export interface SessionStateEventsDeps {

@@ -657,8 +657,8 @@ export const hi: Messages = {
   'terminalSelect.selectAll': 'सभी चुनें',
   'terminalSelect.paste': 'पेस्ट करें',
   'directKeyboard.pasteHint': 'यहाँ दबाकर रखें और पेस्ट चुनें',
-  'ask.placeholder': 'Claude से पूछें…',
-  'ask.send': 'Claude को भेजें',
+  'ask.placeholderAgent': '{name} से पूछें…',
+  'ask.sendAgent': '{name} को भेजें',
   'ask.folder': 'फ़ोल्डर: {folder}',
   'ask.where': 'Claude से यहाँ पूछें…',
   'history.menuItem': 'इतिहास',
@@ -815,8 +815,6 @@ export const hi: Messages = {
   'codex.slash.diff': 'git diff दिखाएँ, अनट्रैक की गई फ़ाइलों सहित',
   'codex.slash.init': 'AGENTS.md बनाएँ',
   'ask.agent': 'एजेंट',
-  'ask.placeholderCodex': 'Codex से पूछें…',
-  'ask.sendCodex': 'Codex को भेजें',
   'ask.whereCodex': 'Codex से यहाँ पूछें…',
   // Dictation (speech to text into the message box)
   'dictation.listening': 'सुन रहा है… अब बोलें',
@@ -1514,6 +1512,7 @@ export const hi: Messages = {
   // A quick start whose program is not on the Mac: dimmed, and a tap says so
   'quickStart.notInstalled': 'इंस्टॉल नहीं है',
   'quickStart.notInstalledOnMac': 'Mac पर {name} इंस्टॉल नहीं है',
+  'quickStart.installAgent': '{name} इंस्टॉल नहीं है। इंस्टॉल करें: {url}',
   'whatsNew.previewServers.title': 'दो टैप में प्रीव्यू',
   'whatsNew.previewServers.body':
     '“+ प्रीव्यू जोड़ें” आपके Mac पर चल रहे वेब सर्वर दिखाता है; किसी एक पर टैप करें और हो गया।',
@@ -2360,6 +2359,12 @@ export const hi: Messages = {
   'orch.open': 'ऑर्केस्ट्रेटर खोलें',
   'orch.newGoal': 'नया लक्ष्य',
   'orch.stop': 'ऑर्केस्ट्रेटर रोकें',
+  'orch.changeAgent': 'एजेंट बदलें',
+  'orch.migrateConfirmBody':
+    '{name} के ऑर्केस्ट्रेटर को {agent} में माइग्रेट करें? इसका वर्तमान सत्र बना रहता है, फिर से शुरू करने के लिए तैयार।',
+  'orch.changeAgentTitle': 'दूसरे एजेंट से जारी रखें',
+  'orch.migrated': '{name} का ऑर्केस्ट्रेटर अब {agent} उपयोग करता है',
+  'orch.migrateFailed': 'एजेंट नहीं बदला जा सका: {error}',
   'orch.stopQuestion': 'ऑर्केस्ट्रेटर रोकें? इसके टास्क चलते रहेंगे।',
   'orch.stopConfirm': 'रोकें',
   'orch.stopped': '{name} का ऑर्केस्ट्रेटर रोका गया',
@@ -2557,6 +2562,16 @@ export const hi: Messages = {
   'orch.error.generic': 'कुछ गड़बड़ हुई; फिर कोशिश करें',
   'projectSettings.error.invalid': 'कोई मान मान्य नहीं है',
   'projectSettings.error.generic': 'कुछ गड़बड़ हुई; फिर कोशिश करें',
+  'projectSettings.orchestratorAgent': 'ऑर्केस्ट्रेटर एजेंट',
+  'projectSettings.orchestratorAgentHint':
+    'नया ऑर्केस्ट्रेटर जिस एजेंट से शुरू होता है। चल रहा ऑर्केस्ट्रेटर अपना एजेंट बनाए रखता है जब तक आप उसे बदलते नहीं।',
+  'projectSettings.orchestratorModel': 'ऑर्केस्ट्रेटर मॉडल',
+  'projectSettings.orchestratorModelPlaceholder': 'एजेंट का डिफ़ॉल्ट',
+  'projectSettings.orchestratorModelHint':
+    'वैकल्पिक। खाली छोड़ने पर क्विक स्टार्ट का मॉडल, अन्यथा एजेंट का डिफ़ॉल्ट उपयोग होता है।',
+  'projectSettings.orchestratorAutoMigrate': 'उपयोग सीमा समाप्त होने पर स्वतः माइग्रेट करें',
+  'projectSettings.orchestratorAutoMigrateHint':
+    'जब ऑर्केस्ट्रेटर का एजेंट अपना कोटा समाप्त कर देता है, तो स्वयं दूसरे एजेंट से जारी रखता है। बंद: आपको बदलाव का विकल्प दिया जाता है।',
   'common.errorDetails': 'विवरण',
   // autoApprove (2026-10-24)
   'autoApprove.label': 'मेरी मंज़ूरी न माँगें',

@@ -9,6 +9,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
 import { currentBuild } from './build-info.js';
+import { ownNode } from './native-check.js';
 import {
   type GitEventAck,
   type GitEventNotify,
@@ -387,6 +388,7 @@ export class ApiSocketServer {
         buildDate: BUILD_DATE,
         // A CLI that fails on a command tells whether it is older than this (build-info.ts).
         build: currentBuild({ help: TASK_CLI_HELP, version: VERSION }),
+        node: ownNode(),
         appUpdate: this.appUpdateStatus?.(),
         followMode,
       };

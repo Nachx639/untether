@@ -5,8 +5,10 @@
  * was given, what was done (commits, files left uncommitted), the current diff and the last
  * rows of the old agent's screen, each clipped so the prompt stays a prompt.
  */
+
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { AGENTS } from '../../shared/agents.js';
 import type { TaskAgent } from '../../shared/tasks.js';
 
 const execFileAsync = promisify(execFile);
@@ -60,7 +62,7 @@ const clipEnd = (text: string, max: number) =>
 const clipStart = (text: string, max: number) =>
   text.length > max ? `…\n${text.slice(text.length - max)}` : text;
 
-const agentName = (agent: TaskAgent) => (agent === 'codex' ? 'Codex' : 'Claude');
+const agentName = (agent: TaskAgent) => AGENTS[agent].label;
 
 export interface HandoffInput {
   /** The task as its first agent got it (TaskScheduler.launchPrompt). */

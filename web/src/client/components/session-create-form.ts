@@ -13,6 +13,7 @@
  */
 import { html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { DEFAULT_QUICK_START_COMMANDS } from '../../types/config/quick-start.js';
 import './file-browser.js';
 import './session-create-form/git-branch-selector.js';
 import './session-create-form/quick-start-section.js';
@@ -127,15 +128,9 @@ export class SessionCreateForm extends LitElement {
   @state() private followBranch: string | null = null;
   @state() private showFollowMode = false;
 
-  @state() private quickStartCommands: QuickStartItem[] = [
-    { label: 'codex', command: 'codex' },
-    { label: 'claude', command: 'claude' },
-    { label: 'auggie', command: 'auggie' },
-    { label: 'gemini3', command: 'gemini3' },
-    { label: 'opencode 4', command: 'opencode 4' },
-    { label: 'zsh', command: 'zsh' },
-    { label: 'node', command: 'node' },
-  ];
+  @state() private quickStartCommands: QuickStartItem[] = DEFAULT_QUICK_START_COMMANDS.map(
+    (entry) => ({ label: entry.name ?? entry.command, command: entry.command })
+  );
   /** Quick-start programs missing on the Mac, asked each time the form opens; {} until known. */
   @state() private quickStartAvailability: QuickStartAvailability = {};
 

@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { z } from 'zod';
+import { TASK_AGENTS } from '../../shared/agents.js';
 import { LOOK_IDS } from '../../shared/looks.js';
 import { PROVIDER_ICON_MAX, parseProviderIcon } from '../../shared/model-providers.js';
 import {
@@ -236,10 +237,11 @@ const ConfigSchema = z.object({
   // this installation's, never hard-wired. Unset: Claude's fast is sonnet, the rest the
   // agent's own default. A bad hand edit drops it.
   taskModels: z
-    .object({
-      claude: TaskModelLevelsSchema.optional().catch(undefined),
-      codex: TaskModelLevelsSchema.optional().catch(undefined),
-    })
+    .object(
+      Object.fromEntries(
+        TASK_AGENTS.map((id) => [id, TaskModelLevelsSchema.optional().catch(undefined)])
+      )
+    )
     .optional()
     .catch(undefined),
   // Who a task goes on with when its agent hits its usage limit, in order (agentFallback):
@@ -249,7 +251,7 @@ const ConfigSchema = z.object({
     .array(
       z.object({
         name: z.string().regex(/^[A-Za-z0-9][\w.-]{0,63}$/),
-        agent: z.enum(['claude', 'codex']),
+        agent: z.enum(TASK_AGENTS),
         command: z.string().min(1).max(4096).optional(),
         model: z
           .string()

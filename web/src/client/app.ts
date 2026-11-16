@@ -1,4 +1,5 @@
 // Install crypto polyfill first - must be before any code that uses crypto.randomUUID()
+import { AGENTS, isAgentId, isTaskAgent } from '../shared/agents.js';
 import './utils/crypto-polyfill.js';
 
 import { html, LitElement, nothing } from 'lit';
@@ -68,6 +69,7 @@ import { pushNotificationService } from './services/push-notification-service.js
 import { serverConfigService } from './services/server-config-service.js';
 import { serverEventService } from './services/server-event-service.js';
 import { SessionService } from './services/session-service.js';
+import { taskStore } from './services/task-store.js';
 import { terminalSocketClient } from './services/terminal-socket-client.js';
 import { showActionToast, toast } from './utils/action-toast.js';
 import { parseCommand } from './utils/command-utils.js';
@@ -1411,12 +1413,46 @@ export class UntetherApp extends LitElement {
   private handleDeepLinkParams(url = new URL(window.location.href)) {
     const confirmId = url.searchParams.get('confirm');
     const taskId = url.searchParams.get('task');
-    if (!confirmId && !taskId) return;
+    const migrateRepo = url.searchParams.get('migrate');
+    if (!confirmId && !taskId && !migrateRepo) return;
+    const migrateTo = url.searchParams.get('to') ?? undefined;
     url.searchParams.delete('confirm');
     url.searchParams.delete('task');
+    url.searchParams.delete('migrate');
+    url.searchParams.delete('to');
     window.history.replaceState(window.history.state, '', url.toString());
     if (confirmId) this.showTaskConfirmSheet(confirmId);
     if (taskId) this.showTask(taskId);
+    if (migrateRepo) void this.showMigrateConfirm(migrateRepo, migrateTo);
+  }
+
+  /**
+   * The orchestrator's agent hit its usage limit (the push's offer): one tap asks the user's OK
+   * and migrates it to the offered agent. Its old session is kept, never killed.
+   */
+  private async showMigrateConfirm(repoPath: string, toAgent?: string) {
+    const name = repoPath.split('/').filter(Boolean).pop() ?? repoPath;
+    const target = toAgent && isTaskAgent(toAgent) ? toAgent : undefined;
+    if (!target) {
+      this.handleNavigateToList();
+      return;
+    }
+    const confirmed = await confirmDialog({
+      title: t('orch.changeAgentTitle'),
+      body: t('orch.migrateConfirmBody', { name, agent: AGENTS[target].label }),
+      confirmLabel: t('orch.changeAgent'),
+    });
+    if (!confirmed) return;
+    const result = await taskStore.migrateOrchestrator(repoPath, target);
+    toast(
+      result.ok
+        ? { kind: 'success', text: t('orch.migrated', { name, agent: AGENTS[target].label }) }
+        : {
+            kind: 'error',
+            text: t('orch.migrateFailed', { error: result.message || result.error || '' }),
+          }
+    );
+    if (result.ok) void taskStore.refresh();
   }
 
   /** How long a task push waits for its row to show up in the list (tasks load async). */
@@ -3040,6 +3076,17 @@ export class UntetherApp extends LitElement {
   private handleNotificationAction = (e: CustomEvent) => {
     const { action, data } = e.detail ?? {};
     if (action === 'dismiss') return;
+    // The orchestrator's agent hit its usage limit: the offered migration, one tap.
+    if (
+      (action === 'migrate' || data?.type === 'orchestrator-limit') &&
+      typeof data?.repoPath === 'string'
+    ) {
+      void this.showMigrateConfirm(
+        data.repoPath,
+        typeof data.toAgent === 'string' ? data.toAgent : undefined
+      );
+      return;
+    }
     // An agent's action waiting for the user's OK (task-confirm): the confirm sheet.
     if (
       (action === 'confirm' || data?.type === 'task-confirm') &&
@@ -3136,12 +3183,11 @@ export class UntetherApp extends LitElement {
         session?.name,
       detail: fromPush?.detail || (session ? waitingFor(session) : undefined),
       choices: fromPush?.choices ?? (session ? waitingChoices(session) : undefined) ?? null,
-      agent:
-        fromPush?.agent === 'codex' || fromPush?.agent === 'claude'
-          ? fromPush.agent
-          : session
-            ? waitingAgent(session)
-            : undefined,
+      agent: isAgentId(fromPush?.agent)
+        ? fromPush.agent
+        : session
+          ? waitingAgent(session)
+          : undefined,
       authHeader: () => authClient.getAuthHeader(),
       onOpenSession: () => {
         if (this.selectedSessionId === sessionId && this.currentView === 'session') return;

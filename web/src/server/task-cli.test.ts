@@ -1392,6 +1392,52 @@ describe('task CLI', () => {
       expect(none.calls).toHaveLength(0);
     });
   });
+
+  describe('project orchestrator migrate (2026-11-12)', () => {
+    it('migrate builds the op with --to and --model, and says what became of it', async () => {
+      const { deps, calls, out } = cli([
+        done({
+          repoPath: '/repo',
+          sessionId: 'orch-2222222222',
+          fromAgent: 'claude',
+          toAgent: 'qoder',
+          handoff: 'agent',
+          suspended: true,
+        }),
+      ]);
+      expect(
+        await runTaskCli(
+          'project',
+          ['orchestrator', 'migrate', '--repo', '..', '--to', 'qoder', '--model', 'efficient'],
+          deps
+        )
+      ).toBe(0);
+      expect(calls[0]).toMatchObject({
+        op: 'project-orchestrator-migrate',
+        args: { repo: '/repo', to: 'qoder', model: 'efficient' },
+      });
+      const text = out.join('\n');
+      expect(text).toContain('migrated the orchestrator of repo to qoder');
+      expect(text).toContain('written handoff');
+      expect(text).toContain('suspended');
+    });
+
+    it('migrate needs --to claude|codex|qoder; handoff reads stdin', async () => {
+      const none = cli([]);
+      expect(await runTaskCli('project', ['orchestrator', 'migrate'], none.deps)).toBe(1);
+      expect(none.err[0]).toContain('--to claude|codex|qoder');
+      expect(none.calls).toHaveLength(0);
+
+      const { deps, calls } = cli([done({ repoPath: '/repo', accepted: true })]);
+      expect(
+        await runTaskCli('project', ['orchestrator', 'handoff', '--repo', '..', '-'], deps)
+      ).toBe(0);
+      expect(calls[0]).toMatchObject({
+        op: 'project-orchestrator-handoff',
+        args: { repo: '/repo', text: 'prompt from stdin\n' },
+      });
+    });
+  });
 });
 
 describe('merge queue in ut task list / show (2026-11-01)', () => {

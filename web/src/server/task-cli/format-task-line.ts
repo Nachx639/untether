@@ -1,5 +1,6 @@
 /** One task in one line (`ut task list`), and the notes that go under it. */
 
+import { AGENTS } from '../../shared/agents.js';
 import { overlapsShort } from '../../shared/task-overlap.js';
 import { waitsForNote, waitsForShort } from '../../shared/task-serial.js';
 import { TASK_FINAL_STATES, type TaskRecord, type TaskState } from '../../shared/tasks.js';
@@ -132,11 +133,11 @@ export function pendingNote(task: TaskRecord): string {
   const what = count === 1 ? '1 message' : `${count} messages`;
   if (!task.pendingWhy) return `${what} being typed into its agent now.`;
   const why = {
-    menu: `not typed yet: Claude shows a choice of its own on the task's screen (a question or a permission); it goes in once that is answered ('ut task status ${shortId(task.id)}' shows it, 'ut task answer ${shortId(task.id)} approve | deny | <number> | --text "…"' answers it)`,
+    menu: `not typed yet: ${AGENTS[task.agent].label} shows a choice of its own on the task's screen (a question or a permission); it goes in once that is answered ('ut task status ${shortId(task.id)}' shows it, 'ut task answer ${shortId(task.id)} approve | deny | <number> | --text "…"' answers it)`,
     busy:
-      task.agent === 'codex'
-        ? 'not typed yet: Codex is working and only takes text at its prompt; it goes in once Codex is back there'
-        : 'not typed yet: Claude is not ready to take it (still starting, or a screen Untether does not know); Untether keeps trying',
+      task.agent === 'claude'
+        ? 'not typed yet: Claude is not ready to take it (still starting, or a screen Untether does not know); Untether keeps trying'
+        : `not typed yet: ${AGENTS[task.agent].label} is working and only takes text at its prompt; it goes in once ${AGENTS[task.agent].label} is back there`,
     gone: 'not typed yet: its session ended and could not be reopened; Untether keeps trying for an hour',
   }[task.pendingWhy];
   return `${what} ${why}. Typed over 2 min after it was sent, it carries the time it was sent.`;

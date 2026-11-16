@@ -59,7 +59,7 @@
   min-width: 0;
   flex: 1;
 }
-/* Claude / Codex picker: a two-option segmented control. */
+/* The agent picker: one segment per task agent of the registry (shared/agents.ts). */
 .ask-claude-agent {
   display: inline-flex;
   flex-shrink: 0;
@@ -98,14 +98,6 @@
 }
 .ask-agent-mark {
   display: inline-flex;
-}
-/* The folder chip comes first when the row is short (2026-10-04, c799c532): below
-   AGENT_MARKS_BELOW_PX (ask-claude-box.ts) of room left of ⏱/mic/send, the picker renders the
-   agents' marks instead of their names (one or the other, never both); the chosen agent is still
-   spelled out in the placeholder and the send button, and VoiceOver reads the names. */
-.ask-claude-agent.marks button {
-  min-width: 34px;
-  padding: 2px 9px;
 }
 /* It names the folder (not its path): the system font fits a name like "qa-trust-3" in
    the room an iPhone SE leaves it, where the monospace one cut it to "qa-tru…". */
@@ -166,8 +158,12 @@
   .ask-claude-actions {
     gap: 6px;
   }
+  /* Three agents (Qoder, 2026-11-12): their names take the row, so the mode and folder
+     buttons go to a second line under them instead of sliding under the mic. */
   .ask-claude-start {
     gap: 4px;
+    flex-wrap: wrap;
+    row-gap: 6px;
   }
   .ask-claude-agent button {
     padding: 2px 7px;

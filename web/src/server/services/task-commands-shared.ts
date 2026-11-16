@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import { MESSAGE_ID } from '../../shared/agent-messages.js';
+import { AGENTS } from '../../shared/agents.js';
 import { parseCommand } from '../../shared/command-line.js';
 import {
   TASK_FINAL_STATES,
@@ -117,5 +118,5 @@ export async function resolveProjectRepo(dir: string): Promise<string | null> {
 /** The command line of a quick start ("claude --flag") as argv. */
 export function quickStartArgv(command: string | undefined, agent: TaskAgent): string[] {
   const argv = command ? parseCommand(command.trim()) : [];
-  return argv.length ? argv : [agent];
+  return argv.length ? argv : [AGENTS[agent].executable];
 }

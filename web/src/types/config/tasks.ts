@@ -1,4 +1,5 @@
 /** Settings of tasks on this Mac: approval, models, fallbacks, admission and its checks' room. */
+import type { TaskAgent } from '../../shared/agents.js';
 
 import type { TaskTemplate } from '../../shared/tasks.js';
 
@@ -41,7 +42,7 @@ export interface TasksConfig {
    * and a project's modelRouting run. Unset: Claude's fast is `sonnet`; capable (and Codex's
    * levels) the agent's own default.
    */
-  taskModels?: Partial<Record<'claude' | 'codex', { fast?: string; capable?: string }>>;
+  taskModels?: Partial<Record<TaskAgent, { fast?: string; capable?: string }>>;
 
   /**
    * Who a task goes on with when its agent hits its usage limit, in order (a project's
@@ -50,7 +51,7 @@ export interface TasksConfig {
    */
   taskFallbacks?: Array<{
     name: string;
-    agent: 'claude' | 'codex';
+    agent: TaskAgent;
     command?: string;
     model?: string;
   }>;

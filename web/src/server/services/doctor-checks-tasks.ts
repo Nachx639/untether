@@ -12,6 +12,7 @@ import {
   partyLabel,
   UNANSWERED_WARN_HOURS,
 } from '../../shared/agent-messages.js';
+import { WAIT_OVER_STATES, WAIT_STOPPED_STATES } from '../../shared/task-serial.js';
 import type { TaskCheckLevel, TaskRecord } from '../../shared/tasks.js';
 import { describeNodeRuntime, type NodeRuntime } from '../utils/node-runtime.js';
 import { MINUTE, minutes, shortId } from './doctor-checks-shared.js';
@@ -325,13 +326,26 @@ export function stuckTasksCheck(deps: {
         // this holds only while it is really so.
         const queued = task.state === 'queued' ? task.queued : undefined;
         const queuedSince = queued ? Date.parse(task.stateSince) : Number.NaN;
+        // Started after other tasks (--after, a zone): while any of them is still open it holds
+        // no slot and waiting is correct, however first in line it looks (2026-11-12: 41cd3e1f
+        // told "first in line … not started" while e2621132, which it waits for, still worked).
+        // One already merged or done should have let it start: then the line's warning stands.
+        const waitingOnOpen = (queued?.waitsFor ?? []).some((wait) => {
+          const state = tasks.find((entry) => entry.id === wait.taskId)?.state ?? wait.state;
+          return (
+            !wait.stopped &&
+            !WAIT_OVER_STATES.includes(state) &&
+            !WAIT_STOPPED_STATES.includes(state)
+          );
+        });
         const firstWithSlot =
           queued &&
           queued.position === 1 &&
           queued.active !== undefined &&
           queued.limit !== undefined &&
           queued.active < queued.limit &&
-          Number.isFinite(queuedSince);
+          Number.isFinite(queuedSince) &&
+          !waitingOnOpen;
         if (!firstWithSlot) {
           admittedSince.delete(task.id);
         } else {

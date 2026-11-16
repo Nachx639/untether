@@ -226,11 +226,13 @@ describe('SessionCreateForm', () => {
 
       // The test environment may not render the buttons correctly due to lit-html issues
       // so we'll just verify the data structure exists
+      // The agents come from the shared registry (web/src/shared/agents.ts).
       const expectedCommands = [
-        'codex',
         'claude',
+        'codex',
+        'gemini',
+        'qodercli',
         'auggie',
-        'gemini3',
         'opencode 4',
         'zsh',
         'node',

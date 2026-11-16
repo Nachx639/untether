@@ -17,6 +17,9 @@ export interface ClickData {
   confirmId?: string;
   /** Task pushes (task-ready, task-needs-you, task-failed, task-merged, task-missed …). */
   taskId?: string;
+  /** "Orchestrator at its usage limit": the project to migrate, and the agent offered. */
+  repoPath?: string;
+  toAgent?: string;
 }
 
 export interface ClickTarget {
@@ -39,6 +42,16 @@ export function notificationClickTarget(action: string, data: ClickData | undefi
     (!action || action === 'view-session' || action === 'confirm')
   ) {
     return { url: `/?confirm=${encodeURIComponent(data.confirmId)}`, action: 'confirm' };
+  }
+  // The orchestrator's agent hit its usage limit: one tap to migrate it to the offered agent
+  // (/?migrate=<repo>&to=<agent>), where the app asks the user's OK before it carries on.
+  if (
+    data?.type === 'orchestrator-limit' &&
+    typeof data.repoPath === 'string' &&
+    (!action || action === 'migrate' || action === 'view-session')
+  ) {
+    const to = typeof data.toAgent === 'string' ? `&to=${encodeURIComponent(data.toAgent)}` : '';
+    return { url: `/?migrate=${encodeURIComponent(data.repoPath)}${to}`, action: 'migrate' };
   }
   // A task's push (ready, needs you, failed, merged, not run, setup failed): the task's row in
   // the list (/?task=<id>), where Fusionar / Descartar are — not its agent's terminal. Pushes

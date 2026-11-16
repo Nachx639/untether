@@ -5,7 +5,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { z } from 'zod';
+import { AGENTS, TASK_AGENTS } from '../../shared/agents.js';
 import { NEW_PROJECT_NAME_MAX } from '../../shared/new-project.js';
+import { HANDOFF_MAX } from '../../shared/orchestrator-prompt.js';
 import { TASK_PROMPT_MAX } from '../../shared/tasks.js';
 import { resolveAbsolutePath } from '../utils/path-utils.js';
 import { createProjectCreator, NewProjectError, type ProjectCreator } from './project-create.js';
@@ -243,9 +245,107 @@ async function projectNew(self: TaskCommandsCore, args: Record<string, unknown>,
   return ok(data);
 }
 
+const ProjectMigrateSchema = ProjectSchema.extend({
+  to: z.enum(TASK_AGENTS),
+  model: z.string().trim().min(1).max(200).optional(),
+});
+
+/**
+ * `ut project orchestrator migrate --to <agent> [--model M]` / POST /projects/orchestrator/migrate
+ * (2026-11-12): the project's orchestrator carries on with another agent. The current one hands
+ * off (its written handoff, or Untether's fallback), the new agent starts with the brief plus the
+ * handoff, the queued messages and events follow, and the old session is kept (suspended or idle),
+ * never killed. The user migrates at once; anyone else asks their OK on the phone.
+ */
+async function projectOrchestratorMigrate(
+  self: TaskCommandsCore,
+  args: Record<string, unknown>,
+  ctx: Context
+) {
+  const service = self.deps.orchestrator?.();
+  if (!service?.migrate) return fail('unavailable', 'Orchestrators are not available here');
+  const parsed = ProjectMigrateSchema.safeParse(args);
+  if (!parsed.success) return fail('bad-request', issues(parsed.error));
+  const dir = parsed.data.repo ?? parsed.data.cwd;
+  if (!dir) return fail('bad-request', 'repo is required');
+  const { to, model } = parsed.data;
+  if (ctx.caller.kind !== 'ui' && !ctx.confirmed) {
+    const repoPath = await self.resolveRepo(dir);
+    if (!repoPath) return fail('bad-request', 'Not inside a git repository');
+    const name = path.basename(repoPath);
+    return self.request(
+      'project-orchestrator-migrate',
+      {
+        where: name,
+        repoPath,
+        summary: `Migrate the orchestrator of ${name} to ${AGENTS[to].label}`,
+        detail: [
+          `Project: ${repoPath}`,
+          `New agent: ${AGENTS[to].label}${model ? ` (${model})` : ''}`,
+          'The current orchestrator hands off; its session is kept (suspended or idle), never killed.',
+        ],
+      },
+      ctx,
+      {
+        op: 'project-orchestrator-migrate',
+        args: { repo: repoPath, to, ...(model ? { model } : {}) },
+      }
+    );
+  }
+  const result = await service.migrate(dir, to, model);
+  if (!result.ok) return fail(result.code === 'conflict' ? 'busy' : result.code, result.message);
+  return ok({
+    repoPath: result.repoPath,
+    sessionId: result.sessionId,
+    fromAgent: result.fromAgent,
+    toAgent: result.toAgent,
+    handoff: result.handoff,
+    suspended: result.suspended,
+    ...(result.pending ? { pending: true } : {}),
+  });
+}
+
+const ProjectHandoffSchema = ProjectSchema.extend({
+  text: z
+    .string()
+    .trim()
+    .min(1)
+    .max(HANDOFF_MAX + 2000),
+});
+
+/**
+ * `ut project orchestrator handoff` (2026-11-12): the current orchestrator gives back its written
+ * handoff while it is migrated. Only that project's own orchestrator may, and only while a
+ * migration of it waits for the handoff (orchestrator.ts submitHandoff).
+ */
+async function projectOrchestratorHandoff(
+  self: TaskCommandsCore,
+  args: Record<string, unknown>,
+  ctx: Context
+) {
+  const service = self.deps.orchestrator?.();
+  if (!service?.submitHandoff) return fail('unavailable', 'Orchestrators are not available here');
+  const parsed = ProjectHandoffSchema.safeParse(args);
+  if (!parsed.success) return fail('bad-request', issues(parsed.error));
+  const dir = parsed.data.repo ?? parsed.data.cwd;
+  if (!dir) return fail('bad-request', 'repo is required');
+  const repoPath = await self.resolveRepo(dir);
+  if (!repoPath) return fail('bad-request', 'Not inside a git repository');
+  const sessionId = ctx.caller.kind === 'cli' ? ctx.caller.sessionId : undefined;
+  if (!sessionId || sessionId !== service.sessionFor?.(repoPath)) {
+    return fail('forbidden', "Only the project's own orchestrator can give its handoff");
+  }
+  if (!service.submitHandoff(repoPath, parsed.data.text)) {
+    return fail('not-found', 'No migration of this project is waiting for a handoff');
+  }
+  return ok({ repoPath, accepted: true });
+}
+
 export const orchestrateOps: TaskOpFamily = {
   ops: {
     'project-orchestrate': projectOrchestrate,
+    'project-orchestrator-migrate': projectOrchestratorMigrate,
+    'project-orchestrator-handoff': projectOrchestratorHandoff,
     'project-forget': projectForget,
     'project-new': projectNew,
   },

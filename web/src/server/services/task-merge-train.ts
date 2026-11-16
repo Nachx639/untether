@@ -150,7 +150,7 @@ interface BoardArgs {
   files: string[];
   fullCommand(files: string[]): string;
   record(): void;
-  move(expected: string, sha: string): ReturnType<typeof moveBase>;
+  move(expected: string, sha: string, agentWorking?: () => boolean): ReturnType<typeof moveBase>;
 }
 
 /** On board the merge batch (merge-train.ts) and wait for its verdict. */
@@ -165,6 +165,7 @@ export async function boardTrain(a: BoardArgs): Promise<TrainVerdict> {
     level: a.level,
     files: a.files,
     signal: options.signal,
+    agentWorking: options.agentWorking,
     note: (text) => log.write(text),
     async fullCheck(files): Promise<TrainCheck> {
       const command = a.fullCommand(files);
@@ -184,8 +185,8 @@ export async function boardTrain(a: BoardArgs): Promise<TrainVerdict> {
       if (run.by !== task.id) ctx.stamp('verify', run.start, run.outcome, 'batch', run.end);
     },
     recordMove: () => a.record(),
-    async move(expected, sha) {
-      const moved = await a.move(expected, sha);
+    async move(expected, sha, agentWorking) {
+      const moved = await a.move(expected, sha, agentWorking);
       if (moved.kind === 'blocked') {
         return {
           kind: 'blocked',

@@ -3,6 +3,7 @@
  * card, the ones that need you first, and one instruction sent to several of them at once.
  * Pure logic here; the view is components/agent-mission.ts.
  */
+import { type AgentId, isAgentId } from '../../shared/agents.js';
 import { parseScreenChoices } from '../../shared/claude-screen.js';
 import type { Session } from '../../shared/types.js';
 import { sessionTool } from '../components/phone-session-row.js';
@@ -11,7 +12,7 @@ import { modeSwitchBlocked } from './claude-mode.js';
 import { lastActivityAt } from './last-activity.js';
 import { isWatching } from './mac-attach-mode.js';
 
-export type AgentKind = 'claude' | 'codex' | 'gemini';
+export type AgentKind = AgentId;
 export type AgentState = 'waiting' | 'working' | 'idle';
 
 export interface AgentCard {
@@ -32,7 +33,7 @@ export function agentKind(session: Session): AgentKind | null {
   if (session.codexActive) return 'codex';
   if (session.geminiActive) return 'gemini';
   const tool = sessionTool(session);
-  return tool === 'claude' || tool === 'codex' || tool === 'gemini' ? tool : null;
+  return isAgentId(tool) ? tool : null;
 }
 
 export function agentState(session: Session): AgentState {

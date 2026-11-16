@@ -10,7 +10,7 @@ import type { TaskAgent } from '../../shared/tasks.js';
 import type { ModelProvider } from '../../types/config.js';
 import type { MessageLedger } from './agent-messages.js';
 import type { ConnectorChannelInfo } from './connector/connector-tokens.js';
-import type { OrchestratorStartResult } from './orchestrator.js';
+import type { OrchestratorMigrateResult, OrchestratorStartResult } from './orchestrator.js';
 import type { ProjectCreator } from './project-create.js';
 import type { ProjectSettingsPatch, StoredProjectSettings } from './project-settings.js';
 import type { NotificationPayload } from './push-notification-service.js';
@@ -40,6 +40,10 @@ export interface OrchestratorEvents {
   sessionFor?(repoPath: string): string | undefined;
   /** Forgets the project's orchestrator and ends its session (`ut project forget`). */
   stop?(repoPath: string): Promise<{ ok: boolean; message?: string }>;
+  /** Migrates the project's orchestrator to another agent in hot (`ut project orchestrator migrate`). */
+  migrate?(dir: string, toAgent: TaskAgent, model?: string): Promise<OrchestratorMigrateResult>;
+  /** The current orchestrator's written handoff during a migration; false when none waits. */
+  submitHandoff?(repoPath: string, text: string): boolean;
 }
 
 export interface TaskCaller {

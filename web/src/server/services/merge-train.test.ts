@@ -55,6 +55,30 @@ const car = (
 });
 
 describe('merge train', () => {
+  it('the final move checks activity of every car again, including an earlier car', async () => {
+    const queue = createMergeQueue();
+    const trains = createMergeTrains({ queue });
+    const w = world(() => true);
+    const ticket = queue.join(KEY, { id: 'later', at: 9 });
+    let working = false;
+    const first = car(w, 'a', 'm');
+    first.agentWorking = () => working;
+    const last = car(w, 'b', 'm+a');
+    last.move = async (_expected, _sha, anyAgentWorking) => {
+      // A git read/queue wait between selecting the batch and moving its base.
+      await Promise.resolve();
+      working = true;
+      expect(anyAgentWorking?.()).toBe(true);
+      return { kind: 'blocked', reason: 'agent working' };
+    };
+    const a = trains.board(KEY, first, 'm');
+    const b = trains.board(KEY, last, 'm');
+    ticket.leave();
+    expect(await a).toMatchObject({ kind: 'blocked', reason: 'agent working' });
+    expect(await b).toMatchObject({ kind: 'blocked', reason: 'agent working' });
+    expect(w.moves).toEqual([]);
+  });
+
   it('a lone car leaves at once and merges after one whole check', async () => {
     const queue = createMergeQueue();
     const trains = createMergeTrains({ queue });

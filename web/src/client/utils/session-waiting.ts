@@ -3,6 +3,7 @@
  * `claudeStatus`; Codex in `agentStatus`, its menu read off the screen (approval, trust this
  * folder, update). The list's quick answers, «Te necesita» and the answer sheet read it here.
  */
+import type { AgentId } from '../../shared/agents.js';
 import type { Session } from '../../shared/types.js';
 
 type WaitingSession = Pick<Session, 'claudeStatus' | 'agentStatus'>;
@@ -32,6 +33,6 @@ export function waitingSince(session: WaitingSession): number | undefined {
 }
 
 /** The agent that waits there, for texts that name it. */
-export function waitingAgent(session: WaitingSession): 'claude' | 'codex' | undefined {
+export function waitingAgent(session: WaitingSession): AgentId | undefined {
   return session.claudeStatus ? 'claude' : session.agentStatus?.agent;
 }

@@ -687,8 +687,8 @@ export const fr: Messages = {
   'terminalSelect.selectAll': 'Tout sélectionner',
   'terminalSelect.paste': 'Coller',
   'directKeyboard.pasteHint': 'Maintenez ici et choisissez Coller',
-  'ask.placeholder': 'Demander à Claude…',
-  'ask.send': 'Envoyer à Claude',
+  'ask.placeholderAgent': 'Demander à {name}…',
+  'ask.sendAgent': 'Envoyer à {name}',
   'ask.folder': 'Dossier : {folder}',
   'ask.where': 'Demander à Claude dans…',
   'history.menuItem': 'Historique',
@@ -851,8 +851,6 @@ export const fr: Messages = {
   'codex.slash.diff': 'Afficher le diff git, fichiers non suivis inclus',
   'codex.slash.init': 'Créer AGENTS.md',
   'ask.agent': 'Agent',
-  'ask.placeholderCodex': 'Demander à Codex…',
-  'ask.sendCodex': 'Envoyer à Codex',
   'ask.whereCodex': 'Demander à Codex dans…',
   // Dictation (speech to text into the message box)
   'dictation.listening': 'Écoute… parlez maintenant',
@@ -1580,6 +1578,7 @@ export const fr: Messages = {
   // A quick start whose program is not on the Mac: dimmed, and a tap says so
   'quickStart.notInstalled': 'Non installé',
   'quickStart.notInstalledOnMac': '{name} n’est pas installé sur le Mac',
+  'quickStart.installAgent': '{name} non installé. Installation : {url}',
   'whatsNew.previewServers.title': 'Aperçus en deux touches',
   'whatsNew.previewServers.body':
     '« + Ajouter un aperçu » liste les serveurs web lancés sur votre Mac ; touchez-en un et c’est fait.',
@@ -2462,6 +2461,12 @@ export const fr: Messages = {
   'orch.open': "Ouvrir l'orchestrateur",
   'orch.newGoal': 'Nouvel objectif',
   'orch.stop': "Arrêter l'orchestrateur",
+  'orch.changeAgent': 'Changer d’agent',
+  'orch.migrateConfirmBody':
+    'Migrer l’orchestrateur de {name} vers {agent} ? Sa session actuelle est conservée, prête à reprendre.',
+  'orch.changeAgentTitle': 'Continuer avec un autre agent',
+  'orch.migrated': 'L’orchestrateur de {name} utilise désormais {agent}',
+  'orch.migrateFailed': 'Impossible de changer l’agent : {error}',
   'orch.stopQuestion': "Arrêter l'orchestrateur ? Ses tâches continuent.",
   'orch.stopConfirm': 'Arrêter',
   'orch.stopped': 'Orchestrateur de {name} arrêté',
@@ -2672,6 +2677,16 @@ export const fr: Messages = {
   'orch.error.generic': 'un problème est survenu ; réessaie',
   'projectSettings.error.invalid': "une des valeurs n'est pas valide",
   'projectSettings.error.generic': 'un problème est survenu ; réessaie',
+  'projectSettings.orchestratorAgent': 'Agent de l’orchestrateur',
+  'projectSettings.orchestratorAgentHint':
+    'L’agent avec lequel démarre un nouvel orchestrateur. Celui en cours garde le sien jusqu’à ce que vous le changiez.',
+  'projectSettings.orchestratorModel': 'Modèle de l’orchestrateur',
+  'projectSettings.orchestratorModelPlaceholder': 'le modèle par défaut de l’agent',
+  'projectSettings.orchestratorModelHint':
+    'Facultatif. Vide utilise le modèle du démarrage rapide, sinon celui par défaut de l’agent.',
+  'projectSettings.orchestratorAutoMigrate': 'Migrer automatiquement à sa limite d’utilisation',
+  'projectSettings.orchestratorAutoMigrateHint':
+    'Quand l’agent de l’orchestrateur épuise son quota, continuer avec un autre agent automatiquement. Désactivé : le changement vous est proposé.',
   'common.errorDetails': 'Détails',
   // autoApprove (2026-10-24)
   'autoApprove.label': 'Ne pas demander mon accord',

@@ -15,6 +15,7 @@
  */
 import { html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { AGENT_IDS } from '../../shared/agents.js';
 import type { ScreenLayout } from '../../shared/claude-screen.js';
 import type { MacModeRequest } from '../../shared/mac-sessions.js';
 import type { Session } from '../../shared/types.js';
@@ -89,7 +90,7 @@ const SOFT_KEYBOARD_MIN_HEIGHT = 50;
 const QUICK_ACTION_ENTER_DELAY_MS = 300;
 
 /** Agents whose conversation the chat view reads (sessionTool's names). */
-const AGENT_TOOLS = new Set(['claude', 'codex', 'gemini']);
+const AGENT_TOOLS = new Set<string>(AGENT_IDS);
 
 /** Keys that only modify another one. */
 function isModifierKey(key: string): boolean {

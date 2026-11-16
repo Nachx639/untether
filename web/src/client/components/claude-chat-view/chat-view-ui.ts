@@ -1,5 +1,6 @@
 import { html, nothing, type TemplateResult } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { namedForAgent } from '../../../shared/agent-push.js';
 import { translatePrompt, translatePromptOption } from '../../../shared/claude-prompt-text.js';
 import { getLocale, t } from '../../i18n/index.js';
 import { authClient } from '../../services/auth-client.js';
@@ -866,9 +867,9 @@ export abstract class ClaudeChatViewUi extends ClaudeChatViewBase {
   protected renderBusyStrip() {
     const text = AGENT_TEXT[this.agent];
     return html`<div class="dock-busy" role="status" data-testid="chat-busy-strip">
-      <div class="typing" role="img" aria-label=${t(text.working)}><span></span><span></span><span></span></div>
+      <div class="typing" role="img" aria-label=${namedForAgent(t(text.working), this.agent)}><span></span><span></span><span></span></div>
       <span class="activity" data-testid="chat-activity" dir="auto"
-        >${this.activity ? formatActivity(this.activity) : t(text.working)}</span
+        >${this.activity ? formatActivity(this.activity) : namedForAgent(t(text.working), this.agent)}</span
       >
       ${
         this.activity?.since
@@ -878,7 +879,7 @@ export abstract class ClaudeChatViewUi extends ClaudeChatViewBase {
       ${
         this.readOnly
           ? nothing
-          : html`<button class="ut-surface--badge stop" @click=${this.stop} aria-label=${t(text.stop)}>
+          : html`<button class="ut-surface--badge stop" @click=${this.stop} aria-label=${namedForAgent(t(text.stop), this.agent)}>
               ${icon('stop', 14)}${t('phone.stop')}
             </button>`
       }
@@ -1112,7 +1113,9 @@ export abstract class ClaudeChatViewUi extends ClaudeChatViewBase {
                 ? nothing
                 : html`<div class="empty">${
                     // "Send Claude a message below": there is no "below" when nothing is sent.
-                    this.readOnly ? t('chat.readOnlyEmpty') : t(AGENT_TEXT[this.agent].empty)
+                    this.readOnly
+                      ? t('chat.readOnlyEmpty')
+                      : namedForAgent(t(AGENT_TEXT[this.agent].empty), this.agent)
                   }</div>`
               : this.renderMessages()
         }
@@ -1121,7 +1124,7 @@ export abstract class ClaudeChatViewUi extends ClaudeChatViewBase {
         ${
           this.busy && !docked
             ? html`<div class="busy-row">
-                <div class="typing" role="img" aria-label=${t(AGENT_TEXT[this.agent].working)}><span></span><span></span><span></span></div>
+                <div class="typing" role="img" aria-label=${namedForAgent(t(AGENT_TEXT[this.agent].working), this.agent)}><span></span><span></span><span></span></div>
                 ${
                   this.activity
                     ? html`<span class="activity" data-testid="chat-activity"
@@ -1136,7 +1139,7 @@ export abstract class ClaudeChatViewUi extends ClaudeChatViewBase {
                 ${
                   this.readOnly
                     ? nothing
-                    : html`<button class="ut-surface--badge stop" @click=${this.stop} aria-label=${t(AGENT_TEXT[this.agent].stop)}>${icon('stop', 14)}${t('chat.stop')}</button>`
+                    : html`<button class="ut-surface--badge stop" @click=${this.stop} aria-label=${namedForAgent(t(AGENT_TEXT[this.agent].stop), this.agent)}>${icon('stop', 14)}${t('chat.stop')}</button>`
                 }
               </div>`
             : this.backgroundWait

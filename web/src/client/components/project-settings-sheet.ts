@@ -14,6 +14,7 @@
  */
 import { html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { AGENTS, TASK_AGENTS, type TaskAgent } from '../../shared/agents.js';
 import {
   type AgentFallbackMode,
   MAX_ACTIVE_TASKS_MAX,
@@ -144,6 +145,11 @@ export class ProjectSettingsSheet extends LitElement {
   @state() private modelRouting = false;
   /** Another agent at a usage limit: offered (default), automatic or never. */
   @state() private agentFallback: AgentFallbackMode = 'offer';
+  /** The agent a new orchestrator runs on (default claude); the running one migrates apart. */
+  @state() private orchestratorAgent: TaskAgent = 'claude';
+  @state() private orchestratorModel = '';
+  /** At its agent's usage limit, the orchestrator migrates by itself (default off: offered). */
+  @state() private orchestratorAutoMigrate = false;
   @state() private securitySweep = false;
   @state() private security: SecuritySweepStatus | null = null;
   /** Provider connectors (2026-10-26), one draft per known provider. */
@@ -261,6 +267,12 @@ export class ProjectSettingsSheet extends LitElement {
         settings.agentFallback === 'auto' || settings.agentFallback === 'off'
           ? settings.agentFallback
           : 'offer';
+      this.orchestratorAgent =
+        settings.orchestratorAgent && TASK_AGENTS.includes(settings.orchestratorAgent)
+          ? settings.orchestratorAgent
+          : 'claude';
+      this.orchestratorModel = settings.orchestratorModel ?? '';
+      this.orchestratorAutoMigrate = settings.orchestratorAutoMigrate === true;
       // Off unless the user turned it on.
       this.securitySweep = settings.securitySweep === true;
       this.security = body.security ?? null;
@@ -322,6 +334,9 @@ export class ProjectSettingsSheet extends LitElement {
             aiReview: this.aiReview,
             modelRouting: this.modelRouting ? true : null,
             agentFallback: this.agentFallback === 'offer' ? null : this.agentFallback,
+            orchestratorAgent: this.orchestratorAgent === 'claude' ? null : this.orchestratorAgent,
+            orchestratorModel: this.orchestratorModel.trim() || null,
+            orchestratorAutoMigrate: this.orchestratorAutoMigrate ? true : null,
             securitySweep: this.securitySweep ? true : null,
             securityConnectors: connectorsToSave(this.connectors),
             setupCommand: this.setupCommand.trim() || null,
@@ -701,6 +716,76 @@ export class ProjectSettingsSheet extends LitElement {
       </div>`;
   }
 
+  private renderOrchestratorAgent(agent: TaskAgent) {
+    const on = this.orchestratorAgent === agent;
+    const pick = this.tap(() => {
+      this.orchestratorAgent = agent;
+    });
+    return html`<button
+      type="button"
+      role="radio"
+      aria-checked=${on ? 'true' : 'false'}
+      class="tks-option ${on ? 'selected' : ''} ut-surface--control"
+      data-testid="project-orchestrator-agent-${agent}"
+      @pointerup=${pick}
+      @click=${pick}
+    >
+      <span class="tks-radio" aria-hidden="true"></span>
+      <span class="tks-option-text"><span class="tks-option-label">${AGENTS[agent].label}</span></span>
+    </button>`;
+  }
+
+  /** The orchestrator's agent and model, and whether it migrates by itself at a usage limit. */
+  private renderOrchestrator() {
+    const toggle = this.tap(() => {
+      this.orchestratorAutoMigrate = !this.orchestratorAutoMigrate;
+    });
+    return html`<div class="tks-field">
+        <span class="tks-label" id="pss-orchestrator-agent">${t('projectSettings.orchestratorAgent')}</span>
+        <div class="tks-options" role="radiogroup" aria-labelledby="pss-orchestrator-agent">
+          ${TASK_AGENTS.map((agent) => this.renderOrchestratorAgent(agent))}
+        </div>
+        <span class="tks-hint">${t('projectSettings.orchestratorAgentHint')}</span>
+      </div>
+      <label class="tks-field">
+        <span class="tks-label">${t('projectSettings.orchestratorModel')}</span>
+        <input
+          class="tks-input mono ut-surface--inset"
+          data-testid="project-orchestrator-model"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          dir="ltr"
+          placeholder=${t('projectSettings.orchestratorModelPlaceholder')}
+          .value=${this.orchestratorModel}
+          @input=${(e: Event) => {
+            this.orchestratorModel = (e.target as HTMLInputElement).value;
+          }}
+        />
+        <span class="tks-hint">${t('projectSettings.orchestratorModelHint')}</span>
+      </label>
+      <div class="tks-field">
+        <button
+          type="button"
+          role="switch"
+          class="ut-surface--inset tks-switch"
+          aria-checked=${this.orchestratorAutoMigrate ? 'true' : 'false'}
+          aria-describedby="pss-orchestrator-auto-hint"
+          data-testid="project-orchestrator-auto-migrate"
+          @pointerup=${toggle}
+          @click=${toggle}
+        >
+          <span class="tks-option-label">${t('projectSettings.orchestratorAutoMigrate')}</span>
+          <span class="tks-knob ${this.orchestratorAutoMigrate ? 'on' : ''}" aria-hidden="true"
+            ><span></span
+          ></span>
+        </button>
+        <span class="tks-hint" id="pss-orchestrator-auto-hint"
+          >${t('projectSettings.orchestratorAutoMigrateHint')}</span
+        >
+      </div>`;
+  }
+
   private renderPolicy(policy: TaskMergePolicy, label: string, hint: string) {
     const on = this.mergePolicy === policy;
     const pick = this.tap(() => {
@@ -809,6 +894,7 @@ export class ProjectSettingsSheet extends LitElement {
         <span class="tks-hint" id="pss-ai-review-hint">${t('projectSettings.aiReviewHint')}</span>
       </div>
       ${this.renderAgents()}
+      ${this.renderOrchestrator()}
       ${this.renderSecurity()}
       <label class="tks-field">
         <span class="tks-label">${t('projectSettings.setup')}</span>

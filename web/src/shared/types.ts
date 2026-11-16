@@ -1,6 +1,7 @@
 /**
  * Shared type definitions used by both frontend and backend
  */
+import type { AgentId } from './agents.js';
 
 import type { MacOpenMode, MacSizing } from './mac-sessions.js';
 
@@ -135,6 +136,8 @@ export interface SessionInfo {
   attachedViaUT?: boolean;
   /** Claude Code conversation last seen running in this session (resumable with --resume). */
   claudeSessionId?: string;
+  /** Qoder's hook-bound transcript; no directory guessing or cross-session matching. */
+  qoderSession?: { id: string; transcriptPath: string };
   /** What Claude's settings.json said when this session's claude started (the doctor's reference). */
   claudeStartSettings?: ClaudeStartSettings;
   /** Claude's conversation title, kept after the session exits. */
@@ -687,7 +690,7 @@ export interface ServerStatus {
 
 /** An agent's state for the session list when it is not Claude Code (Session.agentStatus). */
 export interface SessionAgentStatus {
-  agent: 'codex';
+  agent: Exclude<AgentId, 'claude'>;
   status: 'busy' | 'waiting' | 'idle';
   /** When this status began (epoch ms). */
   since?: number;

@@ -1,6 +1,8 @@
 /** A task's agent: which one, its model, what cut it short and who took over. */
 
-export type TaskAgent = 'claude' | 'codex';
+import type { TaskAgent } from '../agents.js';
+
+export type { TaskAgent } from '../agents.js';
 
 export type TaskHaltKind = 'usage-limit' | 'api-error' | 'auth' | 'model';
 

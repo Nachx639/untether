@@ -6,8 +6,8 @@
  *   agentGlyph(agentKind(session))
  */
 import { html, type SVGTemplateResult, svg, type TemplateResult } from 'lit';
+import { type AgentId, commandAgent } from '../../shared/agents.js';
 import type { Session } from '../../shared/types.js';
-import { isAIAssistantSession } from '../utils/ai-sessions.js';
 
 const PATHS = {
   search: svg`<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>`,
@@ -94,7 +94,7 @@ export function icon(name: IconName, size = 16): TemplateResult {
   >${PATHS[name]}</svg>`;
 }
 
-export type AgentKind = 'claude' | 'codex' | 'shell';
+export type AgentKind = AgentId | 'shell';
 
 /** A sunburst mark (drawn, not the ✳ character: iOS renders that as a green emoji). */
 export const CLAUDE_MARK = html`<svg viewBox="0 0 24 24" width="26" height="26" fill="none"
@@ -109,21 +109,24 @@ export const GEMINI_MARK = html`<svg viewBox="0 0 24 24" width="26" height="26" 
   <path d="M12 2c.6 5.4 4.6 9.4 10 10-5.4.6-9.4 4.6-10 10-.6-5.4-4.6-9.4-10-10 5.4-.6 9.4-4.6 10-10z" />
 </svg>`;
 
-/** Which agent a session runs: claude, codex, or a plain shell/command. */
+/**
+ * Qoder's mark in Untether: a duckling of our own (2026-11-12), not Qoder's logo. One outline
+ * in currentColor like the other marks, so every look and state tints it; legible at 16 px.
+ */
+export const QODER_MARK = html`<svg viewBox="0 0 24 24" width="26" height="26" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M9.83 10.43A4.4 4.4 0 1 1 16.03 10.97c2.6.5 4.5 2 4.5 3.9 0 3.3-3.5 5.6-8.5 5.6-5.6 0-9.1-4.3-8.6-9.7 2 1.6 4.8 1.5 6.4-.34z" />
+  <path d="M17.5 6.5l3.5 1.3-3.6 1.5M9.8 15.4c1.3 1.5 3.7 1.5 5 0" />
+  <circle cx="14.3" cy="7" r="1" fill="currentColor" stroke="none" />
+</svg>`;
+
+/** Which agent a session runs (the shared registry's executables), or a plain shell/command. */
 export function agentKind(session: Pick<Session, 'command'>): AgentKind {
   const commands = Array.isArray(session.command) ? session.command : [session.command];
-  const base = (commands[0] ?? '').split('/').pop()?.toLowerCase() ?? '';
-  if (!isAIAssistantSession(session as Session)) return 'shell';
-  if (base.startsWith('codex')) return 'codex';
-  if (base.startsWith('claude')) return 'claude';
-  // Another assistant (or a wrapper as the first word): look at every word.
-  const words = commands.map((word) => word?.split('/').pop()?.toLowerCase() ?? '');
-  if (words.some((word) => word.startsWith('claude'))) return 'claude';
-  if (words.some((word) => word.startsWith('codex'))) return 'codex';
-  return 'shell';
+  return commandAgent(commands) ?? 'shell';
 }
 
-/** The agent's 16 px glyph: Claude's sunburst (the phone's mark), a "Cx" monogram, a prompt. */
+/** The agent's 16 px glyph: Claude's sunburst, a "Cx" monogram, Gemini's spark, Qoder's duckling, a prompt. */
 export function agentGlyph(kind: AgentKind, size = 16): TemplateResult {
   switch (kind) {
     case 'claude':
@@ -132,6 +135,15 @@ export function agentGlyph(kind: AgentKind, size = 16): TemplateResult {
         style="width:${size}px;height:${size}px"
         aria-hidden="true"
         >${CLAUDE_MARK}</span
+      >`;
+    case 'gemini':
+      return html`<span class="ut-agent-glyph" style="width:${size}px;height:${size}px" aria-hidden="true">${GEMINI_MARK}</span>`;
+    case 'qoder':
+      return html`<span
+        class="ut-agent-glyph"
+        style="width:${size}px;height:${size}px"
+        aria-hidden="true"
+        >${QODER_MARK}</span
       >`;
     case 'codex':
       return html`<span

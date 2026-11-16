@@ -12,6 +12,7 @@
  */
 import { html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { AGENTS, TASK_AGENTS } from '../../shared/agents.js';
 import {
   nextNightAt2,
   TASK_FINAL_STATES,
@@ -76,7 +77,7 @@ export interface TaskSheetOptions {
   /** Folders to offer, the default first. */
   folders: string[];
   /** The agents' command lines (the user's quick starts). */
-  commands: Record<TaskAgent, string[]>;
+  commands: Partial<Record<TaskAgent, string[]>>;
   agent?: TaskAgent;
   shielded?: boolean;
   /** A task started now: open its session. */
@@ -91,7 +92,10 @@ export class TaskSheet extends LitElement {
 
   @property({ attribute: false }) options: TaskSheetOptions = {
     folders: ['~'],
-    commands: { claude: ['claude'], codex: ['codex'] },
+    commands: Object.fromEntries(TASK_AGENTS.map((id) => [id, [AGENTS[id].executable]])) as Record<
+      TaskAgent,
+      string[]
+    >,
   };
 
   @state() private tab: 'new' | 'scheduled' = 'new';
@@ -255,7 +259,7 @@ export class TaskSheet extends LitElement {
       name: this.taskName(),
       prompt: this.prompt.trim(),
       workingDir: this.folder.trim() || '~',
-      command: this.options.commands[this.agent],
+      command: this.options.commands[this.agent] ?? [AGENTS[this.agent].executable],
       agent: this.agent,
       shielded: this.shielded,
       notify: this.notify,
@@ -609,10 +613,7 @@ export class TaskSheet extends LitElement {
       ${this.segment<TaskAgent>(
         t('tasks.agent'),
         this.agent,
-        [
-          ['claude', 'Claude'],
-          ['codex', 'Codex'],
-        ],
+        TASK_AGENTS.map((id) => [id, AGENTS[id].label]),
         (agent) => {
           this.agent = agent;
         },

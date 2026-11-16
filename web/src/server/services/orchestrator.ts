@@ -35,6 +35,12 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  type AgentMessage,
+  type ConversationTurn,
+  isUsersOwnTurn,
+  partyLabel,
+} from '../../shared/agent-messages.js';
 import { actualModelText, taskActualModel } from '../../shared/agent-models.js';
 import {
   PROMPT_ESCALATE_MS,
@@ -44,9 +50,12 @@ import {
   wrappedNote,
 } from '../../shared/agent-prompt.js';
 import { agentPush } from '../../shared/agent-push.js';
+import { AGENTS, type TaskAgent, taskAskedModel } from '../../shared/agents.js';
 import {
   cleanGoal,
   DIGEST_MINUTES_DEFAULT,
+  HANDOFF_TURNS,
+  HANDOFF_WAIT_MS,
   isQuietReply,
   isUrgentEvent,
   ORCHESTRATOR_MANUAL_VERSION,
@@ -56,8 +65,11 @@ import {
   oneLine,
   orchestratorAdoptPrompt,
   orchestratorEventMessage,
+  orchestratorHandoffRequest,
   orchestratorManualUpdates,
+  orchestratorMigratePrompt,
   orchestratorPrompt,
+  untetherHandoff,
 } from '../../shared/orchestrator-prompt.js';
 import type { ProjectSettings } from '../../shared/projects.js';
 import { clockOf, failureNudgesLine, progressLine } from '../../shared/task-progress.js';
@@ -76,6 +88,7 @@ import type { AgentHalt } from './agent-halt.js';
 import { BACKGROUND } from './claude-status-notifier.js';
 import type { NotificationPayload } from './push-notification-service.js';
 import type { SessionReplacementFollower } from './session-replacements.js';
+import { CODEX_NO_TOOLTIPS, CODEX_NO_UPDATE_CHECK, QODER_NO_PROJECT_MCP } from './task-launcher.js';
 
 /**
  * What the orchestrator's Claude may run without asking. Read-only tools (Read, Grep, Glob)
@@ -124,7 +137,7 @@ const TASK_PUSHES: Record<string, OrchestratorEventKind> = {
   'task-looping': 'looping',
 };
 
-/** Flags of the user's quick start that must not reach the orchestrator's Claude. */
+/** Flags of the user's quick start that must not reach the orchestrator's agent. */
 const BYPASS_FLAGS = new Set([
   '--dangerously-skip-permissions',
   '--allow-dangerously-skip-permissions',
@@ -132,15 +145,45 @@ const BYPASS_FLAGS = new Set([
 const TOOL_FLAGS = new Set(['--allowedTools', '--allowed-tools']);
 
 /**
- * The orchestrator's command line from the user's Claude quick start. 2026-10-20: the quick
- * start's --dangerously-skip-permissions made the "only ut task" rule fake: orchestrators ran
- * pkill, curl and git, edited another repository and deleted a file. Its permission flags
- * (bypass, any --permission-mode, its own allowed tools) are dropped, so --allowedTools is
- * the whole list and anything else asks the user.
+ * Startup flags an orchestrator of each agent gets on top of the user's quick start (the ones
+ * the quick start already carries are not doubled): Qoder loads no project MCP server, so its
+ * approval dialog never stops an orchestrator nobody watches (as a task's, task-launcher.ts);
+ * Codex opens without its update menu or tooltips.
  */
-export function orchestratorCommand(base: string[]): string[] {
-  const argv = path.basename(base[0] ?? '') === 'claude' ? base : ['claude'];
+const ORCHESTRATOR_START_ARGS: Record<TaskAgent, (command: string[]) => string[]> = {
+  claude: () => [],
+  codex: (command) => {
+    const has = (key: string) => command.some((arg) => arg.includes(key));
+    return [
+      ...(has('check_for_update_on_startup') ? [] : CODEX_NO_UPDATE_CHECK),
+      ...(has('show_tooltips') ? [] : CODEX_NO_TOOLTIPS),
+    ];
+  },
+  qoder: (command) =>
+    command.some((arg) => arg === '--mcp-config' || arg.startsWith('--mcp-config='))
+      ? []
+      : QODER_NO_PROJECT_MCP,
+};
+
+/**
+ * The orchestrator's command line from the user's quick start for `agent` (default claude).
+ * 2026-10-20: the quick start's --dangerously-skip-permissions made the "only ut task" rule
+ * fake: orchestrators ran pkill, curl and git, edited another repository and deleted a file.
+ * Its permission flags (bypass, any --permission-mode, its own allowed tools) are dropped, so
+ * the allowed tools are the whole list and anything else asks the user. An agent with no tool
+ * flag of its own (registry orchestratorToolsFlag, e.g. Codex) keeps the rules by instruction
+ * alone, as an adopted session does. `model`, when given, replaces the quick start's.
+ */
+export function orchestratorCommand(
+  base: string[],
+  agent: TaskAgent = 'claude',
+  model?: string
+): string[] {
+  const spec = AGENTS[agent];
+  const argv = path.basename(base[0] ?? '') === spec.executable ? base : [spec.executable];
   const out = [argv[0]];
+  const modelFlag = (arg: string) =>
+    spec.modelFlags.find((flag) => arg === flag || arg.startsWith(`${flag}=`));
   for (let i = 1; i < argv.length; i++) {
     const arg = argv[i];
     if (BYPASS_FLAGS.has(arg) || arg.startsWith('--permission-mode=')) continue;
@@ -153,9 +196,18 @@ export function orchestratorCommand(base: string[]): string[] {
       while (i + 1 < argv.length && !argv[i + 1].startsWith('-')) i++;
       continue;
     }
+    if (model && modelFlag(arg)) {
+      if (arg === modelFlag(arg) && i + 1 < argv.length && !argv[i + 1].startsWith('-')) i++;
+      continue;
+    }
     out.push(arg);
   }
-  return [...out, '--allowedTools', ...ORCHESTRATOR_ALLOWED_TOOLS];
+  if (model) out.push(spec.modelFlags[0], model);
+  out.push(...ORCHESTRATOR_START_ARGS[agent](out));
+  if (spec.orchestratorToolsFlag) {
+    out.push(spec.orchestratorToolsFlag, ...ORCHESTRATOR_ALLOWED_TOOLS);
+  }
+  return out;
 }
 
 export interface OrchestratorInfo {
@@ -176,7 +228,12 @@ export interface OrchestratorDeps {
     get(repoPath: string): ProjectSettings;
     update(
       repoPath: string,
-      patch: { orchestratorSessionId: string | null; orchestratorAdopted?: boolean | null }
+      patch: {
+        orchestratorSessionId?: string | null;
+        orchestratorAdopted?: boolean | null;
+        orchestratorAgent?: TaskAgent | null;
+        orchestratorModel?: string | null;
+      }
     ): unknown;
     list(): Array<{ repoPath: string; settings: ProjectSettings }>;
     /** Moves records of project folders that were renamed or moved (before restore looks). */
@@ -202,8 +259,32 @@ export interface OrchestratorDeps {
   /** 'running' while the session lives. */
   sessionStatus(sessionId: string): string | undefined;
   stopSession(sessionId: string): Promise<void>;
-  /** The user's Claude command line (quick start). */
-  claudeCommand(): string[];
+  /** The user's quick start for an agent as argv (its flags included), else the bare agent. */
+  agentCommand(agent: TaskAgent): string[];
+  /** The agent a session runs (claude, codex, qoder…), undefined when none is seen. */
+  agentOf?: (sessionId: string) => TaskAgent | undefined;
+  /**
+   * Suspends the old orchestrator's session on migration (never killed): true when it was
+   * suspended. Only Claude sessions suspend (session-suspender.ts); another agent's is left
+   * running idle, still the user's to open and resume.
+   */
+  suspendSession?: (sessionId: string) => Promise<boolean>;
+  /** The conversation's turns (the user's and the agent's), for a migration's fallback handoff. */
+  conversation?: (sessionId: string) => Promise<ConversationTurn[]>;
+  /** The messages between agents still open to or from the project (fallback handoff). */
+  openMessages?: (repoPath: string) => AgentMessage[];
+  /**
+   * The project's orchestrator tasks follow their orchestrator to its new session on migration
+   * (task-scheduler); resolves to how many.
+   */
+  repointTasks?: (oldSessionId: string, newSessionId: string, repoPath: string) => number;
+  /** How long a migration waits for the current orchestrator's written handoff (default 90 s). */
+  handoffWaitMs?: number;
+  /**
+   * The agent a usage-limit migration offers (or auto-migrates to): another one configured on
+   * this Mac, undefined when none is. The user may still pick any agent from the menu.
+   */
+  migrateTarget?: (repoPath: string, fromAgent: TaskAgent) => TaskAgent | undefined;
   /** The configured external model providers, for the brief (model-providers.ts); none: unset. */
   providers?: () => OrchestratorProvider[] | undefined;
   /** The main checkout of the repository `dir` is in (normalized), null outside one. */
@@ -348,10 +429,27 @@ interface Running {
   longNoted: Map<string, string>;
   /** Task pushes it took, by outbox id (StoredOrchestrator.delivered). */
   delivered: Set<string>;
+  /** Its agent's usage limit was already told to the user (the migration offer), once. */
+  limitOffered?: boolean;
 }
 
 export type OrchestratorStartResult =
   | { ok: true; repoPath: string; sessionId: string; reused: boolean; pending?: boolean }
+  | { ok: false; code: 'bad-request' | 'conflict' | 'error'; message: string };
+
+export type OrchestratorMigrateResult =
+  | {
+      ok: true;
+      repoPath: string;
+      sessionId: string;
+      fromAgent: TaskAgent;
+      toAgent: TaskAgent;
+      /** Whose handoff the new orchestrator got: the old agent's, or Untether's fallback. */
+      handoff: 'agent' | 'untether';
+      /** The old session was suspended (Claude); false: left running idle (another agent). */
+      suspended: boolean;
+      pending?: boolean;
+    }
   | { ok: false; code: 'bad-request' | 'conflict' | 'error'; message: string };
 
 export class Orchestrator {
@@ -360,6 +458,10 @@ export class Orchestrator {
   private readonly replacing = new Set<string>();
   /** Starts under way, per project (2026-10-20: two at once made two orchestrators). */
   private readonly starting = new Map<string, Promise<OrchestratorStartResult>>();
+  /** Migrations under way, per project: one at a time (the old session is suspended once). */
+  private readonly migrating = new Set<string>();
+  /** A migration waiting for the current orchestrator's written handoff, per project. */
+  private readonly handoffWaiters = new Map<string, (text: string) => void>();
   /**
    * Orchestrators whose session ended, by session id: a resumed conversation takes the role
    * back (2026-10-20: a resumed orchestrator came back as a plain session, its tasks pushing
@@ -657,10 +759,12 @@ export class Orchestrator {
 
   private async startNew(repoPath: string, text: string): Promise<OrchestratorStartResult> {
     const repoName = path.basename(repoPath);
+    const settings = this.deps.settings.get(repoPath);
+    const agent = settings.orchestratorAgent ?? 'claude';
     let sessionId: string;
     try {
       ({ sessionId } = await this.deps.createSession(
-        orchestratorCommand(this.deps.claudeCommand()),
+        orchestratorCommand(this.deps.agentCommand(agent), agent, settings.orchestratorModel),
         {
           name: `orchestrator (${repoName})`,
           // The board's badge says it is the orchestrator; the title says what for.
@@ -680,7 +784,13 @@ export class Orchestrator {
     this.deps.log?.(`orchestrator ${sessionId} started in ${repoPath}`);
     const typed = await this.brief(
       sessionId,
-      orchestratorPrompt({ goal: text, repoPath, repoName, providers: this.deps.providers?.() }),
+      orchestratorPrompt({
+        goal: text,
+        repoPath,
+        repoName,
+        providers: this.deps.providers?.(),
+        agent,
+      }),
       { trustFolder: true }
     );
     if (typed === false) {
@@ -708,8 +818,16 @@ export class Orchestrator {
     if (this.deps.sessionStatus(sessionId) !== 'running') {
       return { ok: false, code: 'bad-request', message: 'That session is not running' };
     }
-    if (!this.lastStatus.has(sessionId) && !this.deps.claudeConversation?.(sessionId)) {
-      return { ok: false, code: 'bad-request', message: 'That session is not running Claude' };
+    const runsAgent =
+      this.deps.agentOf?.(sessionId) !== undefined ||
+      this.lastStatus.has(sessionId) ||
+      !!this.deps.claudeConversation?.(sessionId);
+    if (!runsAgent) {
+      return {
+        ok: false,
+        code: 'bad-request',
+        message: 'That session is not running Claude, Codex or Qoder',
+      };
     }
     const ownTask = this.deps
       .tasks()
@@ -746,6 +864,7 @@ export class Orchestrator {
           repoName: path.basename(repoPath),
           adoptedTasks,
           providers: this.deps.providers?.(),
+          agent: this.deps.agentOf?.(sessionId),
         })
       );
       if (typed === false) {
@@ -761,7 +880,12 @@ export class Orchestrator {
       };
     }
     this.track(repoPath, sessionId);
-    this.saveSettings(repoPath, { orchestratorSessionId: sessionId, orchestratorAdopted: true });
+    const adoptedAgent = this.deps.agentOf?.(sessionId);
+    this.saveSettings(repoPath, {
+      orchestratorSessionId: sessionId,
+      orchestratorAdopted: true,
+      ...(adoptedAgent ? { orchestratorAgent: adoptedAgent } : {}),
+    });
     const adoptedTasks = this.deps.adoptTasks?.(sessionId, repoPath) ?? 0;
     const repoName = path.basename(repoPath);
     this.deps.log?.(`orchestrator ${sessionId} adopted in ${repoPath} (${adoptedTasks} tasks)`);
@@ -773,6 +897,7 @@ export class Orchestrator {
         repoName,
         adoptedTasks,
         providers: this.deps.providers?.(),
+        agent: adoptedAgent,
       })
     );
     if (typed === false) {
@@ -780,6 +905,265 @@ export class Orchestrator {
       return { ok: false, code: 'error', message: 'Could not type the brief into that session' };
     }
     return { ok: true, repoPath, sessionId, reused: false, ...(typed ? {} : { pending: true }) };
+  }
+
+  /**
+   * Migrates the project's orchestrator to another agent in hot (2026-11-12): the current one
+   * is asked for a written handoff when it is free and answers in time, else Untether builds
+   * one from what it knows; the new agent starts with the orchestrator's brief plus that
+   * handoff; the queued messages and task events carry over (none lost, none doubled); the old
+   * session is suspended (Claude) or left running idle (another agent), never killed, still the
+   * user's to resume; the orchestratorAgent setting becomes the new one. Going back is another
+   * migration. The literal conversation does not travel between agents — the handoff does.
+   */
+  async migrate(
+    dir: string,
+    toAgent: TaskAgent,
+    model?: string
+  ): Promise<OrchestratorMigrateResult> {
+    const repoPath = await this.deps.resolveRepo(dir);
+    if (!repoPath)
+      return { ok: false, code: 'bad-request', message: 'Not inside a git repository' };
+    if (this.migrating.has(repoPath)) {
+      return { ok: false, code: 'conflict', message: 'A migration is already under way' };
+    }
+    const current = this.sessionFor(repoPath);
+    const entry = current ? this.running.get(current) : undefined;
+    if (!current || !entry) {
+      return { ok: false, code: 'bad-request', message: 'No orchestrator to migrate' };
+    }
+    const settings = this.deps.settings.get(repoPath);
+    const fromAgent = settings.orchestratorAgent ?? 'claude';
+    // The old agent's model only carries over when the agent stays the same: 'opus' is not a
+    // Qoder or Codex model. Changing agent uses the model given, or the new agent's default.
+    const targetModel = model ?? (toAgent === fromAgent ? settings.orchestratorModel : undefined);
+    if (toAgent === fromAgent && (targetModel ?? null) === (settings.orchestratorModel ?? null)) {
+      return {
+        ok: false,
+        code: 'bad-request',
+        message: `The orchestrator already runs ${AGENTS[toAgent].label}${targetModel ? ` (${targetModel})` : ''}`,
+      };
+    }
+    this.migrating.add(repoPath);
+    try {
+      const handoff = await this.handoffFor(entry, repoPath, toAgent);
+      const repoName = path.basename(repoPath);
+      let sessionId: string;
+      try {
+        ({ sessionId } = await this.deps.createSession(
+          orchestratorCommand(this.deps.agentCommand(toAgent), toAgent, targetModel),
+          {
+            name: `orchestrator (${repoName})`,
+            userTitle: `orchestrator (${repoName})`,
+            workingDir: repoPath,
+          }
+        ));
+      } catch (error) {
+        return {
+          ok: false,
+          code: 'error',
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+      // What waited for the old one carries over before it is forgotten (forget then has
+      // nothing left to push to the phone), exactly as a reopened session's queue does.
+      const carried = this.takePending(entry);
+      this.forget(current, repoPath);
+      const suspended = (await this.deps.suspendSession?.(current)) ?? false;
+      this.track(repoPath, sessionId);
+      this.saveSettings(repoPath, {
+        orchestratorSessionId: sessionId,
+        orchestratorAdopted: null,
+        orchestratorAgent: toAgent,
+        orchestratorModel: targetModel ?? null,
+      });
+      const moved = this.deps.repointTasks?.(current, sessionId, repoPath) ?? 0;
+      this.deps.log?.(
+        `orchestrator of ${repoPath} migrated ${fromAgent} → ${toAgent} (${current} → ${sessionId}, ${moved} task(s), handoff: ${handoff.fromUntether ? 'untether' : 'agent'}, old ${suspended ? 'suspended' : 'left running'})`
+      );
+      const next = this.running.get(sessionId);
+      if (next) {
+        next.queue.push(...carried.messages);
+        for (const queued of carried.events) next.events.set(eventKey(queued.event), queued);
+      }
+      const typed = await this.brief(
+        sessionId,
+        orchestratorMigratePrompt({
+          repoPath,
+          repoName,
+          handoff: handoff.text,
+          fromUntether: handoff.fromUntether,
+          providers: this.deps.providers?.(),
+          agent: toAgent,
+        }),
+        { trustFolder: true }
+      );
+      if (typed === false) {
+        this.forget(sessionId, repoPath);
+        return {
+          ok: false,
+          code: 'error',
+          message: "The new orchestrator's session ended before it got the handoff",
+        };
+      }
+      this.persist();
+      return {
+        ok: true,
+        repoPath,
+        sessionId,
+        fromAgent,
+        toAgent,
+        handoff: handoff.fromUntether ? 'untether' : 'agent',
+        suspended,
+        ...(typed ? {} : { pending: true }),
+      };
+    } finally {
+      this.migrating.delete(repoPath);
+    }
+  }
+
+  /**
+   * The current orchestrator's written handoff (`ut project orchestrator handoff`), during a
+   * migration. False when no migration of that project waits for it.
+   */
+  submitHandoff(repoPath: string, text: string): boolean {
+    const resolve = this.handoffWaiters.get(repoPath);
+    if (!resolve) return false;
+    this.handoffWaiters.delete(repoPath);
+    resolve(cleanGoal(text));
+    return true;
+  }
+
+  /** The handoff the new orchestrator gets: the old agent's when it answers, else Untether's. */
+  private async handoffFor(
+    entry: Running,
+    repoPath: string,
+    toAgent: TaskAgent
+  ): Promise<{ text: string; fromUntether: boolean }> {
+    let halted: AgentHalt | undefined;
+    try {
+      halted = this.deps.halt?.(entry.sessionId);
+    } catch {
+      halted = undefined;
+    }
+    const free = entry.status !== 'busy' && entry.status !== 'waiting' && !halted;
+    if (free) {
+      const text = await this.requestHandoff(entry, repoPath, toAgent);
+      if (text) return { text, fromUntether: false };
+    }
+    return { text: await this.fallbackHandoff(entry, repoPath), fromUntether: true };
+  }
+
+  /** Asks the free orchestrator for its handoff and waits a short while; null when it never came. */
+  private requestHandoff(
+    entry: Running,
+    repoPath: string,
+    toAgent: TaskAgent
+  ): Promise<string | null> {
+    const request = orchestratorHandoffRequest({ repoPath, toLabel: AGENTS[toAgent].label });
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = (text: string | null) => {
+        if (done) return;
+        done = true;
+        this.handoffWaiters.delete(repoPath);
+        this.clearTimer(timer);
+        // A request still waiting (never typed) must not follow the queue to the new
+        // orchestrator: it would answer a handoff nobody waits for (review 2026-11-12).
+        if (this.running.get(entry.sessionId) === entry) {
+          entry.queue = entry.queue.filter((message) => message.text !== request);
+          if (entry.inFlight) {
+            entry.inFlight.messages = entry.inFlight.messages.filter(
+              (message) => message.text !== request
+            );
+          }
+        }
+        resolve(text);
+      };
+      const timer = this.setTimer(() => finish(null), this.deps.handoffWaitMs ?? HANDOFF_WAIT_MS);
+      this.handoffWaiters.set(repoPath, (text) => finish(text));
+      this.enqueue(entry.sessionId, request);
+    });
+  }
+
+  /** The handoff Untether builds from what it knows (the orchestrator did not answer). */
+  private async fallbackHandoff(entry: Running, repoPath: string): Promise<string> {
+    const tasks = (this.deps.tasks()?.list() ?? [])
+      .filter(
+        (task) =>
+          task.orchestratorSessionId === entry.sessionId && !TASK_FINAL_STATES.includes(task.state)
+      )
+      .map((task) => ({
+        id: task.id,
+        name: task.name,
+        state: task.state,
+        ...(task.blocker ? { blocker: task.blocker.kind } : {}),
+        ...(task.summary ? { summary: task.summary } : {}),
+      }));
+    const messages = (this.deps.openMessages?.(repoPath) ?? []).map((message) => ({
+      id: message.id,
+      from: partyLabel(message.from),
+      preview: message.preview,
+    }));
+    let turns: Array<{ role: string; text: string }> = [];
+    try {
+      const all = (await this.deps.conversation?.(entry.sessionId)) ?? [];
+      turns = all
+        .filter(
+          (turn) =>
+            (turn.role === 'user' && isUsersOwnTurn(turn.text)) ||
+            (turn.role === 'assistant' && turn.text.trim() && !isQuietReply(turn.text))
+        )
+        .slice(-HANDOFF_TURNS)
+        .map((turn) => ({ role: turn.role, text: turn.text }));
+    } catch {
+      turns = [];
+    }
+    return untetherHandoff({ tasks, messages, turns });
+  }
+
+  /**
+   * The orchestrator's agent hit its usage limit: tell the user once and offer the migration
+   * with one tap (or carry it out by itself when the project turned orchestratorAutoMigrate on).
+   */
+  private checkLimitOffer(entry: Running): void {
+    let halt: AgentHalt | undefined;
+    try {
+      halt = this.deps.halt?.(entry.sessionId);
+    } catch {
+      return;
+    }
+    if (halt?.kind !== 'usage-limit' || entry.limitOffered) return;
+    entry.limitOffered = true;
+    const settings = this.deps.settings.get(entry.repoPath);
+    const fromAgent = settings.orchestratorAgent ?? 'claude';
+    const target = this.deps.migrateTarget?.(entry.repoPath, fromAgent);
+    const repoName = path.basename(entry.repoPath);
+    if (settings.orchestratorAutoMigrate && target) {
+      this.deps.log?.(
+        `orchestrator of ${entry.repoPath} at its limit: auto-migrating to ${target}`
+      );
+      void this.migrate(entry.repoPath, target).then((result) => {
+        if (!result.ok) this.deps.log?.(`auto-migration failed: ${result.message}`);
+      });
+      return;
+    }
+    this.deps.notify?.({
+      type: 'orchestrator-limit',
+      title: `${AGENTS[fromAgent].label} hit its usage limit`,
+      body: target
+        ? `The orchestrator of ${repoName} can carry on with ${AGENTS[target].label}. Tap to migrate it.`
+        : `The orchestrator of ${repoName} is stopped at its usage limit.`,
+      tag: `untether-orchestrator-limit-${repoName}`,
+      requireInteraction: true,
+      data: {
+        type: 'orchestrator-limit',
+        repoPath: entry.repoPath,
+        fromAgent,
+        sessionId: entry.sessionId,
+        ...(target ? { toAgent: target } : {}),
+      },
+    });
   }
 
   /** Blindar is about to reopen `sessionId` as another session. */
@@ -940,8 +1324,13 @@ export class Orchestrator {
     if (status === 'busy' || status === BACKGROUND || (status === 'idle' && known)) {
       entry.deliveredAt = undefined;
     }
+    // At work again: its usage limit (if any) is over, so a later one is told again.
+    if (status === 'busy' || status === BACKGROUND) entry.limitOffered = undefined;
     // Waiting on background work its turn ended with, its prompt takes what is queued too.
-    if (status === 'idle' || status === BACKGROUND) this.flush(entry);
+    if (status === 'idle' || status === BACKGROUND) {
+      this.checkLimitOffer(entry);
+      this.flush(entry);
+    }
   }
 
   /** A session ended: an orchestrator that did is forgotten (and remembered for a resume). */
@@ -1577,7 +1966,10 @@ export class Orchestrator {
   private watch(): void {
     this.releaseHeldPushes();
     // A delivery waiting inside its typing (a dialog on screen) retries nothing: looked at here.
-    for (const entry of this.running.values()) this.noteWaiting(entry);
+    for (const entry of this.running.values()) {
+      this.noteWaiting(entry);
+      this.checkLimitOffer(entry);
+    }
     const tasks = this.deps.tasks()?.list() ?? [];
     for (const entry of Array.from(this.running.values())) {
       for (const task of tasks) {
@@ -1621,7 +2013,12 @@ export class Orchestrator {
 
   private saveSettings(
     repoPath: string,
-    patch: { orchestratorSessionId: string | null; orchestratorAdopted?: boolean | null }
+    patch: {
+      orchestratorSessionId?: string | null;
+      orchestratorAdopted?: boolean | null;
+      orchestratorAgent?: TaskAgent | null;
+      orchestratorModel?: string | null;
+    }
   ): void {
     try {
       this.deps.settings.update(repoPath, patch);
@@ -1662,11 +2059,13 @@ function eventResult(
 ): { result: string[] } | undefined {
   if (!['ready', 'needs_you', 'failed', 'merged', 'done'].includes(kind)) return undefined;
   const actual = taskActualModel(task);
+  // Its own model, else the one its command carries (a security sweep's, the quick start's).
+  const asked = taskAskedModel(task);
   const lines = [
     // 2026-11-08: the model it really ran with, next to the asked one (agent-models.ts).
     ...(actual
       ? [
-          `model: ${actualModelText(actual, task.modelProvider ? undefined : task.model)}${task.model ? '' : " (the agent's default)"}`,
+          `model: ${actualModelText(actual, task.modelProvider ? undefined : asked)}${asked ? '' : " (the agent's default)"}`,
         ]
       : []),
     ...(task.resultMismatch ? [`mismatch: ${task.resultMismatch}`] : []),

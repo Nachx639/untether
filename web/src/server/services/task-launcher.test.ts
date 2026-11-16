@@ -8,6 +8,7 @@ import {
   createTaskLauncher,
   createTaskResumer,
   modelForLevel,
+  QODER_NO_PROJECT_MCP,
   TASK_ALLOWED_TOOLS,
   TASK_RESUME_TEXT,
   taskCommand,
@@ -331,6 +332,38 @@ describe('createTaskLauncher', () => {
     ).rejects.toThrow(/worktree/);
   });
 
+  it('resumes Qoder with its saved conversation and the same task permissions', async () => {
+    const createSession = vi.fn(async () => ({ sessionId: 'again', sessionInfo: {} }));
+    const deliver = vi.fn();
+    const resume = createTaskResumer({
+      ptyManager: { createSession, isShieldAvailable: () => true } as never,
+      deliverInitialInput: () => deliver,
+    });
+    await resume(
+      {
+        ...task,
+        agent: 'qoder',
+        command: ['qodercli'],
+        isolation: 'worktree',
+        worktreePath: os.tmpdir(),
+      },
+      'q-conversation',
+      'again'
+    );
+    expect(createSession).toHaveBeenCalledWith(
+      [
+        'qodercli',
+        ...QODER_NO_PROJECT_MCP,
+        '--permission-mode',
+        'bypass_permissions',
+        '--resume',
+        'q-conversation',
+      ],
+      expect.objectContaining({ workingDir: os.tmpdir(), sessionId: 'again' })
+    );
+    expect(deliver).toHaveBeenCalledWith('again', TASK_RESUME_TEXT, 'qoder', { trustFolder: true });
+  });
+
   it('adds the task tools only to a worktree task that starts Claude itself', () => {
     expect(taskCommand({ command: ['claude'], agent: 'claude', isolation: 'none' })).toEqual([
       'claude',
@@ -384,6 +417,51 @@ describe("a task's Codex without its tooltips (2026-11-03)", () => {
     // Claude's command is not touched by it.
     expect(taskCommand({ command: ['claude'], agent: 'claude', isolation: 'none' })).not.toContain(
       'tui.show_tooltips=false'
+    );
+  });
+});
+
+describe("a task's Qoder MCP servers (2026-11-12)", () => {
+  it('loads no project MCP server, so its approval dialog never stops the task', () => {
+    expect(QODER_NO_PROJECT_MCP).toEqual([
+      '--strict-mcp-config',
+      '--mcp-config',
+      '{"mcpServers":{}}',
+    ]);
+    for (const isolation of ['none', 'worktree'] as const) {
+      expect(taskCommand({ command: ['qodercli'], agent: 'qoder', isolation })).toEqual([
+        'qodercli',
+        ...QODER_NO_PROJECT_MCP,
+        '--permission-mode',
+        'bypass_permissions',
+      ]);
+    }
+  });
+
+  it('keeps a --mcp-config the command names itself (no blanket approval)', () => {
+    const own = ['qodercli', '--mcp-config', '{"mcpServers":{"kept":{}}}'];
+    expect(taskCommand({ command: own, agent: 'qoder', isolation: 'none' })).toEqual([
+      'qodercli',
+      '--permission-mode',
+      'bypass_permissions',
+      '--mcp-config',
+      '{"mcpServers":{"kept":{}}}',
+    ]);
+    expect(
+      taskCommand({
+        command: ['qodercli', '--mcp-config=own.json'],
+        agent: 'qoder',
+        isolation: 'none',
+      })
+    ).not.toContain('--strict-mcp-config');
+  });
+
+  it('leaves Claude and Codex commands untouched', () => {
+    expect(taskCommand({ command: ['claude'], agent: 'claude', isolation: 'none' })).toEqual([
+      'claude',
+    ]);
+    expect(taskCommand({ command: ['codex'], agent: 'codex', isolation: 'none' })).not.toContain(
+      '--strict-mcp-config'
     );
   });
 });
@@ -453,10 +531,17 @@ describe("a task's model and runners (2026-11-01)", () => {
   });
 
   it('runners: the configured fallbacks, else both agents; only programs on this Mac', () => {
-    const agentCommand = (agent: 'claude' | 'codex') => [agent];
+    const agentCommand = (agent: import('../../shared/agents.js').TaskAgent) => [
+      agent === 'qoder' ? 'qodercli' : agent,
+    ];
     const argv = (command: string) => command.split(' ');
     expect(
-      taskRunners({ fallbacks: undefined, agentCommand, argv, available: { codex: false } })
+      taskRunners({
+        fallbacks: undefined,
+        agentCommand,
+        argv,
+        available: { codex: false, qodercli: false },
+      })
     ).toEqual([{ name: 'claude', agent: 'claude', command: ['claude'] }]);
     expect(
       taskRunners({

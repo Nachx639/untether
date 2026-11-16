@@ -10,6 +10,7 @@
  * Then POST /api/tasks/submit with the choice. Closing a choice without picking, or a failed
  * request, gives the text back to the box.
  */
+import type { TaskAgent } from '../../shared/agents.js';
 import { t } from '../i18n/index.js';
 import { toast } from '../utils/action-toast.js';
 import { authClient } from './auth-client.js';
@@ -65,7 +66,7 @@ export interface TaskRoutingDeps {
 export interface TaskRequest {
   repoPath: string;
   text: string;
-  agent: 'claude' | 'codex';
+  agent: TaskAgent;
 }
 
 /** Send `text` as a task: routed, confirmed or chosen, then submitted. */

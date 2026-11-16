@@ -129,6 +129,7 @@ export function setupSessions(ctx: AppContext) {
       shieldNewSessionsByDefault: () => configService.getConfig().shieldNewSessions !== false,
       // Codex's state from its rollout, read up to now (the sessions it runs in are looked
       // up every 3 s, server-core.ts), and the menu it waits on, off its screen.
+      agentSnapshot: (id) => ctx.agentEvents.snapshot(id),
       codex: {
         runs: (sessionId) => ctx.codexSessions.ref(sessionId) !== undefined,
         status: (sessionId) =>

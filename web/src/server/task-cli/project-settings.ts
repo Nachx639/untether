@@ -13,6 +13,12 @@ const USAGE = `  ut project set [--repo DIR] [--merge auto|ask] [--check "cmd"] 
                   model; agentFallback=offer|auto|off: when an agent hits its usage limit,
                   another one (the other agent, or this Mac's taskFallbacks) is offered
                   (offer, the default), takes over the task in its worktree (auto), or not);
+                  orchestratorAgent=claude|codex|qoder: the agent a new orchestrator runs on
+                  (default claude; the running one keeps its agent until 'ut project orchestrator
+                  migrate'); orchestratorModel=M: its model (empty: the quick start's, else the
+                  agent's default); orchestratorAutoMigrate=true: at its agent's usage limit the
+                  orchestrator migrates to another agent by itself (default off: the user is
+                  offered the change with one tap);
                   taskBudget=wall=3h,agent=2h,rounds=6,tokens=100M,warn=75: its tasks' budget
                   (any of them, 0 = no limit; those are the defaults), taskBudget= the defaults;
                   stallMinutes=N: a task's agent with no progress for N minutes while it waits

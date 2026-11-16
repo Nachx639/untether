@@ -1,5 +1,7 @@
 import { LitElement, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
+import { namedForAgent } from '../../../shared/agent-push.js';
+import { isAgentId } from '../../../shared/agents.js';
 import {
   narrowerThanPty,
   parseScreenChoices,
@@ -532,9 +534,10 @@ export abstract class ClaudeChatViewBase extends LitElement {
     if (before === null || before === status) return;
     const text = AGENT_TEXT[this.agent];
     if (this.waitingFor) announce(t('chat.waiting', { reason: this.waitingFor }));
-    else if (this.busy) announce(t(text.working));
+    else if (this.busy) announce(namedForAgent(t(text.working), this.agent));
     else if (this.backgroundWait) announce(t('a11y.chat.replied'));
-    else if (before === 'busy' || before === 'background') announce(t(text.finished));
+    else if (before === 'busy' || before === 'background')
+      announce(namedForAgent(t(text.finished), this.agent));
   }
 
   protected pollGeneration = 0;
@@ -686,7 +689,7 @@ export abstract class ClaudeChatViewBase extends LitElement {
     this.dispatchEvent(
       new CustomEvent('claude-chat-availability', { detail: chat.available, bubbles: true })
     );
-    this.agent = chat.agent === 'codex' || chat.agent === 'gemini' ? chat.agent : 'claude';
+    this.agent = isAgentId(chat.agent) ? chat.agent : 'claude';
     this.backgroundWait = chat.status === 'busy' && chat.waitingForBackground === true;
     this.busy = chat.status === 'busy' && !this.backgroundWait;
     // A fresh object every poll re-rendered the whole transcript each 1.5 s while Claude

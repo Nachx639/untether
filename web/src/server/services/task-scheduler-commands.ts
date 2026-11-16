@@ -95,11 +95,7 @@ export abstract class TaskSchedulerCommands extends TaskSchedulerPipeline {
     this.save();
     // Finished before the restart, their stop still to come: armed again (the doctor is later).
     for (const task of this.tasks) {
-      // Its busy limit counts from when it finished, not from this restart (2026-11-02).
-      if (this.finishedSessionToStop(task)) {
-        const finished = Date.parse(task.finishedAt ?? '');
-        this.armFinishedStop(task, Number.isFinite(finished) ? Math.min(finished, now) : now);
-      }
+      if (this.finishedSessionToStop(task)) this.armFinishedStop(task);
       // A worktree a restart cut off before it went (its session already gone).
       else this.track(this.dropDoneWorktree(task));
     }
@@ -343,6 +339,10 @@ export abstract class TaskSchedulerCommands extends TaskSchedulerPipeline {
     claude: ClaudeStatus
   ): void {
     this.lastStatus.set(sessionId, status);
+    const completed = this.tasks.find(
+      (entry) => entry.sessionId === sessionId && entry.state === 'done'
+    );
+    if (completed && this.completionInvalidated(completed)) this.workResumed(completed);
     const preview = claude.preview?.text ? `${claude.preview.role}:${claude.preview.text}` : '';
     const task = this.tasks.find(
       (entry) => entry.sessionId === sessionId && SESSION_STATES.includes(entry.state)
@@ -356,7 +356,13 @@ export abstract class TaskSchedulerCommands extends TaskSchedulerPipeline {
     }
     if (status === 'busy' || status === BACKGROUND) {
       this.cancelHold(task.id);
-      if (task.state === 'working' || this.realFollowUp(task, preview)) {
+      if (this.completionInvalidated(task)) this.workResumed(task);
+      const events = this.events(task);
+      const structuredWork =
+        events &&
+        ['working', 'compacting'].includes(events.state) &&
+        (events.lastWorkStartedAt ?? events.since) >= Date.parse(task.stateSince);
+      if (task.state === 'working' || structuredWork || this.realFollowUp(task, preview)) {
         this.probing.delete(task.id);
         this.seenBusy.add(task.id);
         this.waitingOnPrompt.delete(task.id);
@@ -1024,6 +1030,25 @@ export abstract class TaskSchedulerCommands extends TaskSchedulerPipeline {
   }
 
   /**
+   * The project's orchestrator migrated to another agent's session (orchestrator.ts): the tasks
+   * that reported to the old one report to the new one now (their own agent sessions are
+   * untouched). Returns how many followed.
+   */
+  repointOrchestratorTasks(oldSessionId: string, newSessionId: string, repoPath: string): number {
+    const repo = normalizeRepoPath(repoPath);
+    let count = 0;
+    for (const task of this.tasks) {
+      if (task.orchestratorSessionId !== oldSessionId) continue;
+      if (task.repoPath && normalizeRepoPath(task.repoPath) !== repo) continue;
+      task.orchestratorSessionId = newSessionId;
+      if (task.createdBySessionId === oldSessionId) task.createdBySessionId = newSessionId;
+      count++;
+    }
+    if (count) this.save();
+    return count;
+  }
+
+  /**
    * Tasks whose session ended report back; a Codex task quiet for CODEX_IDLE_MS is done.
    * A worktree task that ended without a commit failed ("session-exit").
    */
@@ -1035,6 +1060,8 @@ export abstract class TaskSchedulerCommands extends TaskSchedulerPipeline {
     try {
       for (const task of Array.from(this.tasks)) {
         if (!task.sessionId) continue;
+        if ((!isFinal(task) || task.state === 'done') && this.completionInvalidated(task))
+          this.workResumed(task);
         if (!isFinal(task)) this.syncGuardBlocks(task);
         if (task.agent === 'codex' && (task.state === 'ready' || task.state === 'paused')) {
           if (this.deps.sessionStatus(task.sessionId) === 'running') this.checkCodexBack(task);

@@ -78,6 +78,22 @@ describe('notification click', () => {
     expect(opened).toEqual(['https://mac.example/?confirm=c%201']);
   });
 
+  it('opens the orchestrator migration offer at /?migrate=<repo>&to=<agent>', () => {
+    const data = {
+      type: 'orchestrator-limit',
+      repoPath: '/repo',
+      toAgent: 'qoder',
+      sessionId: 'abc',
+    };
+    expect(notificationClickTarget('', data)).toEqual({
+      url: '/?migrate=%2Frepo&to=qoder',
+      action: 'migrate',
+    });
+    expect(notificationClickTarget('migrate', data).action).toBe('migrate');
+    // Without a project it is just the app.
+    expect(notificationClickTarget('', { type: 'orchestrator-limit' }).url).toBe('/');
+  });
+
   // 2026-11-11: "View Logs" of a "session ended" push opened the ended session when the app
   // was open (the app knows no such action) and the log viewer when it was closed.
   it('opens the log viewer for "View Logs", with the app open or closed', async () => {

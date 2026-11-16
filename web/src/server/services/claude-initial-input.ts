@@ -6,10 +6,11 @@
  * The text goes to the PTY as keyboard input (never into a shell command line). Readiness is
  * per agent: Claude Code reports its status in a file, Codex is read off the screen.
  */
+import type { TaskAgent } from '../../shared/agents.js';
 
 export const INITIAL_INPUT_MAX_LENGTH = 20000;
 
-export type InitialInputAgent = 'claude' | 'codex';
+export type InitialInputAgent = TaskAgent;
 
 export interface InitialInputDeps {
   /** Claude Code's status for the session ('idle', 'busy', 'waiting'), if Claude runs yet. */

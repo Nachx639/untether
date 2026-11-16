@@ -186,11 +186,14 @@ export abstract class TaskSchedulerPipeline extends TaskSchedulerAutoFix {
         // Files changed while its check ran: the agent's edits only if its session printed
         // meanwhile; else the check's own rewrites (a formatter), and its result stands.
         agentActiveSince: (since) => this.agentActedSince(task, since),
+        agentWorking: () =>
+          task.reportRequired === true || this.agentBusy(task) || this.completionInvalidated(task),
         signal: leave.signal,
         ...(this.deps.mergeQueue ? { mergeQueue: this.deps.mergeQueue } : {}),
         round: currentRound(task.timings),
         onLateReview: (review, timing) => this.lateReview(task, review, timing),
         onProgress: (progress) => {
+          if (leave.signal.aborted) return;
           if (progress.state === 'verifying') {
             this.noticeDisk(task, progress.verify);
             task.verify = progress.verify;
@@ -237,6 +240,12 @@ export abstract class TaskSchedulerPipeline extends TaskSchedulerAutoFix {
           // The merge is in: the agent's session (in the folder about to go) ends.
           this.cancelHold(task.id);
           if (task.sessionId && this.deps.sessionStatus(task.sessionId) === 'running') {
+            if (this.agentBusy(task) || this.completionInvalidated(task) || task.reportRequired) {
+              throw new Error('Agent working: session retained after merge');
+            }
+            this.deps.onError?.(
+              `Task ${task.id}: stopping idle session ${task.sessionId} after merge, before worktree cleanup`
+            );
             await this.deps.stopSession?.(task.sessionId);
           }
         },
@@ -265,6 +274,12 @@ export abstract class TaskSchedulerPipeline extends TaskSchedulerAutoFix {
         checks.loadFailed += result.checks.loadFailed;
       }
       if (isFinal(task)) return;
+      if (result.agentWorking || task.reportRequired) {
+        if (result.mergedSha) task.mergedSha = result.mergedSha;
+        this.workResumed(task);
+        this.save();
+        return;
+      }
       // It left the merge queue to be discarded: the discard goes on from here.
       if (leave.signal.aborted && result.state !== 'merged') {
         this.setState(task, 'ready');

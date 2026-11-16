@@ -90,6 +90,9 @@ describe('new-session form: quick starts the Mac does not have', () => {
     await element.updateComplete;
     await element.querySelector('quick-start-section')?.updateComplete;
     expect(notice()?.textContent?.trim()).toBe('gemini is not installed on the Mac');
+    expect(element.querySelector('#quick-start-install-link a')?.getAttribute('href')).toBe(
+      'https://geminicli.com/docs/get-started/installation/'
+    );
     expect(element.command).toBe(commandBefore);
 
     pill('claude')?.click();

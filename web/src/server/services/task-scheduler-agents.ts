@@ -3,6 +3,7 @@
  * resume), and the hand-off to another agent.
  * One layer of TaskScheduler (task-scheduler.ts).
  */
+import { AGENTS, isTaskAgent } from '../../shared/agents.js';
 import {
   TASK_AGENT_CHANGES_MAX,
   type TaskAgent,
@@ -572,7 +573,7 @@ export abstract class TaskSchedulerAgents extends TaskSchedulerQueue {
     if (told) return;
     const other: TaskAgent = task.agent === 'claude' ? 'codex' : 'claude';
     const otherFree = !!this.deps.agentCommand?.(other)?.length && !this.agentLimit(other);
-    const otherName = other === 'claude' ? 'Claude' : 'Codex';
+    const otherName = AGENTS[other].label;
     const id = task.id.slice(0, 8);
     const detail = [
       `Not started yet: ${haltHeadline(halt.kind, task.agent)} (task ${limit.task.id.slice(0, 8)}), so it starts by itself at ${clockText(limit.until, this.now())}.`,
@@ -593,7 +594,7 @@ export abstract class TaskSchedulerAgents extends TaskSchedulerQueue {
       : [];
     const found = runners.find((entry) => entry.name === name);
     if (found) return found.command.length ? found : undefined;
-    if (name !== 'claude' && name !== 'codex') return undefined;
+    if (!isTaskAgent(name)) return undefined;
     // No runners list (tests, an older wiring): the agent with the user's quick start.
     if (this.deps.runners) return undefined;
     const command = this.deps.agentCommand?.(name);

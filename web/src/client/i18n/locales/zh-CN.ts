@@ -651,8 +651,8 @@ export const zhCN: Messages = {
   'terminalSelect.selectAll': '全选',
   'terminalSelect.paste': '粘贴',
   'directKeyboard.pasteHint': '在此长按并选择粘贴',
-  'ask.placeholder': '问问 Claude…',
-  'ask.send': '发送给 Claude',
+  'ask.placeholderAgent': '问问 {name}…',
+  'ask.sendAgent': '发送给 {name}',
   'ask.folder': '文件夹：{folder}',
   'ask.where': '在此处询问 Claude…',
   'history.menuItem': '历史',
@@ -806,8 +806,6 @@ export const zhCN: Messages = {
   'codex.slash.diff': '显示 git diff（包括未跟踪的文件）',
   'codex.slash.init': '创建 AGENTS.md',
   'ask.agent': '助手',
-  'ask.placeholderCodex': '问问 Codex…',
-  'ask.sendCodex': '发送给 Codex',
   'ask.whereCodex': '在此处询问 Codex…',
   // Dictation (speech to text into the message box)
   'dictation.listening': '正在听…请说话',
@@ -1486,6 +1484,7 @@ export const zhCN: Messages = {
   // A quick start whose program is not on the Mac: dimmed, and a tap says so
   'quickStart.notInstalled': '未安装',
   'quickStart.notInstalledOnMac': 'Mac 上未安装 {name}',
+  'quickStart.installAgent': '尚未安装 {name}。安装：{url}',
   'whatsNew.previewServers.title': '两步添加预览',
   'whatsNew.previewServers.body':
     '“+ 添加预览”会列出 Mac 上正在运行的 Web 服务器，点按一个即可添加。',
@@ -2314,6 +2313,11 @@ export const zhCN: Messages = {
   'orch.open': '打开编排器',
   'orch.newGoal': '新目标',
   'orch.stop': '停止编排器',
+  'orch.changeAgent': '更改代理',
+  'orch.migrateConfirmBody': '将 {name} 的编排器迁移到 {agent}？当前会话会保留，可随时恢复。',
+  'orch.changeAgentTitle': '改用另一个代理继续',
+  'orch.migrated': '{name} 的编排器现在使用 {agent}',
+  'orch.migrateFailed': '无法更改代理：{error}',
   'orch.stopQuestion': '停止编排器？它的任务会继续进行。',
   'orch.stopConfirm': '停止',
   'orch.stopped': '{name} 的编排器已停止',
@@ -2504,6 +2508,15 @@ export const zhCN: Messages = {
   'orch.error.generic': '出了点问题；请重试',
   'projectSettings.error.invalid': '有一个值无效',
   'projectSettings.error.generic': '出了点问题；请重试',
+  'projectSettings.orchestratorAgent': '编排器代理',
+  'projectSettings.orchestratorAgentHint':
+    '新编排器启动时使用的代理。正在运行的编排器保留其代理，直到你更改。',
+  'projectSettings.orchestratorModel': '编排器模型',
+  'projectSettings.orchestratorModelPlaceholder': '代理的默认模型',
+  'projectSettings.orchestratorModelHint': '可选。留空则使用快速启动的模型，否则用代理的默认模型。',
+  'projectSettings.orchestratorAutoMigrate': '用量耗尽时自动迁移',
+  'projectSettings.orchestratorAutoMigrateHint':
+    '当编排器的代理耗尽配额时，自动改用另一个代理继续。关闭：会向你提供更改选项。',
   'common.errorDetails': '详情',
   // autoApprove (2026-10-24)
   'autoApprove.label': '不再征求我的同意',

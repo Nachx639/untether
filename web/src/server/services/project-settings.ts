@@ -21,6 +21,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { z } from 'zod';
+import { TASK_AGENTS } from '../../shared/agents.js';
 import {
   DEFAULT_PROJECT_SETTINGS,
   MAX_ACTIVE_TASKS_MAX,
@@ -112,7 +113,7 @@ export const ProjectSettingsSchema = z
     autoMergePausedCode: z.enum(['reverts', 'failures']),
     autoMergePausedCount: z.number().int().min(0).max(100_000),
     autoMergeResumedAt: z.string().datetime(),
-    defaultAgent: z.enum(['claude', 'codex']),
+    defaultAgent: z.enum(TASK_AGENTS),
     maxActiveTasks: z.number().int().min(1).max(MAX_ACTIVE_TASKS_MAX),
     modelRouting: z.boolean(),
     agentFallback: z.enum(['off', 'offer', 'auto']),
@@ -177,6 +178,9 @@ export const ProjectSettingsSchema = z
       ),
     orchestratorSessionId: z.string().min(1).max(200),
     orchestratorAdopted: z.boolean(),
+    orchestratorAgent: z.enum(TASK_AGENTS),
+    orchestratorModel: z.string().trim().min(1).max(200),
+    orchestratorAutoMigrate: z.boolean(),
     pinnedAt: z.string().datetime(),
     icon: z
       .string()

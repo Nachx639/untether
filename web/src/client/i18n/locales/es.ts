@@ -682,8 +682,8 @@ export const es: Messages = {
   'terminalSelect.selectAll': 'Seleccionar todo',
   'terminalSelect.paste': 'Pegar',
   'directKeyboard.pasteHint': 'Mantén pulsado aquí y elige Pegar',
-  'ask.placeholder': 'Pregunta a Claude…',
-  'ask.send': 'Enviar a Claude',
+  'ask.placeholderAgent': 'Pregúntale a {name}…',
+  'ask.sendAgent': 'Enviar a {name}',
   'ask.folder': 'Carpeta: {folder}',
   'ask.where': 'Preguntar a Claude en…',
   'history.menuItem': 'Historial',
@@ -845,8 +845,6 @@ export const es: Messages = {
   'codex.slash.diff': 'Mostrar el diff de git, con archivos sin seguimiento',
   'codex.slash.init': 'Crear AGENTS.md',
   'ask.agent': 'Agente',
-  'ask.placeholderCodex': 'Pregunta a Codex…',
-  'ask.sendCodex': 'Enviar a Codex',
   'ask.whereCodex': 'Preguntar a Codex en…',
   // Dictation (speech to text into the message box)
   'dictation.listening': 'Escuchando… habla ahora',
@@ -1566,6 +1564,7 @@ export const es: Messages = {
   // A quick start whose program is not on the Mac: dimmed, and a tap says so
   'quickStart.notInstalled': 'No instalado',
   'quickStart.notInstalledOnMac': '{name} no está instalado en el Mac',
+  'quickStart.installAgent': '{name} no está instalado. Instalar: {url}',
   'whatsNew.previewServers.title': 'Vistas previas en dos toques',
   'whatsNew.previewServers.body':
     '«+ Añadir vista previa» lista los servidores web que tienes en marcha en el Mac; toca uno y listo.',
@@ -2437,6 +2436,12 @@ export const es: Messages = {
   'orch.open': 'Abrir orquestador',
   'orch.newGoal': 'Nuevo objetivo',
   'orch.stop': 'Detener orquestador',
+  'orch.changeAgent': 'Cambiar agente',
+  'orch.migrateConfirmBody':
+    '¿Migrar el orquestador de {name} a {agent}? Su sesión actual se conserva, lista para reanudar.',
+  'orch.changeAgentTitle': 'Continuar con otro agente',
+  'orch.migrated': 'El orquestador de {name} ahora usa {agent}',
+  'orch.migrateFailed': 'No se pudo cambiar el agente: {error}',
   'orch.stopQuestion': '¿Detener el orquestador? Sus tareas siguen en marcha.',
   'orch.stopConfirm': 'Detener',
   'orch.stopped': 'Orquestador de {name} detenido',
@@ -2646,6 +2651,16 @@ export const es: Messages = {
   'orch.error.generic': 'algo ha fallado; vuelve a intentarlo',
   'projectSettings.error.invalid': 'algún valor no es válido',
   'projectSettings.error.generic': 'algo ha fallado; vuelve a intentarlo',
+  'projectSettings.orchestratorAgent': 'Agente del orquestador',
+  'projectSettings.orchestratorAgentHint':
+    'El agente con el que arranca un orquestador nuevo. El que está en marcha conserva el suyo hasta que lo cambies.',
+  'projectSettings.orchestratorModel': 'Modelo del orquestador',
+  'projectSettings.orchestratorModelPlaceholder': 'el predeterminado del agente',
+  'projectSettings.orchestratorModelHint':
+    'Opcional. Vacío usa el modelo del inicio rápido, o el predeterminado del agente.',
+  'projectSettings.orchestratorAutoMigrate': 'Migrar solo al agotar su cupo',
+  'projectSettings.orchestratorAutoMigrateHint':
+    'Cuando el agente del orquestador agota su cupo, continúa con otro agente por sí solo. Apagado: se te ofrece el cambio.',
   'common.errorDetails': 'Detalles',
   // autoApprove (2026-10-24)
   'autoApprove.label': 'No pedir mi OK',

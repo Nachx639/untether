@@ -204,6 +204,60 @@ export function taskMergeSuite(part: TaskMergePart): void {
     });
 
     if (part === 'pipeline') {
+      it.each(['check', 'base-move'])(
+        'agent resumes during %s: never moves the base or closes its session',
+        async (when) => {
+          commitFile(wt, 'feature.ts', 'export const feature = 1;\n');
+          const before = git(repo, 'rev-parse', 'main');
+          let working = false;
+          const beforeCleanup = vi.fn(async () => {});
+          if (when === 'check')
+            runCheck.mockImplementation(async () => {
+              working = true;
+              return passed;
+            });
+          const result = await runTaskPipeline(
+            task,
+            options({
+              agentWorking: () => working,
+              onMoveBase: () => {
+                if (when === 'base-move') working = true;
+              },
+              beforeCleanup,
+            })
+          );
+          expect(result).toMatchObject({ state: 'ready', agentWorking: true });
+          expect(git(repo, 'rev-parse', 'main')).toBe(before);
+          expect(beforeCleanup).not.toHaveBeenCalled();
+          expect(fs.existsSync(wt)).toBe(true);
+          expect(branchExists('ut/login')).toBe(true);
+        }
+      );
+
+      it('a session stop refused after the base moved preserves the worktree and explains why', async () => {
+        const head = commitFile(wt, 'feature.ts', 'export const feature = 1;\n');
+        const result = await runTaskPipeline(
+          task,
+          options({
+            beforeCleanup: async () => {
+              throw new Error('Agent working: session retained after merge');
+            },
+          })
+        );
+        expect(result).toMatchObject({ state: 'needs_you', mergedSha: head });
+        expect(result.blocker?.detail?.join(' ')).toContain('Agent working');
+        expect(fs.existsSync(wt)).toBe(true);
+        expect(branchExists('ut/login')).toBe(true);
+        const stop = vi.fn(async () => {});
+        const recovered = await finishMergedTask(
+          task,
+          options({ agentWorking: () => true, beforeCleanup: stop })
+        );
+        expect(recovered).toMatchObject({ agentWorking: true, mergedSha: head });
+        expect(stop).not.toHaveBeenCalled();
+        expect(fs.existsSync(wt)).toBe(true);
+      });
+
       it("its fast-forward of the checked-out base says it is Untether's in the reflog (2026-11-02)", async () => {
         commitFile(wt, 'feature.ts', 'export const feature = 1;\n');
         const result = await runTaskPipeline(task, options());

@@ -45,7 +45,7 @@ export type AgentStateName =
   | 'compacting'
   | 'ended';
 
-export type AgentEventSource = 'claude-hook' | 'codex-rollout';
+export type AgentEventSource = 'claude-hook' | 'codex-rollout' | 'qoder-hook';
 
 export type AgentEventKind =
   | 'session-start'
@@ -462,6 +462,8 @@ export interface AgentSnapshot {
   lastEventAt: number;
   /** Its last turn start, tool call or tool result: when it last did something. */
   lastActionAt?: number;
+  /** Last new turn or tool call; completing the `ut task done` call is not new work. */
+  lastWorkStartedAt?: number;
   /**
    * Its last real progress (2026-11-02): model output (a tool call, a message, the end of its
    * turn) or a tool result. Not a turn start (someone typed to it), not a call merely open.
@@ -559,7 +561,8 @@ function trackedFrom(value: unknown): Tracked | undefined {
   const v = value as Record<string, unknown>;
   if (typeof v.state !== 'string' || !STATE_NAMES.has(v.state)) return undefined;
   if (!finite(v.since) || !finite(v.lastEventAt)) return undefined;
-  if (v.source !== 'claude-hook' && v.source !== 'codex-rollout') return undefined;
+  if (v.source !== 'claude-hook' && v.source !== 'codex-rollout' && v.source !== 'qoder-hook')
+    return undefined;
   const open = new Map<string, AgentWait>();
   if (Array.isArray(v.open)) {
     for (const entry of v.open) {
@@ -586,6 +589,7 @@ function trackedFrom(value: unknown): Tracked | undefined {
   };
   for (const key of [
     'lastActionAt',
+    'lastWorkStartedAt',
     'lastProgressAt',
     'turnStartedAt',
     'turnEndedAt',
@@ -665,6 +669,7 @@ export class AgentStateTracker {
         break;
       case 'turn-start':
         closeTools();
+        t.lastWorkStartedAt = Math.max(event.at, (t.lastWorkStartedAt ?? event.at - 1) + 1);
         t.turnStartedAt = event.at;
         t.lastActionAt = event.at;
         delete t.finalMessage;
@@ -672,6 +677,7 @@ export class AgentStateTracker {
         enter('working');
         break;
       case 'tool-start': {
+        t.lastWorkStartedAt = Math.max(event.at, (t.lastWorkStartedAt ?? event.at - 1) + 1);
         const wait: AgentWait = {
           tool: event.tool ?? 'tool',
           ...(event.detail ? { detail: event.detail } : {}),

@@ -3,12 +3,15 @@
  * chat shape. Shared by the phone chat view and the "while you were away" summary.
  */
 import { createHash } from 'node:crypto';
+import { commandAgent } from '../../shared/agents.js';
 import type { SessionInfo } from '../../shared/types.js';
+import type { AgentSnapshot } from './agent-events.js';
 import { type ClaudeChat, readClaudeChat } from './claude-chat.js';
 import { isCodexCommand, readCodexChat } from './codex-chat.js';
 import { codexSessionRef } from './codex-process.js';
 import { isGeminiCommand, readGeminiChat } from './gemini-chat.js';
 import { geminiSessionRef } from './gemini-process.js';
+import { readQoderChat } from './qoder-chat.js';
 
 type ChatSession = SessionInfo & { pid: number };
 
@@ -18,11 +21,13 @@ type ChatSession = SessionInfo & { pid: number };
  */
 export async function readSessionChat(
   session: ChatSession,
-  programPid: number
+  programPid: number,
+  snapshot?: AgentSnapshot
 ): Promise<ClaudeChat> {
   // An attached session's command is its tmux client: what runs is found from the pane below.
   const command = session.multiplexer ? undefined : session.command;
   // OpenAI Codex: the same chat shape, read from its rollout file.
+  if (commandAgent(command) === 'qoder') return readQoderChat(session, snapshot);
   if (isCodexCommand(command)) return readCodexChat(session);
   // Gemini CLI: the same chat shape, read from its chat recording.
   if (isGeminiCommand(command)) return readGeminiChat(session);

@@ -160,6 +160,39 @@ describe("a task stopped on its agent's own prompt has a way out (3dc243e4, 2026
     expect(scheduler.get(task.id)?.blocker).toBeUndefined();
   });
 
+  it("deny rejects Qoder's MCP dialog (Approve / Always approve / Reject); approve is the plain Approve (2026-11-12)", async () => {
+    make();
+    const task = await onPrompt();
+    // Qoder's dialog: its negative option is "Reject", not "No" — `ut task answer … deny` could
+    // not find it ("The prompt has no such option") and the orchestrator had to press 3 by hand.
+    const qoderMenu = (): ScreenChoices => ({
+      question: 'Approve this MCP server?',
+      options: ['Approve', 'Always approve', 'Reject'],
+      detail: ['MCP server', 'npx -y @playwright/mcp@0.0.85'],
+      numbered: true,
+      key: 'qoder-mcp',
+    });
+    asking = 'Permission for MCP server: npx -y @playwright/mcp@0.0.85';
+    menu = qoderMenu();
+    const denied = await scheduler.answerPrompt(task.id, { kind: 'deny' }, { byAgent: true });
+    expect(denied.ok).toBe(true);
+    expect(answered).toEqual([{ sessionId: 's1', option: 3 }]);
+    // Approve is the plain Approve (1), never "Always approve" (2).
+    menu = qoderMenu();
+    const approved = await scheduler.answerPrompt(task.id, { kind: 'approve' }, { byAgent: true });
+    expect(approved.ok).toBe(true);
+    expect(answered.at(-1)).toEqual({ sessionId: 's1', option: 1 });
+    // "Always approve" widens the permission beyond this call: an agent may not give it.
+    menu = qoderMenu();
+    const wide = await scheduler.answerPrompt(
+      task.id,
+      { kind: 'option', option: 2 },
+      { byAgent: true }
+    );
+    expect(wide).toMatchObject({ ok: false, code: 'needs-user' });
+    expect(answered).toHaveLength(2);
+  });
+
   it('never approves a deletion for an agent: refused, nothing typed, the user told on the phone', async () => {
     make();
     const rm = 'D="${TMPDIR:-/tmp}/rv"; mkdir -p "$D"; cd "$D"\nrm -rf "$D"/*';

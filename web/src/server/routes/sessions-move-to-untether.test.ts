@@ -112,7 +112,7 @@ describe('POST /sessions/:id/shield for a ut session in a terminal window', () =
       deliver: (sessionId) => status(sessionId) === 'running',
       sessionStatus: status,
       stopSession: async () => {},
-      claudeCommand: () => ['claude'],
+      agentCommand: () => ['claude'],
       resolveRepo: async (dir) => (dir.startsWith(tmp) ? tmp : null),
       adoptTasks: () => 0,
       pushMerged: () => true,

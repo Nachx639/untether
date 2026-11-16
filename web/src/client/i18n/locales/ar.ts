@@ -655,8 +655,8 @@ export const ar: Messages = {
   'terminalSelect.selectAll': 'تحديد الكل',
   'terminalSelect.paste': 'لصق',
   'directKeyboard.pasteHint': 'اضغط مطولًا هنا واختر لصق',
-  'ask.placeholder': 'اسأل Claude…',
-  'ask.send': 'إرسال إلى Claude',
+  'ask.placeholderAgent': 'اسأل {name}…',
+  'ask.sendAgent': 'إرسال إلى {name}',
   'ask.folder': 'المجلد: {folder}',
   'ask.where': 'اسأل Claude في…',
   'history.menuItem': 'السجل',
@@ -813,8 +813,6 @@ export const ar: Messages = {
   'codex.slash.diff': 'عرض git diff بما في ذلك الملفات غير المتتبعة',
   'codex.slash.init': 'إنشاء AGENTS.md',
   'ask.agent': 'الوكيل',
-  'ask.placeholderCodex': 'اسأل Codex…',
-  'ask.sendCodex': 'إرسال إلى Codex',
   'ask.whereCodex': 'اسأل Codex في…',
   // Dictation (speech to text into the message box)
   'dictation.listening': 'يستمع… تحدّث الآن',
@@ -1511,6 +1509,7 @@ export const ar: Messages = {
   // A quick start whose program is not on the Mac: dimmed, and a tap says so
   'quickStart.notInstalled': 'غير مثبّت',
   'quickStart.notInstalledOnMac': '{name} غير مثبّت على الـ Mac',
+  'quickStart.installAgent': '{name} غير مثبت. التثبيت: {url}',
   'whatsNew.previewServers.title': 'معاينات بلمستين',
   'whatsNew.previewServers.body':
     'يعرض «+ إضافة معاينة» خوادم الويب التي تعمل على جهاز Mac؛ اضغط على أحدها وانتهى الأمر.',
@@ -2358,6 +2357,11 @@ export const ar: Messages = {
   'orch.open': 'فتح المنسّق',
   'orch.newGoal': 'هدف جديد',
   'orch.stop': 'إيقاف المنسّق',
+  'orch.changeAgent': 'تغيير الوكيل',
+  'orch.migrateConfirmBody': 'ترحيل منسّق {name} إلى {agent}؟ تُحفظ جلسته الحالية، جاهزة للاستئناف.',
+  'orch.changeAgentTitle': 'المتابعة بوكيل آخر',
+  'orch.migrated': 'منسّق {name} يستخدم الآن {agent}',
+  'orch.migrateFailed': 'تعذّر تغيير الوكيل: {error}',
   'orch.stopQuestion': 'إيقاف المنسّق؟ تستمر مهامه.',
   'orch.stopConfirm': 'إيقاف',
   'orch.stopped': 'أُوقف منسّق {name}',
@@ -2555,6 +2559,16 @@ export const ar: Messages = {
   'orch.error.generic': 'حدث خطأ ما؛ حاول مرة أخرى',
   'projectSettings.error.invalid': 'إحدى القيم غير صالحة',
   'projectSettings.error.generic': 'حدث خطأ ما؛ حاول مرة أخرى',
+  'projectSettings.orchestratorAgent': 'وكيل المنسّق',
+  'projectSettings.orchestratorAgentHint':
+    'الوكيل الذي يبدأ به منسّق جديد. يحتفظ المنسّق الحالي بوكيله حتى تغيّره.',
+  'projectSettings.orchestratorModel': 'نموذج المنسّق',
+  'projectSettings.orchestratorModelPlaceholder': 'النموذج الافتراضي للوكيل',
+  'projectSettings.orchestratorModelHint':
+    'اختياري. فارغ يستخدم نموذج البدء السريع، وإلا النموذج الافتراضي للوكيل.',
+  'projectSettings.orchestratorAutoMigrate': 'الترحيل تلقائيًا عند نفاد حصته',
+  'projectSettings.orchestratorAutoMigrateHint':
+    'عندما يستنفد وكيل المنسّق حصته، يكمل بوكيل آخر من تلقاء نفسه. إيقاف: يُعرض عليك التغيير.',
   'common.errorDetails': 'التفاصيل',
   // autoApprove (2026-10-24)
   'autoApprove.label': 'لا تطلب موافقتي',

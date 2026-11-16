@@ -6,9 +6,10 @@
  * The client fills these in (client/utils/input-diagnostics.ts), the server checks them field
  * by field, logs them and keeps them for `ut diag input` (server/services/input-diagnostics.ts).
  */
+import { AGENT_IDS } from './agents.js';
 
 /** Who was in the session measured: an agent, a plain shell, or no session (the list). */
-export const DIAG_AGENTS = ['claude', 'codex', 'gemini', 'shell', 'none'] as const;
+export const DIAG_AGENTS = [...AGENT_IDS, 'shell', 'none'] as const;
 export type DiagAgent = (typeof DIAG_AGENTS)[number];
 
 /** What a keyboard sample was taken after. */

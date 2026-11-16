@@ -133,6 +133,8 @@ export interface PipelineOptions {
   onMoveBase?: (move: { sha: string; onto: string }) => void;
   /** Right after the base branch has the task's commit, before its worktree goes. */
   beforeCleanup?: () => Promise<void>;
+  /** Read live at the base mutation and cleanup, including after asynchronous git reads. */
+  agentWorking?: () => boolean;
   limiter?: Limiter;
   /** The Mac's load: sampled during each check run; a run failed under it waits to rerun. */
   loadGate?: LoadGate;
@@ -176,6 +178,8 @@ export interface PipelineOptions {
 }
 
 export interface PipelineResult {
+  /** Completion was overtaken by agent activity; the scheduler returns it to working. */
+  agentWorking?: boolean;
   state: 'merged' | 'ready' | 'needs_you' | 'failed';
   blocker?: TaskBlocker;
   mergedSha?: string;

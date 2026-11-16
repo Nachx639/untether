@@ -3,6 +3,7 @@
 import type express from 'express';
 import type * as http from 'http';
 import type { WebSocketServer } from 'ws';
+import type { TaskAgent } from '../shared/agents.js';
 import type { createAuthMiddleware } from './middleware/auth.js';
 import type { PtyManager } from './pty/index.js';
 import type { SessionManager } from './pty/session-manager.js';
@@ -178,7 +179,7 @@ export interface AppContext {
   // setupTasks
   projectSettings: ProjectSettingsStore;
   flushTaskPushes: () => void;
-  agentCommand: (agent: 'claude' | 'codex') => string[];
+  agentCommand: (agent: TaskAgent) => string[];
   securitySweeper: SecuritySweeper | null;
   connectorListener: ConnectorListener | null;
   connectorHealth: ConnectorHealthDeps;

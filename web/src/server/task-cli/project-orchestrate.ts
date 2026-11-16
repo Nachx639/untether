@@ -1,6 +1,7 @@
 /** `ut project orchestrate`: starts a project's orchestrator with a goal, or gives the running one the goal. */
 
 import * as path from 'path';
+import { isTaskAgent } from '../../shared/agents.js';
 import type { TaskConfirmation } from '../../shared/task-confirmations.js';
 import type { TaskResponse } from '../pty/socket-protocol.js';
 import { shortId } from './format-task-line.js';
@@ -11,7 +12,16 @@ const USAGE = `  ut project orchestrate [--repo DIR] [--wait [--timeout SEC]] [-
                  (start the project's orchestrator with this goal, or give the running one the
                   goal; from an agent or a script it asks the user's OK on the phone first.
                   --wait waits for the answer, 540 s by default; run it again with --wait to
-                  keep waiting: it does not ask twice)`;
+                  keep waiting: it does not ask twice)
+  ut project orchestrator migrate [--repo DIR] --to claude|codex|qoder [--model M] [--json]
+                 (the project's orchestrator carries on with another agent: the current one
+                  hands off, the new one starts with the brief plus the handoff, the queued
+                  messages and task events follow, and the old session is kept — suspended or
+                  idle — never killed. Going back is another migration. From an agent or a
+                  script it asks the user's OK on the phone first)
+  ut project orchestrator handoff [--repo DIR] - <<'EOF' … EOF
+                 (the current orchestrator gives back its written handoff while it is migrated;
+                  only that project's own orchestrator may, and only while a migration waits)`;
 
 /** A started (or reused) orchestrator, in one or two lines. */
 function formatOrchestrated(data: Record<string, unknown>): string {
@@ -135,10 +145,58 @@ export const projectOrchestrate: CommandFamily = {
         };
       },
     },
+    'project orchestrator': {
+      options: { value: ['repo', 'to', 'model'] },
+      build: async ({ flags, positional, json, repo, deps, text }) => {
+        const [action] = positional;
+        if (action === 'migrate') {
+          const to = flags.to;
+          if (typeof to !== 'string' || !isTaskAgent(to)) {
+            throw new UsageError('ut project orchestrator migrate needs --to claude|codex|qoder');
+          }
+          const model =
+            typeof flags.model === 'string' && flags.model.trim() ? flags.model.trim() : undefined;
+          return {
+            op: 'project-orchestrator-migrate',
+            args: { repo, cwd: deps.cwd, to, ...(model ? { model } : {}) },
+            json,
+          };
+        }
+        if (action === 'handoff') {
+          return {
+            op: 'project-orchestrator-handoff',
+            args: { repo, cwd: deps.cwd, text: await text(positional.slice(1), 'The handoff') },
+            json,
+          };
+        }
+        throw new UsageError('ut project orchestrator needs migrate or handoff');
+      },
+    },
   },
   print: {
     'project-orchestrate': ({ data, deps }) => {
       deps.out(formatOrchestrated(data));
+      return undefined;
+    },
+    'project-orchestrator-migrate': ({ data, deps }) => {
+      const name = path.basename(String(data.repoPath));
+      const lines = [
+        `→ migrated the orchestrator of ${name} to ${String(data.toAgent)} (session ${shortId(String(data.sessionId))})`,
+        data.handoff === 'agent'
+          ? 'It carries the previous orchestrator’s written handoff.'
+          : 'The previous orchestrator did not answer; it carries the handoff Untether built.',
+        data.suspended
+          ? 'The old session is suspended, ready to resume.'
+          : 'The old session is left running idle (its agent does not suspend); open it any time.',
+      ];
+      if (data.pending) lines.push('Its brief is typed in once its agent is ready.');
+      deps.out(lines.join('\n'));
+      return undefined;
+    },
+    'project-orchestrator-handoff': ({ data, deps }) => {
+      deps.out(
+        `→ handoff accepted for the orchestrator of ${path.basename(String(data.repoPath))}`
+      );
       return undefined;
     },
   },

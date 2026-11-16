@@ -81,6 +81,14 @@ function loadAuthenticatePam(): AuthenticateFunction {
   }
 }
 
+/** Node's load error in one line, without its "Please try re-compiling or re-installing…". */
+export function withoutRebuildAdvice(message: string): string {
+  return message
+    .replace(/\s+/g, ' ')
+    .replace(/\s*Please try re-compiling or re-installing.*?(\)\.|$)/i, '')
+    .trim();
+}
+
 /**
  * `authenticate` over a loader that may fail, and whether the module is loaded.
  *
@@ -90,6 +98,15 @@ function loadAuthenticatePam(): AuthenticateFunction {
  * login stayed gone after the module was rebuilt, until someone restarted the server again.
  * A module that did not load is now tried again at the next login (at most once every
  * `retryMs`), and the reason it did not load is kept and said.
+ *
+ * 2026-11-14: it was opened as soon as this file was imported, and the CLI imports it: every
+ * `ut …` of a task (the session's Node 24, on the source of the checkout the server runs from
+ * on Node 26) printed "authenticate-pam … was compiled against a different Node.js version …
+ * Please try re-compiling", about a module that is right for the Node that loads it, to agents
+ * that could have rebuilt it under the running server. Nothing is opened until someone logs in
+ * or asks `status()`: the server asks when it starts (server-core.ts), a command never does.
+ * Node's advice to rebuild is not repeated (`withoutRebuildAdvice`): who rebuilds is the
+ * doctor of the server that loads the module, with its own Node.
  */
 export function createPamAuthenticate(deps: {
   load: () => AuthenticateFunction;
@@ -112,13 +129,12 @@ export function createPamAuthenticate(deps: {
       const message = loadError instanceof Error ? loadError.message : String(loadError);
       if (message !== error) {
         deps.warn?.(
-          `Warning: authenticate-pam native module did not load; password login will not work until it does: ${message.replace(/\s+/g, ' ').slice(0, 800)}`
+          `Warning: authenticate-pam native module did not load; password login will not work until it does: ${withoutRebuildAdvice(message).slice(0, 800)}`
         );
       }
       error = message;
     }
   };
-  tryLoad();
   return {
     authenticate: (username, password, callback) => {
       tryLoad();

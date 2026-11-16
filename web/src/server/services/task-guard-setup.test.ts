@@ -2,7 +2,7 @@ import { spawnSync } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { textDeletes, untetherWrapper } from '../../shared/agent-prompt.js';
 import type { TaskRecord } from '../../shared/tasks.js';
 import { RM_TEST_DIR } from '../../test/helpers/rm-test-dir.js';
@@ -12,13 +12,15 @@ import { taskGuardCheck } from './doctor-checks.js';
 import { ProjectSettingsPatchSchema } from './project-settings.js';
 import { runGuardHook, runShellEnvHook } from './task-guard-hook.js';
 import {
+  type CodexHookTrust,
   codexGuardArgs,
+  codexTakesHookTrust,
   createTaskGuard,
   guardedClaudeSettings,
   guardHookCommand,
   TASK_UNATTENDED_CLAUDE_SETTINGS,
 } from './task-guard-setup.js';
-import { guardApplied, taskCommand } from './task-launcher.js';
+import { createTaskLauncher, guardApplied, taskCommand } from './task-launcher.js';
 import { summarizedCommand } from './task-output.js';
 import { readShellGroups, recordShellGroup, shellGroupsTrouble } from './task-processes.js';
 import { TaskScheduler } from './task-scheduler.js';
@@ -59,14 +61,14 @@ function task(overrides: Partial<TaskRecord> = {}): TaskRecord {
 }
 
 describe('createTaskGuard', () => {
-  it('writes the policy and Claude settings with the event hooks and the guard first', () => {
+  it('writes the policy and Claude settings with the event hooks and the guard first', async () => {
     const guard = createTaskGuard({
       untetherDir: dir,
       home: '/Users/alex',
       hook: ['/usr/bin/node', '/x/task-guard-hook.ts'],
       settings: () => ({ guardOff: ['sudo'], guardDeny: ['terraform apply'] }),
     });
-    const prepared = guard.prepare(task({ worktreePath: '/wt/x' }), '/wt/x');
+    const prepared = await guard.prepare(task({ worktreePath: '/wt/x' }), '/wt/x');
     expect(prepared).not.toBeNull();
     const policyFile = path.join(dir, 'agent-hooks', 'tasks', 'abc123', 'policy.json');
     const policy = JSON.parse(fs.readFileSync(policyFile, 'utf8'));
@@ -96,7 +98,7 @@ describe('createTaskGuard', () => {
     expect(prepared?.codexArgs).toBeNull();
   });
 
-  it('merges a provider task /model picker into the Claude settings (model-providers.ts)', () => {
+  it('merges a provider task /model picker into the Claude settings (model-providers.ts)', async () => {
     const picker = {
       modelPicker: {
         replaceBuiltInOptions: true,
@@ -109,7 +111,7 @@ describe('createTaskGuard', () => {
       hook: ['h'],
       providerSettings: (t) => (t.modelProvider ? picker : undefined),
     });
-    const prepared = guard.prepare(
+    const prepared = await guard.prepare(
       task({
         worktreePath: '/wt/x',
         modelProvider: 'abliteration',
@@ -124,30 +126,31 @@ describe('createTaskGuard', () => {
     expect(settings.hooks.PreToolUse).toBeDefined();
   });
 
-  it('a plain task gets no modelPicker', () => {
+  it('a plain task gets no modelPicker', async () => {
     const guard = createTaskGuard({
       untetherDir: dir,
       hook: ['h'],
       providerSettings: (t) => (t.modelProvider ? { modelPicker: {} } : undefined),
     });
-    const prepared = guard.prepare(task({ worktreePath: '/wt/x' }), '/wt/x');
+    const prepared = await guard.prepare(task({ worktreePath: '/wt/x' }), '/wt/x');
     const settings = JSON.parse(fs.readFileSync(prepared?.claudeSettings as string, 'utf8'));
     expect(settings.modelPicker).toBeUndefined();
   });
 
-  it('gives a Codex task its hook flags only when Codex takes unreviewed hooks', () => {
+  it('gives a Codex task its hook flags only when Codex takes unreviewed hooks', async () => {
     const make = (ok: boolean) =>
-      createTaskGuard({ untetherDir: dir, hook: ['h'], codexTakesHookTrust: () => ok }).prepare(
-        task({ agent: 'codex', command: ['codex'] }),
-        '/wt/x'
-      );
-    expect(make(true)?.codexArgs?.[0]).toBe('--dangerously-bypass-hook-trust');
-    expect(make(false)?.codexArgs).toBeNull();
+      createTaskGuard({
+        untetherDir: dir,
+        hook: ['h'],
+        codexTakesHookTrust: async () => ({ kind: ok ? 'yes' : 'no' }),
+      }).prepare(task({ agent: 'codex', command: ['codex'] }), '/wt/x');
+    expect((await make(true))?.codexArgs?.[0]).toBe('--dangerously-bypass-hook-trust');
+    expect((await make(false))?.codexArgs).toBeNull();
   });
 
-  it('reads back what the hook blocked, and records a task that runs unguarded', () => {
+  it('reads back what the hook blocked, and records a task that runs unguarded', async () => {
     const guard = createTaskGuard({ untetherDir: dir, hook: ['h'] });
-    guard.prepare(task(), '/wt/x');
+    await guard.prepare(task(), '/wt/x');
     expect(guard.blockedStamp('abc123')).toBeNull();
     guard.unguarded(task(), 'its command names its own --settings');
     const entries = guard.blocked('abc123');
@@ -156,10 +159,252 @@ describe('createTaskGuard', () => {
     expect(guard.blockedStamp('abc123')).not.toBeNull();
   });
 
-  it('returns null (unguarded) when its folder cannot be written', () => {
+  it('returns null (unguarded) when its folder cannot be written', async () => {
     const file = path.join(dir, 'not-a-dir');
     fs.writeFileSync(file, '');
-    expect(createTaskGuard({ untetherDir: file, hook: ['h'] }).prepare(task(), '/wt')).toBeNull();
+    expect(
+      await createTaskGuard({ untetherDir: file, hook: ['h'] }).prepare(task(), '/wt')
+    ).toBeNull();
+  });
+});
+
+/** A codex double: a script whose answer a mode file controls, counting each run. */
+function codexDouble(bin: string): { program: string; mode: string; count: string } {
+  fs.mkdirSync(bin, { recursive: true });
+  const program = path.join(bin, 'codex');
+  const mode = path.join(bin, 'codex.mode');
+  const count = path.join(bin, 'codex.count');
+  fs.writeFileSync(
+    program,
+    [
+      '#!/bin/sh',
+      `printf 'x\\n' >> '${count}'`,
+      'mode=ok',
+      `[ -f '${mode}' ] && IFS= read -r mode < '${mode}'`,
+      'case "$mode" in',
+      "  ok) echo '  --dangerously-bypass-hook-trust  Run hooks nobody reviewed';;",
+      "  old) echo 'Usage: codex [OPTIONS] [PROMPT]';;",
+      '  empty) ;;',
+      "  fail) echo 'codex: cannot start' >&2; exit 3;;",
+      '  hang) sleep 5;;',
+      'esac',
+      '',
+    ].join('\n'),
+    { mode: 0o755 }
+  );
+  return { program, mode, count };
+}
+const setMode = (mode: string, value: string) => fs.writeFileSync(mode, value);
+const runs = (count: string) => {
+  try {
+    return fs.readFileSync(count, 'utf8').split('\n').filter(Boolean).length;
+  } catch {
+    return 0;
+  }
+};
+
+describe('codexTakesHookTrust', () => {
+  it('caches a "yes" by the real file, and re-asks when the file changes', async () => {
+    const { program, mode, count } = codexDouble(path.join(dir, 'bin'));
+    expect(await codexTakesHookTrust(program)).toEqual({ kind: 'yes' });
+    expect(runs(count)).toBe(1);
+    // Same file: answered from the cache, nothing run.
+    expect(await codexTakesHookTrust(program)).toEqual({ kind: 'yes' });
+    expect(runs(count)).toBe(1);
+    // The mode file changes but the program does not: still the cached answer.
+    setMode(mode, 'old');
+    expect(await codexTakesHookTrust(program)).toEqual({ kind: 'yes' });
+    expect(runs(count)).toBe(1);
+    // The program itself changes (an upgrade): asked again.
+    fs.appendFileSync(program, '# upgraded\n');
+    expect(await codexTakesHookTrust(program)).toEqual({ kind: 'no' });
+    expect(runs(count)).toBe(2);
+  });
+
+  it('caches a "no" (update Codex): a later answer is not re-asked until the file changes', async () => {
+    const { program, mode, count } = codexDouble(path.join(dir, 'bin'));
+    setMode(mode, 'old');
+    expect(await codexTakesHookTrust(program)).toEqual({ kind: 'no' });
+    setMode(mode, 'ok');
+    expect(await codexTakesHookTrust(program)).toEqual({ kind: 'no' });
+    expect(runs(count)).toBe(1);
+  });
+
+  it('does not cache a missing program (ENOENT): the next launch asks again', async () => {
+    const bin = path.join(dir, 'bin');
+    const program = path.join(bin, 'codex');
+    const first = await codexTakesHookTrust(program);
+    expect(first.kind).toBe('unasked');
+    expect(first.kind === 'unasked' && first.why).toContain('does not exist');
+    // Still missing: asked again, never cached as "too old".
+    expect((await codexTakesHookTrust(program)).kind).toBe('unasked');
+    // It appears (a Node update put it back): now it answers.
+    const { count } = codexDouble(bin);
+    expect(await codexTakesHookTrust(program)).toEqual({ kind: 'yes' });
+    expect(runs(count)).toBe(1);
+  });
+
+  it('does not cache empty help output: the next launch asks again', async () => {
+    const { program, mode, count } = codexDouble(path.join(dir, 'bin'));
+    setMode(mode, 'empty');
+    const first = await codexTakesHookTrust(program);
+    expect(first.kind).toBe('unasked');
+    expect(first.kind === 'unasked' && first.why).toContain('said nothing');
+    expect(runs(count)).toBe(1);
+    setMode(mode, 'ok');
+    expect(await codexTakesHookTrust(program)).toEqual({ kind: 'yes' });
+    expect(runs(count)).toBe(2);
+  });
+
+  it('does not cache a --help that fails: the next launch asks again', async () => {
+    const { program, mode, count } = codexDouble(path.join(dir, 'bin'));
+    setMode(mode, 'fail');
+    const first = await codexTakesHookTrust(program);
+    expect(first.kind).toBe('unasked');
+    expect(first.kind === 'unasked' && first.why).toContain('cannot start');
+    setMode(mode, 'ok');
+    expect(await codexTakesHookTrust(program)).toEqual({ kind: 'yes' });
+    expect(runs(count)).toBe(2);
+  });
+
+  it('does not cache a --help that times out: the next launch asks again', async () => {
+    const { program, mode, count } = codexDouble(path.join(dir, 'bin'));
+    setMode(mode, 'hang');
+    const first = await codexTakesHookTrust(program, { timeoutMs: 1000 });
+    expect(first.kind).toBe('unasked');
+    expect(first.kind === 'unasked' && first.why).toContain('did not respond');
+    expect(runs(count)).toBe(1);
+    setMode(mode, 'ok');
+    expect(await codexTakesHookTrust(program, { timeoutMs: 1000 })).toEqual({ kind: 'yes' });
+    expect(runs(count)).toBe(2);
+  });
+
+  it('resolves the program on the session PATH (its Node first), not the server PATH one', async () => {
+    const old = codexDouble(path.join(dir, 'old-bin'));
+    const fresh = codexDouble(path.join(dir, 'new-bin'));
+    setMode(old.mode, 'old');
+    const original = process.env.PATH;
+    process.env.PATH = `${path.join(dir, 'old-bin')}:${original}`;
+    try {
+      // The server PATH's codex is the old one.
+      expect(await codexTakesHookTrust('codex')).toEqual({ kind: 'no' });
+      expect(runs(old.count)).toBe(1);
+      // The session puts its Node first: the new codex is asked, the old one untouched.
+      expect(
+        await codexTakesHookTrust('codex', { pathPrepend: path.join(dir, 'new-bin') })
+      ).toEqual({
+        kind: 'yes',
+      });
+      expect(runs(fresh.count)).toBe(1);
+      expect(runs(old.count)).toBe(1);
+      // Cached by the real file: asking again runs nothing.
+      expect(
+        await codexTakesHookTrust('codex', { pathPrepend: path.join(dir, 'new-bin') })
+      ).toEqual({
+        kind: 'yes',
+      });
+      expect(runs(fresh.count)).toBe(1);
+    } finally {
+      process.env.PATH = original;
+    }
+  });
+});
+
+describe('createTaskGuard: a Codex that cannot be asked', () => {
+  const codexTask = () => task({ agent: 'codex', command: ['codex'] });
+
+  it('retries, then fails the launch instead of running unguarded', async () => {
+    const ask = vi.fn(
+      async (): Promise<CodexHookTrust> => ({
+        kind: 'unasked',
+        why: 'codex is not on the PATH its session starts with',
+      })
+    );
+    const guard = createTaskGuard({
+      untetherDir: dir,
+      hook: ['h'],
+      codexTakesHookTrust: ask,
+      codexRetryMs: 0,
+    });
+    await expect(guard.prepare(codexTask(), '/wt/x')).rejects.toThrow(/could not be mounted/);
+    expect(ask).toHaveBeenCalledTimes(3);
+  });
+
+  it('a Codex that answers on a retry gets its guard', async () => {
+    let asked = 0;
+    const ask = vi.fn(
+      async (): Promise<CodexHookTrust> =>
+        ++asked === 1 ? { kind: 'unasked', why: 'codex --help did not respond' } : { kind: 'yes' }
+    );
+    const guard = createTaskGuard({
+      untetherDir: dir,
+      hook: ['h'],
+      codexTakesHookTrust: ask,
+      codexRetryMs: 0,
+    });
+    const prepared = await guard.prepare(codexTask(), '/wt/x');
+    expect(prepared?.codexArgs?.[0]).toBe('--dangerously-bypass-hook-trust');
+    expect(ask).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not start a session when the guard cannot be mounted', async () => {
+    const guard = createTaskGuard({
+      untetherDir: dir,
+      hook: ['h'],
+      codexTakesHookTrust: async () => ({
+        kind: 'unasked',
+        why: 'codex is not on the PATH its session starts with',
+      }),
+      codexRetryMs: 0,
+    });
+    const createSession = vi.fn(async () => ({ sessionId: 's', sessionInfo: {} }));
+    const launch = createTaskLauncher({
+      ptyManager: { createSession, isShieldAvailable: () => true } as never,
+      deliverInitialInput: () => vi.fn(),
+      guard,
+      nodeRuntime: async () => ({ kind: 'none' }),
+    });
+    await expect(
+      launch(
+        task({ agent: 'codex', command: ['codex'], isolation: 'none', workingDir: dir }),
+        'Do it',
+        's'
+      )
+    ).rejects.toThrow(/could not be mounted/);
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it('asks the Codex its session would run (its Node first on PATH) and mounts the guard', async () => {
+    const old = codexDouble(path.join(dir, 'old-bin'));
+    const fresh = codexDouble(path.join(dir, 'new-bin'));
+    setMode(old.mode, 'old');
+    const original = process.env.PATH;
+    process.env.PATH = `${path.join(dir, 'old-bin')}:${original}`;
+    try {
+      const guard = createTaskGuard({ untetherDir: dir, hook: ['h'] });
+      const createSession = vi.fn(async () => ({ sessionId: 's', sessionInfo: {} }));
+      const launch = createTaskLauncher({
+        ptyManager: { createSession, isShieldAvailable: () => true } as never,
+        deliverInitialInput: () => vi.fn(),
+        guard,
+        nodeRuntime: async () => ({
+          kind: 'switch',
+          requirements: [],
+          node: { version: '24.22.3', bin: path.join(dir, 'new-bin'), source: 'nvm' },
+        }),
+      });
+      await launch(
+        task({ agent: 'codex', command: ['codex'], isolation: 'none', workingDir: dir }),
+        'Do it',
+        's'
+      );
+      const command = (createSession.mock.calls[0] as unknown[])[0] as string[];
+      expect(command).toContain('--dangerously-bypass-hook-trust');
+      expect(runs(fresh.count)).toBe(1);
+      expect(runs(old.count)).toBe(0);
+    } finally {
+      process.env.PATH = original;
+    }
   });
 });
 

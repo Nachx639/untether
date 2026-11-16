@@ -1,4 +1,5 @@
 /** The quick start commands of the new-session screen. */
+import { AGENT_IDS, AGENTS } from '../../shared/agents.js';
 
 export interface QuickStartCommand {
   name?: string; // Optional display name (can include emoji), if empty uses command
@@ -11,10 +12,8 @@ export interface QuickStartConfig {
 }
 
 export const DEFAULT_QUICK_START_COMMANDS: QuickStartCommand[] = [
-  { name: '✨ codex', command: 'codex' },
-  { name: '✨ claude', command: 'claude' },
+  ...AGENT_IDS.map((id) => ({ name: AGENTS[id].label, command: AGENTS[id].executable })),
   { name: '✨ auggie', command: 'auggie' },
-  { command: 'gemini3' },
   { command: 'opencode 4' },
   { command: 'zsh' },
   { command: 'node' },

@@ -538,7 +538,7 @@ spawn(
 
 const fakeBin = path.join(home, 'fake-bin');
 fs.mkdirSync(fakeBin, { recursive: true });
-for (const agent of ['claude', 'codex', 'gemini']) {
+for (const agent of ['claude', 'codex', 'gemini', 'qodercli']) {
   fs.writeFileSync(
     path.join(fakeBin, agent),
     `#!/bin/bash

@@ -14,6 +14,7 @@
 import { html, LitElement } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { live } from 'lit/directives/live.js';
+import { AGENTS, isTaskAgent, TASK_AGENTS, type TaskAgent } from '../../shared/agents.js';
 import { type MessageKey, t } from '../i18n/index.js';
 import { authClient } from '../services/auth-client.js';
 import { caretTapDiagnostics } from '../utils/caret-tap-diagnostics.js';
@@ -29,7 +30,7 @@ export const ASK_DRAFT_KEY = 'ut-ask-claude-draft';
 export const ASK_AGENT_KEY = 'ut-ask-agent';
 export const ASK_MODE_KEY = 'ut-ask-mode';
 
-export type AskAgent = 'claude' | 'codex';
+export type AskAgent = TaskAgent;
 /** What the text becomes in a repository: a task (routed) or a plain session. */
 export type AskMode = 'task' | 'session';
 
@@ -53,7 +54,8 @@ function writeAskMode(mode: AskMode) {
 /** The agent picked last in the ask box (Claude unless Codex was picked). */
 export function readAskAgent(): AskAgent {
   try {
-    return localStorage.getItem(ASK_AGENT_KEY) === 'codex' ? 'codex' : 'claude';
+    const value = localStorage.getItem(ASK_AGENT_KEY);
+    return isTaskAgent(value) ? value : 'claude';
   } catch {
     return 'claude';
   }
@@ -107,6 +109,7 @@ export class AskClaudeBox extends LitElement {
   @property({ type: String }) folder = '~';
   /** True while the session is being created: blocks a double send. */
   @property({ type: Boolean }) busy = false;
+  @property({ attribute: false }) availability: Record<string, boolean> = {};
   /**
    * Compact phone list (utils/phone-list-layout.ts): "Tareas" as an icon in this row instead
    * of a link on its own line below the box. A tap fires `ask-open-tasks`.
@@ -146,11 +149,12 @@ export class AskClaudeBox extends LitElement {
   }
 
   private sendTap = this.onTap(() => this.send());
-  private claudeTap = this.onTap(() => this.pickAgent('claude'));
-  private codexTap = this.onTap(() => this.pickAgent('codex'));
+  private agentTaps = Object.fromEntries(
+    TASK_AGENTS.map((agent) => [agent, this.onTap(() => this.pickAgent(agent))])
+  );
 
   private pickAgent(agent: AskAgent) {
-    if (agent === this.agent) return;
+    if (agent === this.agent || this.availability[AGENTS[agent].executable] === false) return;
     this.agent = agent;
     writeAskAgent(agent);
   }
@@ -209,7 +213,13 @@ export class AskClaudeBox extends LitElement {
   send() {
     const text = this.text.trim();
     // Still turning the dictation into text: sending now would throw that text away.
-    if (!text || this.busy || this.dictation === 'transcribing') return;
+    if (
+      !text ||
+      this.busy ||
+      this.dictation === 'transcribing' ||
+      this.availability[AGENTS[this.agent].executable] === false
+    )
+      return;
     // abort, not stop: stop() still delivers a final result, which would put the sent
     // question back into the box.
     this.dictationController.cancel();
@@ -264,12 +274,12 @@ export class AskClaudeBox extends LitElement {
   render() {
     const folder = formatPathForDisplay(this.folder);
     const name = folderName(folder);
-    const codex = this.agent === 'codex';
+    const nameOfAgent = AGENTS[this.agent].label;
     const asTask = this.effectiveMode === 'task';
-    const placeholder = t(
-      asTask ? 'ask.placeholderTask' : codex ? 'ask.placeholderCodex' : 'ask.placeholder'
-    );
-    const sendLabel = t(codex ? 'ask.sendCodex' : 'ask.send');
+    const placeholder = t(asTask ? 'ask.placeholderTask' : 'ask.placeholderAgent', {
+      name: nameOfAgent,
+    });
+    const sendLabel = t('ask.sendAgent', { name: nameOfAgent });
     // Always the names, even on an SE (2026-10-12): the folder chip gives way instead.
     const agentButton = (
       agent: AskAgent,
@@ -281,7 +291,8 @@ export class AskClaudeBox extends LitElement {
         role="radio"
         aria-checked=${this.agent === agent ? 'true' : 'false'}
         aria-label=${label}
-        title=${label}
+        title=${this.availability[AGENTS[agent].executable] === false ? t('quickStart.installAgent', { name: label, url: AGENTS[agent].installUrl }) : label}
+        ?disabled=${this.availability[AGENTS[agent].executable] === false}
         class="ut-surface--segment ${this.agent === agent ? 'selected' : ''}"
         data-testid=${`ask-agent-${agent}`}
         @pointerup=${tap.pointerup}
@@ -308,7 +319,7 @@ export class AskClaudeBox extends LitElement {
             role="radiogroup"
             aria-label=${t('ask.agent')}
           >
-            ${agentButton('claude', 'Claude', this.claudeTap)}${agentButton('codex', 'Codex', this.codexTap)}
+            ${TASK_AGENTS.map((agent) => agentButton(agent, AGENTS[agent].label, this.agentTaps[agent]))}
           </span>
           ${
             this.repo

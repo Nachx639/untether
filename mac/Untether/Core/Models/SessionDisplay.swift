@@ -76,7 +76,7 @@ struct SessionDisplay: Identifiable, Equatable, Sendable {
         self.info = info
         let tool = Self.tool(for: info)
         self.tool = tool
-        self.agent = Self.knownAgents.contains(tool) ? tool : (info.claudeStatus != nil ? "claude" : nil)
+        self.agent = Self.agentIds[tool] ?? (info.claudeStatus != nil ? "claude" : nil)
         self.title = Self.title(for: info, tool: tool)
         let state = Self.state(for: info)
         self.state = state
@@ -177,7 +177,15 @@ struct SessionDisplay: Identifiable, Equatable, Sendable {
     // MARK: - Tool
 
     static let shells: Set<String> = ["zsh", "bash", "fish", "sh", "nu", "pwsh", ""]
-    static let knownAgents: Set<String> = ["claude", "codex", "gemini"]
+    // BEGIN GENERATED AGENTS
+    // web/src/shared/agents.ts — run web/scripts/sync-agent-registry.mjs
+    static let agentIds: [String: String] = [
+        "claude": "claude",
+        "codex": "codex",
+        "gemini": "gemini",
+        "qodercli": "qoder",
+    ]
+    // END GENERATED AGENTS
 
     /// The program a session runs: "claude" for `["zsh", "-i", "-c", "claude \"$@\"", "--"]` or
     /// `["/opt/homebrew/bin/gemini"]`, "zsh" for a plain shell. Port of the web's `sessionTool()`.

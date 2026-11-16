@@ -4,6 +4,7 @@
 
 declare const self: ServiceWorkerGlobalScope;
 
+import type { AgentId } from '../shared/agents.js';
 import { syncAppBadge } from './sw-badge.js';
 import { handleNotificationClick } from './sw-notification-click.js';
 import {
@@ -65,8 +66,8 @@ interface ClaudeStatusData {
     | 'claude-finished'
     | 'claude-replied'
     | 'claude-waiting'
-    | 'codex-finished'
-    | 'codex-waiting';
+    | `${Exclude<AgentId, 'claude'>}-finished`
+    | `${Exclude<AgentId, 'claude'>}-waiting`;
   sessionId: string;
   timestamp: string;
 }

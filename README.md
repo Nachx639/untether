@@ -5,14 +5,14 @@
 
 <p align="center">
   <b>The coding agents running on your Mac, on your phone.</b><br>
-  Follow and answer Claude Code and Codex sessions from any browser, and hand them tasks that get
+  Follow and answer Claude Code, Codex and Qoder sessions from any browser, and hand them tasks that get
   reviewed, checked and merged on their own.
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B%20%C2%B7%20Apple%20Silicon-lightgrey" alt="macOS 14 or later, Apple Silicon">
-  <img src="https://img.shields.io/badge/version-1.0.1-brightgreen" alt="Version 1.0.1">
+  <img src="https://img.shields.io/badge/version-1.0.2-brightgreen" alt="Version 1.0.2">
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 ## What it does
 
 - **Your Mac's sessions, on your phone.** A menu bar app runs a local server; its web interface
-  lists every Claude Code, Codex or shell session by project and puts on top the ones that need
+  lists every Claude Code, Codex, Qoder or shell session by project and puts on top the ones that need
   you (a permission, a question, a failure). Open one as a terminal or as a chat and answer.
 - **Tasks that merge themselves.** `ut task new "…"` starts an agent in its own git worktree and
   branch. When it reports done, an AI reviewer reads the diff and your project's check command
@@ -85,7 +85,7 @@ To sign the app with your own Apple developer team, copy `apple/Local.xcconfig.t
 1. Open `Untether.app` from `/Applications`. It lives in the menu bar and starts its server on
    `http://localhost:4020`, reachable from this Mac only.
 2. Install the `ut` command from the app's settings and start a session: `ut claude` (or `ut codex`,
-   or any command). The agents are yours: Untether starts Claude Code and Codex, it does not ship
+   `ut qodercli`, or any command). The agents are yours: Untether starts Claude Code, Codex and Qoder, it does not ship
    or configure them.
 3. Open `http://localhost:4020` and sign in with the password of your macOS account.
 4. Inside a git repository, hand over a task: `ut task new "Add a --json flag to the export command"`.
@@ -113,7 +113,7 @@ To sign the app with your own Apple developer team, copy `apple/Local.xcconfig.t
 - An Apple Silicon Mac with macOS 14 or later.
 - To build: Xcode 16 or later, Node.js 22.12 through 24.x, pnpm, and rustup (the native forwarder
   in `native/ut-fwd` pins its own toolchain).
-- The agents you want to use, installed and signed in by you: Claude Code and/or Codex. Untether
+- The agents you want to use, installed and signed in by you: Claude Code, Codex and/or Qoder. Untether
   starts them; it does not ship or configure them.
 
 The server alone (`web/`) also builds as an npm package for Linux and headless machines; see

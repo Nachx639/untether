@@ -1,5 +1,6 @@
 /** `ut task send` and `answer`: words for a task's agent. */
 
+import { AGENTS } from '../../shared/agents.js';
 import { printTask } from './print.js';
 import { type CommandFamily, UsageError } from './types.js';
 
@@ -65,9 +66,9 @@ export const taskTalk: CommandFamily = {
         const sent = (data.message as { id?: string } | undefined)?.id;
         if (sent) deps.out(`Message ${sent}: its next report answers it.`);
         deps.out(
-          task.agent === 'codex'
-            ? 'Typed into Codex at its prompt.'
-            : 'Typed into its Claude: if it is working it reads it within its current turn.'
+          task.agent === 'claude'
+            ? 'Typed into its Claude: if it is working it reads it within its current turn.'
+            : `Typed into ${AGENTS[task.agent].label} at its prompt.`
         );
       }),
     answer: (input) => printTask(input, () => input.deps.out('Answered: its agent goes on.')),

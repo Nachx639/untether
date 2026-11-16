@@ -1,3 +1,4 @@
+import { AGENT_IDS, AGENTS } from '../../shared/agents.js';
 import type { Session } from '../../shared/types.js';
 import { HttpMethod } from '../../shared/types.js';
 import type { AuthClient } from '../services/auth-client.js';
@@ -5,7 +6,12 @@ import { createLogger } from './logger.js';
 
 const logger = createLogger('ai-sessions');
 
-const AI_ASSISTANTS = ['claude', 'gemini', 'openhands', 'aider', 'codex', 'auggie'];
+const AI_ASSISTANTS = [
+  ...AGENT_IDS.map((id) => AGENTS[id].executable),
+  'openhands',
+  'aider',
+  'auggie',
+];
 
 /**
  * Check if a session is an AI assistant based on command

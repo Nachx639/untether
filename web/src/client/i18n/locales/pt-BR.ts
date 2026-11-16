@@ -678,8 +678,8 @@ export const ptBR: Messages = {
   'terminalSelect.selectAll': 'Selecionar tudo',
   'terminalSelect.paste': 'Colar',
   'directKeyboard.pasteHint': 'Toque e segure aqui e escolha Colar',
-  'ask.placeholder': 'Pergunte ao Claude…',
-  'ask.send': 'Enviar ao Claude',
+  'ask.placeholderAgent': 'Pergunte ao {name}…',
+  'ask.sendAgent': 'Enviar ao {name}',
   'ask.folder': 'Pasta: {folder}',
   'ask.where': 'Perguntar ao Claude em…',
   'history.menuItem': 'Histórico',
@@ -839,8 +839,6 @@ export const ptBR: Messages = {
   'codex.slash.diff': 'Mostrar o diff do git, incluindo arquivos não rastreados',
   'codex.slash.init': 'Criar AGENTS.md',
   'ask.agent': 'Agente',
-  'ask.placeholderCodex': 'Pergunte ao Codex…',
-  'ask.sendCodex': 'Enviar ao Codex',
   'ask.whereCodex': 'Perguntar ao Codex em…',
   // Dictation (speech to text into the message box)
   'dictation.listening': 'Ouvindo… fale agora',
@@ -1558,6 +1556,7 @@ export const ptBR: Messages = {
   // A quick start whose program is not on the Mac: dimmed, and a tap says so
   'quickStart.notInstalled': 'Não instalado',
   'quickStart.notInstalledOnMac': '{name} não está instalado no Mac',
+  'quickStart.installAgent': '{name} não está instalado. Instalar: {url}',
   'whatsNew.previewServers.title': 'Pré-visualizações em dois toques',
   'whatsNew.previewServers.body':
     '“+ Adicionar pré-visualização” lista os servidores web em execução no seu Mac; toque em um e pronto.',
@@ -2422,6 +2421,12 @@ export const ptBR: Messages = {
   'orch.open': 'Abrir orquestrador',
   'orch.newGoal': 'Novo objetivo',
   'orch.stop': 'Parar orquestrador',
+  'orch.changeAgent': 'Trocar agente',
+  'orch.migrateConfirmBody':
+    'Migrar o orquestrador de {name} para {agent}? A sessão atual é mantida, pronta para retomar.',
+  'orch.changeAgentTitle': 'Continuar com outro agente',
+  'orch.migrated': 'O orquestrador de {name} agora usa {agent}',
+  'orch.migrateFailed': 'Não foi possível trocar o agente: {error}',
   'orch.stopQuestion': 'Parar o orquestrador? As tarefas continuam.',
   'orch.stopConfirm': 'Parar',
   'orch.stopped': 'Orquestrador de {name} parado',
@@ -2632,6 +2637,16 @@ export const ptBR: Messages = {
   'orch.error.generic': 'algo deu errado; tente de novo',
   'projectSettings.error.invalid': 'algum valor não é válido',
   'projectSettings.error.generic': 'algo deu errado; tente de novo',
+  'projectSettings.orchestratorAgent': 'Agente do orquestrador',
+  'projectSettings.orchestratorAgentHint':
+    'O agente com o qual um novo orquestrador inicia. O que está em execução mantém o seu até você trocá-lo.',
+  'projectSettings.orchestratorModel': 'Modelo do orquestrador',
+  'projectSettings.orchestratorModelPlaceholder': 'o padrão do agente',
+  'projectSettings.orchestratorModelHint':
+    'Opcional. Vazio usa o modelo do início rápido, ou o padrão do agente.',
+  'projectSettings.orchestratorAutoMigrate': 'Migrar automaticamente ao esgotar sua cota',
+  'projectSettings.orchestratorAutoMigrateHint':
+    'Quando o agente do orquestrador esgota sua cota, continua com outro agente por conta própria. Desligado: a troca é oferecida a você.',
   'common.errorDetails': 'Detalhes',
   // autoApprove (2026-10-24)
   'autoApprove.label': 'Não pedir meu OK',

@@ -1,6 +1,7 @@
 import { type Response, Router } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
+import { AGENTS, commandAgent, isTaskAgent, TASK_AGENTS } from '../../shared/agents.js';
 import {
   looseText,
   type parseScreenChoices,
@@ -25,6 +26,7 @@ import { forwarderPidOf } from '../pty/forwarder-kill.js';
 import { PtyError, type PtyManager } from '../pty/index.js';
 import { isProcessRunning } from '../pty/process-utils.js';
 import type { ExitedKeepReason } from '../pty/pty-manager.js';
+import type { AgentSnapshot } from '../services/agent-events.js';
 import { type AgentExplainerOptions, createAgentExplainer } from '../services/agent-explain.js';
 import {
   type ClaudeStatus,
@@ -38,6 +40,7 @@ import {
   type InitialInputAgent,
   type InitialInputOptions,
   trustFolderOption,
+  typeWhenAgentReady,
   typeWhenClaudeReady,
   typeWhenCodexReady,
 } from '../services/claude-initial-input.js';
@@ -49,7 +52,7 @@ import {
   restartCommandOffered,
   updateNoticeOnScreen,
 } from '../services/claude-update-restart.js';
-import { isCodexCommand, readCodexChat } from '../services/codex-chat.js';
+import { readCodexChat } from '../services/codex-chat.js';
 import { codexResumeTarget, codexSessionRef } from '../services/codex-process.js';
 import {
   carriedCodexArgs,
@@ -78,6 +81,8 @@ import {
   windowNoticeText,
 } from '../services/move-to-untether.js';
 import type { PreviewRegistry } from '../services/preview-registry.js';
+import { readQoderChat } from '../services/qoder-chat.js';
+import { qoderAgentStatus } from '../services/qoder-hooks.js';
 import type { RemoteRegistry } from '../services/remote-registry.js';
 import { type AnswerScreenMenu, createScreenMenu } from '../services/screen-menu.js';
 import { sessionDirForBranch } from '../services/session-branch-dir.js';
@@ -106,6 +111,7 @@ interface SessionRoutesConfig {
    * and the setting. Unset: no lines.
    */
   agentExplain?: Pick<AgentExplainerOptions, 'ask' | 'enabled'>;
+  agentSnapshot?: (id: string) => AgentSnapshot | undefined;
   ptyManager: PtyManager;
   terminalManager: TerminalManager;
   remoteRegistry: RemoteRegistry | null;
@@ -470,7 +476,11 @@ export function createSessionRoutes(config: SessionRoutesConfig): Router {
           const session = ptyManager.getSession(sessionId);
           if (!session?.pid || session.status !== 'running') return null;
           const programPid = ptyManager.programRootPid(session) ?? session.pid;
-          return readSessionChat({ ...session, pid: session.pid }, programPid);
+          return readSessionChat(
+            { ...session, pid: session.pid },
+            programPid,
+            config.agentSnapshot?.(session.id)
+          );
         },
         onError: (error) => logger.debug(`[GET /sessions] card line failed: ${error}`),
       })
@@ -527,6 +537,29 @@ export function createSessionRoutes(config: SessionRoutesConfig): Router {
     };
     const onGiveUp = (reason: string) =>
       logger.warn(`initial input for session ${sessionId} not delivered: ${reason}`);
+    if (agent === 'qoder') {
+      return typeWhenAgentReady(
+        text,
+        {
+          isRunning: running,
+          send,
+          onGiveUp,
+          answerDialog,
+          ...guard,
+          agentName: AGENTS[agent].label,
+          dialogVisible: async () => (await readScreenChoices(sessionId)) !== null,
+          isReady: async () => {
+            const snapshot = config.agentSnapshot?.(sessionId);
+            return (
+              snapshot?.source === 'qoder-hook' &&
+              ['starting', 'turn-ended', 'halted'].includes(snapshot.state) &&
+              !(await readScreenChoices(sessionId))
+            );
+          },
+        },
+        options
+      );
+    }
     return agent === 'codex'
       ? typeWhenCodexReady(
           text,
@@ -1013,6 +1046,13 @@ export function createSessionRoutes(config: SessionRoutesConfig): Router {
         logger.debug(`[GET /sessions] Could not read Gemini title of ${session.id}: ${error}`);
       }
     }
+    for (const session of localSessionsWithSource as Session[]) {
+      if (commandAgent(session.command) !== 'qoder') continue;
+      const status = qoderAgentStatus(config.agentSnapshot?.(session.id));
+      if (status) session.agentStatus = status;
+      const title = readQoderChat(session).title;
+      if (title && !session.userTitle) session.name = title;
+    }
     // Dev servers each running session started (the "Preview" chip).
     if (config.previewRegistry) {
       for (const session of localSessionsWithSource as Session[]) {
@@ -1193,16 +1233,15 @@ export function createSessionRoutes(config: SessionRoutesConfig): Router {
     ) {
       return res.status(400).json({ error: 'initialInput must be a string' });
     }
-    if (
-      initialInputAgent !== undefined &&
-      initialInputAgent !== 'claude' &&
-      initialInputAgent !== 'codex'
-    ) {
-      return res.status(400).json({ error: 'initialInputAgent must be "claude" or "codex"' });
+    if (initialInputAgent !== undefined && !isTaskAgent(initialInputAgent)) {
+      return res.status(400).json({ error: `initialInputAgent must be ${TASK_AGENTS.join(', ')}` });
     }
     // Which agent's prompt to wait for: as asked, else what the command runs.
     const inputAgent: InitialInputAgent =
-      initialInputAgent ?? (isCodexCommand(command) ? 'codex' : 'claude');
+      initialInputAgent ??
+      (isTaskAgent(commandAgent(command))
+        ? (commandAgent(command) as InitialInputAgent)
+        : 'claude');
     // A resume claims its conversation until the session exists (resumesInFlight).
     let reservedSessionId: string | undefined;
     let releaseResume: ((ok: boolean) => void) | undefined;
@@ -1975,7 +2014,11 @@ export function createSessionRoutes(config: SessionRoutesConfig): Router {
     try {
       // A shielded session's pid is its tmux client: look under the program inside tmux.
       const programPid = ptyManager.programRootPid(session) ?? session.pid;
-      const chat = await readSessionChat({ ...session, pid: session.pid }, programPid);
+      const chat = await readSessionChat(
+        { ...session, pid: session.pid },
+        programPid,
+        config.agentSnapshot?.(session.id)
+      );
       // `?have=<fingerprint>`: the client already shows these messages; leave them out.
       res.json(chatAnswer(chat, req.query?.have));
     } catch (error) {
@@ -2988,7 +3031,11 @@ export function createSessionRoutes(config: SessionRoutesConfig): Router {
       const session = ptyManager.getSession(sessionId);
       if (!session?.pid || session.status !== 'running') return { available: false, messages: [] };
       const programPid = ptyManager.programRootPid(session) ?? session.pid;
-      return readSessionChat({ ...session, pid: session.pid }, programPid);
+      return readSessionChat(
+        { ...session, pid: session.pid },
+        programPid,
+        config.agentSnapshot?.(session.id)
+      );
     },
     prompt: (sessionId) => readPrompt(sessionId),
     input: async (sessionId, input) => localInput(sessionId, input),

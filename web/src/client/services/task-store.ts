@@ -87,6 +87,8 @@ export interface ProjectNotice {
   autoMergePausedCount?: number;
   /** The project's icon (a path in it), picked by its orchestrator: GET /api/projects/icon. */
   icon?: string;
+  /** The agent its orchestrator runs on (claude by default), for the «Cambiar agente» menu. */
+  orchestratorAgent?: string;
 }
 
 /** Where the app reads a project's icon; the path makes a changed icon a new URL. */
@@ -116,6 +118,7 @@ function projectNotice(entry: unknown): ProjectNotice | null {
     'autoMergePausedUntil',
     'autoMergePausedReason',
     'icon',
+    'orchestratorAgent',
   ] as const) {
     const value = text(key);
     if (value) notice[key] = value;
@@ -535,6 +538,15 @@ export class TaskStore {
       repoPath,
       sessionId,
       ...(goal.trim() ? { goal: goal.trim() } : {}),
+    });
+  }
+
+  /** POST /api/projects/orchestrator/migrate: the orchestrator carries on with another agent. */
+  migrateOrchestrator(repoPath: string, to: string, model?: string): Promise<TaskActionResult> {
+    return this.request('/api/projects/orchestrator/migrate', 'POST', {
+      repoPath,
+      to,
+      ...(model?.trim() ? { model: model.trim() } : {}),
     });
   }
 

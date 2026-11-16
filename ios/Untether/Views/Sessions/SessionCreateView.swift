@@ -315,8 +315,13 @@ struct SessionCreateView: View {
 
     private var quickStartCommands: [QuickStartItem] {
         [
-            QuickStartItem(title: "claude", command: "claude", icon: "sparkle"),
-            QuickStartItem(title: "gemini", command: "gemini", icon: "sparkle"),
+            // BEGIN GENERATED AGENTS
+            // web/src/shared/agents.ts — run web/scripts/sync-agent-registry.mjs
+            QuickStartItem(title: "Claude", command: "claude", icon: "sparkle"),
+            QuickStartItem(title: "Codex", command: "codex", icon: "sparkle"),
+            QuickStartItem(title: "Gemini", command: "gemini", icon: "sparkle"),
+            QuickStartItem(title: "Qoder", command: "qodercli", icon: "sparkle"),
+            // END GENERATED AGENTS
             QuickStartItem(title: "zsh", command: "zsh", icon: "terminal"),
             QuickStartItem(title: "python3", command: "python3", icon: "chevron.left.forwardslash.chevron.right"),
             QuickStartItem(title: "node", command: "node", icon: "server.rack"),

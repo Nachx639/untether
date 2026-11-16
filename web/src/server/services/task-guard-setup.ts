@@ -12,21 +12,25 @@
  * Codex (0.164 has PreToolUse hooks with Claude's input shape): `-c hooks.PreToolUse=[…]` and
  * `--dangerously-bypass-hook-trust`, without which Codex skips a hook nobody reviewed in its TUI.
  * That flag lets the user's own unreviewed hooks run too in that session, and `-c` replaces the
- * PreToolUse hooks of the user's config.toml for it. A Codex without the flag (older) runs
- * unguarded, said in the log and on the task.
+ * PreToolUse hooks of the user's config.toml for it. A Codex whose --help answers without the
+ * flag (older) runs unguarded, said in the log and on the task. One that cannot be asked at all
+ * (not on the session's PATH, --help timed out or said nothing) fails the launch instead of
+ * running unguarded, and is asked again on the next one (2026-11-13).
  */
-import { execFileSync } from 'child_process';
+import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { type SavingAutoOff, taskSavingOn } from '../../shared/saving-features.js';
 import type { TaskRecord } from '../../shared/tasks.js';
+import { terminalSessionEnv } from '../utils/session-env.js';
 import {
   claudeHookFiles,
   ensureClaudeHookFiles,
   hookSettings,
   shellQuote,
 } from './claude-hooks.js';
+import { ensureQoderHookFiles } from './qoder-hooks.js';
 import {
   type GuardBlockEntry,
   type GuardPolicy,
@@ -61,6 +65,7 @@ export interface TaskGuardFiles {
   policy: string;
   blocked: string;
   claudeSettings: string;
+  qoderSettings: string;
   /** The shell groups its Bash commands recorded (task-processes.ts). */
   shellGroups: string;
   /** Its tool list, fixed at its first start (tool-pruning.ts). */
@@ -81,6 +86,7 @@ export function taskGuardFiles(taskId: string, untetherDir: string): TaskGuardFi
     policy: path.join(dir, 'policy.json'),
     blocked: path.join(dir, 'blocked.jsonl'),
     claudeSettings: path.join(dir, 'claude-settings.json'),
+    qoderSettings: path.join(dir, 'qoder-settings.json'),
     shellGroups: path.join(dir, SHELL_GROUPS_DIR),
     toolProfile: path.join(dir, 'tool-profile.json'),
     output: path.join(dir, 'output'),
@@ -179,29 +185,151 @@ export function guardedClaudeSettings(
   return { ...structuredClone(TASK_UNATTENDED_CLAUDE_SETTINGS), ...events };
 }
 
+/** The flag Codex needs to run a hook nobody reviewed in its TUI (codexGuardArgs). */
+const HOOK_TRUST_FLAG = '--dangerously-bypass-hook-trust';
+
 /** Codex's flags for the guard (its TOML: a JSON string is a TOML basic string). */
 export function codexGuardArgs(hookLine: string): string[] {
   // `-c` here is Codex's config override (TOML key=value), not a shell script; hookLine is a
   // JSON-quoted TOML string and Codex runs it as the hook command it already is.
   const hooksToml = `hooks.PreToolUse=[{matcher="*", hooks=[{type="command", command=${JSON.stringify(hookLine)}, timeout=${GUARD_TIMEOUT_S}}]}]`;
-  return ['--dangerously-bypass-hook-trust', '-c', hooksToml];
+  return [HOOK_TRUST_FLAG, '-c', hooksToml];
 }
 
-const codexSupport = new Map<string, boolean>();
+/** What asking a Codex about HOOK_TRUST_FLAG answered. */
+export type CodexHookTrust =
+  /** Its --help lists the flag: the guard goes on. */
+  | { kind: 'yes' }
+  /** Its --help answered without the flag: an older Codex (update Codex). Cached. */
+  | { kind: 'no' }
+  /**
+   * It could not be asked (not on the session's PATH, --help timed out or said nothing).
+   * Never cached: the next launch asks again, and the task does not start unguarded on it.
+   */
+  | { kind: 'unasked'; why: string };
 
-/** Whether this Codex takes --dangerously-bypass-hook-trust (asked once per program). */
-export function codexTakesHookTrust(program: string): boolean {
-  const known = codexSupport.get(program);
-  if (known !== undefined) return known;
-  let ok = false;
+export interface CodexProbeOptions {
+  /** The folder the task's session starts in (a relative program is resolved against it). */
+  cwd?: string;
+  /** The bin the session puts first on PATH (its project's Node, node-runtime.ts). */
+  pathPrepend?: string;
+  /** How long --help may take (tests). */
+  timeoutMs?: number;
+}
+
+/** Definitive answers, by the program's real path and the file's stamp (an upgrade re-asks). */
+const codexSupport = new Map<string, { stamp: string; supported: boolean }>();
+
+const CODEX_HELP_TIMEOUT_MS = 10_000;
+/** A Codex that could not be asked is asked again this many times before the launch fails. */
+const CODEX_ASK_ATTEMPTS = 3;
+const CODEX_ASK_RETRY_MS = 1_000;
+
+function executableFile(file: string): boolean {
   try {
-    const help = execFileSync(program, ['--help'], { encoding: 'utf8', timeout: 10_000 });
-    ok = help.includes('--dangerously-bypass-hook-trust');
+    fs.accessSync(file, fs.constants.X_OK);
+    return fs.statSync(file).isFile();
   } catch {
-    ok = false;
+    return false;
   }
-  codexSupport.set(program, ok);
-  return ok;
+}
+
+/** The program as the task's session would run it: on the session's PATH, its Node first. */
+function resolveProgram(program: string, cwd: string, pathEnv: string): string | null {
+  if (program.includes(path.sep)) {
+    const file = path.resolve(cwd, program);
+    return executableFile(file) ? file : null;
+  }
+  for (const dir of pathEnv.split(path.delimiter)) {
+    if (!dir) continue;
+    const file = path.join(dir, program);
+    if (executableFile(file)) return file;
+  }
+  return null;
+}
+
+/** One `--help`, told apart: an answer (yes/no) from a failure to ask (unasked). */
+function askCodexHelp(
+  resolved: string,
+  env: Record<string, string>,
+  timeoutMs: number
+): Promise<CodexHookTrust> {
+  return new Promise((resolve) => {
+    execFile(
+      resolved,
+      ['--help'],
+      { encoding: 'utf8', timeout: timeoutMs, maxBuffer: 1024 * 1024, env },
+      (error, stdout, stderr) => {
+        const err = error as (NodeJS.ErrnoException & { killed?: boolean }) | null;
+        if (err?.killed || err?.code === 'ETIMEDOUT') {
+          resolve({
+            kind: 'unasked',
+            why: `codex --help did not respond within ${Math.round(timeoutMs / 1000)} s`,
+          });
+          return;
+        }
+        const help = String(stdout ?? '');
+        if (help.trim()) {
+          resolve({ kind: help.includes(HOOK_TRUST_FLAG) ? 'yes' : 'no' });
+          return;
+        }
+        if (err) {
+          const detail =
+            String(stderr ?? '')
+              .trim()
+              .split('\n')[0] || err.message;
+          resolve({ kind: 'unasked', why: `codex --help failed: ${detail}` });
+          return;
+        }
+        resolve({ kind: 'unasked', why: 'codex --help said nothing' });
+      }
+    );
+  });
+}
+
+/**
+ * Whether this Codex takes HOOK_TRUST_FLAG, asked the way the task's session runs it: the
+ * program resolved on the session's PATH (its project's Node first), the answer cached by the
+ * real file's path and stamp, never by name. A failure to ask is not cached (2026-11-13: a
+ * codex that moved with an nvm Node update was cached as "too old" until the server restarted,
+ * and every Codex task ran unguarded on a transient ENOENT).
+ */
+export async function codexTakesHookTrust(
+  program: string,
+  options: CodexProbeOptions = {}
+): Promise<CodexHookTrust> {
+  const env = terminalSessionEnv(process.env, {});
+  if (options.pathPrepend) {
+    env.PATH = [
+      options.pathPrepend,
+      ...(env.PATH ?? '').split(path.delimiter).filter((p) => p && p !== options.pathPrepend),
+    ].join(path.delimiter);
+  }
+  const resolved = resolveProgram(program, options.cwd ?? process.cwd(), env.PATH ?? '');
+  if (!resolved) {
+    return {
+      kind: 'unasked',
+      why: program.includes(path.sep)
+        ? `${program} does not exist or is not executable`
+        : `${program} is not on the PATH its session starts with`,
+    };
+  }
+  let real: string;
+  let stamp: string;
+  try {
+    real = fs.realpathSync(resolved);
+    const stat = fs.statSync(real);
+    stamp = `${stat.mtimeMs}:${stat.size}`;
+  } catch {
+    return { kind: 'unasked', why: `${resolved} could not be read` };
+  }
+  const known = codexSupport.get(real);
+  if (known && known.stamp === stamp) return { kind: known.supported ? 'yes' : 'no' };
+  const answer = await askCodexHelp(resolved, env, options.timeoutMs ?? CODEX_HELP_TIMEOUT_MS);
+  if (answer.kind !== 'unasked') {
+    codexSupport.set(real, { stamp, supported: answer.kind === 'yes' });
+  }
+  return answer;
 }
 
 function writeFile(file: string, content: string): void {
@@ -218,7 +346,9 @@ export interface TaskGuardOptions {
   log?: (message: string) => void;
   home?: string;
   /** Whether a Codex program takes --dangerously-bypass-hook-trust (tests). */
-  codexTakesHookTrust?: (program: string) => boolean;
+  codexTakesHookTrust?: (program: string, options?: CodexProbeOptions) => Promise<CodexHookTrust>;
+  /** The wait between asks of a Codex that could not be asked (tests). */
+  codexRetryMs?: number;
   /**
    * The task's tool list (tool-pruning.ts, 2026-11-03): what its Claude goes without, fixed
    * at its first start; null = everything.
@@ -238,14 +368,43 @@ export interface TaskGuardOptions {
 
 export type TaskGuard = ReturnType<typeof createTaskGuard>;
 
-/** Writes the task's guard files; null when they can't be written (the task runs unguarded). */
+/**
+ * Writes the task's guard files; null when they can't be written (the task runs unguarded).
+ * Throws when a Codex could not be asked about its hook flag after retries: the launch fails
+ * instead of running unguarded, and the next launch asks again.
+ */
 export function createTaskGuard(options: TaskGuardOptions = {}) {
   const untetherDir = options.untetherDir ?? path.join(os.homedir(), '.untether');
   const home = options.home ?? os.homedir();
   const log = options.log ?? (() => {});
   const hook = () => options.hook ?? guardHookCommand();
 
-  const prepare = (task: TaskRecord, root: string): TaskCommandGuard | null => {
+  const prepare = async (
+    task: TaskRecord,
+    root: string,
+    pathPrepend?: string
+  ): Promise<TaskCommandGuard | null> => {
+    const { index, name } = agentExecutable(task.command);
+    // Codex is asked before anything is written, the way its session runs it (its Node first
+    // on PATH). A failure to ask is retried, then fails the launch: the task never starts
+    // unguarded on it (a "too old" answer, by contrast, runs unguarded and is cached).
+    let takesHooks = false;
+    if (name === 'codex') {
+      const ask = options.codexTakesHookTrust ?? codexTakesHookTrust;
+      const probe = () => ask(task.command[index], { cwd: root, pathPrepend });
+      let trust = await probe();
+      for (let attempt = 1; trust.kind === 'unasked' && attempt < CODEX_ASK_ATTEMPTS; attempt++) {
+        log(`[task-guard] ${task.id}: ${trust.why}; asking Codex again`);
+        await new Promise((resolve) =>
+          setTimeout(resolve, options.codexRetryMs ?? CODEX_ASK_RETRY_MS)
+        );
+        trust = await probe();
+      }
+      if (trust.kind === 'unasked') {
+        throw new Error(`the command guard could not be mounted: ${trust.why}`);
+      }
+      takesHooks = trust.kind === 'yes';
+    }
     const files = taskGuardFiles(task.id, untetherDir);
     try {
       fs.mkdirSync(files.dir, { recursive: true, mode: 0o700 });
@@ -264,26 +423,25 @@ export function createTaskGuard(options: TaskGuardOptions = {}) {
       };
       // Heavy check runs of its agent take a check slot (check-slot-wrap.ts): rewritten for
       // Claude, refused with the command to use for Codex.
-      const agentName = agentExecutable(task.command).name;
       let cli: string[] | undefined;
       try {
         cli = options.cli?.();
       } catch {
         cli = undefined;
       }
-      if (cli?.length && (agentName === 'claude' || agentName === 'codex')) {
+      if (cli?.length && (name === 'claude' || name === 'codex' || name === 'qodercli')) {
         const check = settings.checkCommand?.trim();
         const related = settings.relatedTestCommand?.trim();
         policy.checkSlot = {
           cli,
-          mode: agentName === 'claude' ? 'wrap' : 'ask',
+          mode: name === 'claude' ? 'wrap' : 'ask',
           ...(check ? { checks: [check] } : {}),
           ...(related ? { related } : {}),
         };
       }
       // Claude runs its env file in each Bash shell and reads a PreToolUse hook's updatedInput;
       // Codex does neither (so no shell groups, no summaries).
-      if (agentExecutable(task.command).name === 'claude') {
+      if (name === 'claude') {
         policy.recordShellGroups = true;
         // As the task recorded it (holdout, the quality guard: shared/saving-features.ts).
         if (taskSavingOn(task, 'test-summary', settings)) {
@@ -302,7 +460,6 @@ export function createTaskGuard(options: TaskGuardOptions = {}) {
       const hookLine = guardHookLine(hook(), files.policy);
       const events = ensureClaudeHookFiles(claudeHookFiles(untetherDir), log);
       if (!events) throw new Error('the event hooks could not be written');
-      const { index, name } = agentExecutable(task.command);
       // Its tool list goes in the same file (the hooks stay: the pruning has no hooks key).
       let pruning: ToolPruning | null = null;
       if (name === 'claude') {
@@ -330,11 +487,19 @@ export function createTaskGuard(options: TaskGuardOptions = {}) {
           2
         )}\n`
       );
-      const takesHooks =
-        name === 'codex' &&
-        (options.codexTakesHookTrust ?? codexTakesHookTrust)(task.command[index]);
+      if (name === 'qodercli') {
+        const qoder = ensureQoderHookFiles(untetherDir, log);
+        if (!qoder) throw new Error('Qoder event hooks could not be written');
+        const settings = hookSettings(qoder.script) as { hooks: Record<string, unknown[]> };
+        settings.hooks.PreToolUse.push({
+          matcher: '*',
+          hooks: [{ type: 'command', command: hookLine, timeout: GUARD_TIMEOUT_S }],
+        });
+        writeFile(files.qoderSettings, `${JSON.stringify(settings)}\n`);
+      }
       return {
         claudeSettings: files.claudeSettings,
+        ...(name === 'qodercli' ? { qoderSettings: files.qoderSettings } : {}),
         codexArgs: takesHooks ? codexGuardArgs(hookLine) : null,
         ...(pruning && pruningNote(pruning) ? { toolNote: pruningNote(pruning) as string } : {}),
       };

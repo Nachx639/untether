@@ -655,8 +655,8 @@ export const bn: Messages = {
   'terminalSelect.selectAll': 'সব নির্বাচন',
   'terminalSelect.paste': 'পেস্ট',
   'directKeyboard.pasteHint': 'এখানে চেপে ধরে পেস্ট বেছে নিন',
-  'ask.placeholder': 'Claude-কে জিজ্ঞাসা করুন…',
-  'ask.send': 'Claude-কে পাঠান',
+  'ask.placeholderAgent': '{name}-কে জিজ্ঞাসা করুন…',
+  'ask.sendAgent': '{name}-কে পাঠান',
   'ask.folder': 'ফোল্ডার: {folder}',
   'ask.where': 'Claude-কে এখানে জিজ্ঞাসা করুন…',
   'history.menuItem': 'ইতিহাস',
@@ -812,8 +812,6 @@ export const bn: Messages = {
   'codex.slash.diff': 'git diff দেখান, ট্র্যাক না করা ফাইলসহ',
   'codex.slash.init': 'AGENTS.md তৈরি করুন',
   'ask.agent': 'এজেন্ট',
-  'ask.placeholderCodex': 'Codex-কে জিজ্ঞাসা করুন…',
-  'ask.sendCodex': 'Codex-কে পাঠান',
   'ask.whereCodex': 'Codex-কে এখানে জিজ্ঞাসা করুন…',
   // Dictation (speech to text into the message box)
   'dictation.listening': 'শুনছে… এখন বলুন',
@@ -1506,6 +1504,7 @@ export const bn: Messages = {
   // A quick start whose program is not on the Mac: dimmed, and a tap says so
   'quickStart.notInstalled': 'ইনস্টল করা নেই',
   'quickStart.notInstalledOnMac': 'Mac-এ {name} ইনস্টল করা নেই',
+  'quickStart.installAgent': '{name} ইনস্টল করা নেই। ইনস্টল: {url}',
   'whatsNew.previewServers.title': 'দুই ট্যাপে প্রিভিউ',
   'whatsNew.previewServers.body':
     '“+ প্রিভিউ যোগ করুন” আপনার Mac-এ চলমান ওয়েব সার্ভারগুলো দেখায়; একটিতে ট্যাপ করলেই হয়ে যাবে।',
@@ -2345,6 +2344,12 @@ export const bn: Messages = {
   'orch.open': 'অর্কেস্ট্রেটর খুলুন',
   'orch.newGoal': 'নতুন লক্ষ্য',
   'orch.stop': 'অর্কেস্ট্রেটর থামান',
+  'orch.changeAgent': 'এজেন্ট বদলান',
+  'orch.migrateConfirmBody':
+    '{name}-এর অর্কেস্ট্রেটরকে {agent}-এ মাইগ্রেট করবেন? এর বর্তমান সেশন সংরক্ষিত থাকে, পুনরায় শুরু করার জন্য প্রস্তুত।',
+  'orch.changeAgentTitle': 'অন্য এজেন্ট দিয়ে চালিয়ে যান',
+  'orch.migrated': '{name}-এর অর্কেস্ট্রেটর এখন {agent} ব্যবহার করে',
+  'orch.migrateFailed': 'এজেন্ট বদলানো যায়নি: {error}',
   'orch.stopQuestion': 'অর্কেস্ট্রেটর থামাবেন? এর টাস্কগুলো চলতে থাকবে।',
   'orch.stopConfirm': 'থামান',
   'orch.stopped': '{name}-এর অর্কেস্ট্রেটর থামানো হয়েছে',
@@ -2540,6 +2545,16 @@ export const bn: Messages = {
   'orch.error.generic': 'কিছু ভুল হয়েছে; আবার চেষ্টা করুন',
   'projectSettings.error.invalid': 'কোনো একটি মান বৈধ নয়',
   'projectSettings.error.generic': 'কিছু ভুল হয়েছে; আবার চেষ্টা করুন',
+  'projectSettings.orchestratorAgent': 'অর্কেস্ট্রেটর এজেন্ট',
+  'projectSettings.orchestratorAgentHint':
+    'নতুন অর্কেস্ট্রেটর যে এজেন্ট দিয়ে শুরু হয়। চলমান অর্কেস্ট্রেটর তার এজেন্ট রাখে যতক্ষণ না আপনি বদলান।',
+  'projectSettings.orchestratorModel': 'অর্কেস্ট্রেটর মডেল',
+  'projectSettings.orchestratorModelPlaceholder': 'এজেন্টের ডিফল্ট',
+  'projectSettings.orchestratorModelHint':
+    'ঐচ্ছিক। খালি রাখলে কুইক স্টার্টের মডেল, নইলে এজেন্টের ডিফল্ট ব্যবহার হয়।',
+  'projectSettings.orchestratorAutoMigrate': 'ব্যবহারের সীমা শেষ হলে স্বয়ংক্রিয়ভাবে মাইগ্রেট',
+  'projectSettings.orchestratorAutoMigrateHint':
+    'অর্কেস্ট্রেটরের এজেন্ট তার কোটা শেষ করলে, নিজে থেকে অন্য এজেন্ট দিয়ে চালিয়ে যায়। বন্ধ: আপনাকে পরিবর্তনের প্রস্তাব দেওয়া হয়।',
   'common.errorDetails': 'বিস্তারিত',
   // autoApprove (2026-10-24)
   'autoApprove.label': 'আমার অনুমতি চাইবে না',

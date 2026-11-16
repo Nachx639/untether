@@ -9,6 +9,7 @@
 import { html, LitElement, nothing, render } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { AGENT_IDS, AGENTS } from '../../shared/agents.js';
 import { sessionProviderMarker } from '../../shared/model-providers.js';
 import { sessionTitle } from '../../shared/session-title.js';
 import type { Session } from '../../shared/types.js';
@@ -89,7 +90,7 @@ function tap(fn: (e: Event) => void, guardSince?: () => number) {
   };
 }
 
-const KIND_NAMES = { claude: 'Claude', codex: 'Codex', gemini: 'Gemini' };
+const KIND_NAMES = Object.fromEntries(AGENT_IDS.map((id) => [id, AGENTS[id].label]));
 
 /** The row's state dot, as on the Sessions tab (phone-session-row.ts rowState). */
 function rowStateOf(card: AgentCard): RowState {

@@ -14,6 +14,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { AGENTS, agentForExecutable, isTaskAgent, TASK_AGENTS } from '../../shared/agents.js';
 import type { TaskRecord } from '../../shared/tasks.js';
 import type { PtyManager } from '../pty/index.js';
 import { detectGitInfo } from '../utils/git-info.js';
@@ -97,6 +98,16 @@ export const CODEX_NO_UPDATE_CHECK = ['-c', 'check_for_update_on_startup=false']
 export const CODEX_NO_TOOLTIPS = ['-c', 'tui.show_tooltips=false'];
 
 /**
+ * A Qoder task loads no MCP servers but the ones it is given: `--strict-mcp-config` with an empty
+ * `--mcp-config` keeps out the project's `.mcp.json` and the user's, so the "approve this MCP
+ * server?" dialog never stops a task nobody watches (2026-11-12: a Qoder task stopped on the
+ * project's playwright server, `npx -y @playwright/mcp`). Nothing is approved in bulk and no
+ * server's code is downloaded; the review one-shot locks MCP the same way (qoder-oneshot.ts).
+ * A command that names its own `--mcp-config` keeps it.
+ */
+export const QODER_NO_PROJECT_MCP = ['--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}'];
+
+/**
  * The program a command line runs: past `env` and its VAR=value words (a runner with an
  * account of its own, e.g. `env CLAUDE_CONFIG_DIR=~/.claude-work claude`).
  */
@@ -121,8 +132,8 @@ function withModel(
   executable: string,
   model: string | undefined
 ): string[] {
-  if (!model || (executable !== 'claude' && executable !== 'codex')) return command;
-  const flags = executable === 'codex' ? ['-m', '--model'] : ['--model'];
+  if (!model || !agentForExecutable(executable)) return command;
+  const flags: readonly string[] = AGENTS[agentForExecutable(executable)!].modelFlags;
   const out = [...command];
   for (let i = index + 1; i < out.length; i++) {
     const flag = flags.find((f) => out[i] === f || out[i].startsWith(`${f}=`));
@@ -131,7 +142,7 @@ function withModel(
     else out[i] = `${flag}=${model}`;
     return out;
   }
-  const flag = executable === 'codex' ? '-m' : '--model';
+  const flag = flags[0];
   return [...out.slice(0, index + 1), flag, model, ...out.slice(index + 1)];
 }
 
@@ -141,6 +152,7 @@ export interface TaskCommandGuard {
   claudeSettings: string;
   /** Codex: its flags; null when this Codex can't run an unreviewed hook (too old). */
   codexArgs: string[] | null;
+  qoderSettings?: string;
   /** Told with its brief: the tools its session goes without (tool-pruning.ts). */
   toolNote?: string;
 }
@@ -161,6 +173,23 @@ export function taskCommand(
     ...args,
     ...command.slice(index + 1),
   ];
+  // A task runs without permission prompts (registry taskArgs: Qoder's bypass_permissions):
+  // the quick start's own --permission-mode gives way to it.
+  const agent = agentForExecutable(executable);
+  if (agent && AGENTS[agent].taskArgs.length) {
+    const args = [...command];
+    for (let i = index + 1; i < args.length; i++) {
+      if (args[i] === '--permission-mode') args.splice(i--, 2);
+      else if (args[i].startsWith('--permission-mode=')) args.splice(i--, 1);
+    }
+    command = [...args.slice(0, index + 1), ...AGENTS[agent].taskArgs, ...args.slice(index + 1)];
+  }
+  if (agent === 'qoder' && guard?.qoderSettings && !hasSettingsFlag(command)) {
+    command = insert(['--settings', guard.qoderSettings]);
+  }
+  if (agent === 'qoder' && !hasMcpConfigFlag(command)) {
+    command = insert(QODER_NO_PROJECT_MCP);
+  }
   if (executable === 'codex') {
     if (guard?.codexArgs && !command.some((arg) => arg.startsWith('hooks.PreToolUse'))) {
       command = insert(guard.codexArgs);
@@ -185,6 +214,10 @@ function hasSettingsFlag(command: readonly string[]): boolean {
   return command.some((arg) => arg === '--settings' || arg.startsWith('--settings='));
 }
 
+function hasMcpConfigFlag(command: readonly string[]): boolean {
+  return command.some((arg) => arg === '--mcp-config' || arg.startsWith('--mcp-config='));
+}
+
 /**
  * Whether the task's command line carries its guard: false when it could not be put on it
  * (guard files not written, a shell wrapping the agent, the user's own --settings, a Codex
@@ -193,33 +226,44 @@ function hasSettingsFlag(command: readonly string[]): boolean {
 export function guardApplied(command: readonly string[], guard: TaskCommandGuard | null): boolean {
   if (!guard) return false;
   const { name } = agentExecutable(command);
+  if (name === 'qodercli') return !!guard.qoderSettings && command.includes(guard.qoderSettings);
   if (name === 'claude') return command.includes(guard.claudeSettings);
   if (name === 'codex') return !!guard.codexArgs && command.includes(guard.codexArgs[0]);
   return false;
 }
 
-/** Sets up a task's guard in `cwd`; null when it could not be (said through `unguarded`). */
+/**
+ * Sets up a task's guard in `cwd`; null when it could not be (said through `unguarded`).
+ * `pathPrepend` is the bin the session puts first on PATH (its project's Node), so a Codex is
+ * asked about its hook flag the same way the session runs it. Throws when a Codex could not be
+ * asked after retries: the task must not start unguarded on a failure that may pass.
+ */
 export interface TaskGuardPreparer {
-  prepare: (task: TaskRecord, cwd: string) => TaskCommandGuard | null;
+  prepare: (
+    task: TaskRecord,
+    cwd: string,
+    pathPrepend?: string
+  ) => Promise<TaskCommandGuard | null>;
   /** The task runs without its guard, and why (logged, and recorded on the task). */
   unguarded?: (task: TaskRecord, why: string) => void;
 }
 
 /** The task's command line with its guard, or without it and said so (and its tool note). */
-function guardedCommand(
+async function guardedCommand(
   task: TaskRecord,
   cwd: string,
-  guard: TaskGuardPreparer | undefined
-): { command: string[]; toolNote?: string } {
+  guard: TaskGuardPreparer | undefined,
+  pathPrepend?: string
+): Promise<{ command: string[]; toolNote?: string }> {
   if (!guard) return { command: taskCommand(task) };
-  const prepared = guard.prepare(task, cwd);
+  const prepared = await guard.prepare(task, cwd, pathPrepend);
   const command = taskCommand(task, prepared);
   if (!guardApplied(command, prepared)) {
     const { name } = agentExecutable(task.command);
     const why = !prepared
       ? 'its guard files could not be written'
-      : name !== 'claude' && name !== 'codex'
-        ? `its command does not start claude or codex itself (${name || 'empty'})`
+      : !isTaskAgent(agentForExecutable(name))
+        ? `its command does not start a task agent itself (${name || 'empty'})`
         : name === 'codex'
           ? 'this Codex has no --dangerously-bypass-hook-trust (update Codex)'
           : 'its command names its own --settings';
@@ -306,20 +350,20 @@ export function createTaskResumer(deps: {
     if (!fs.existsSync(cwd)) throw new Error(`Folder not found: ${cwd}`);
     // The provider launch first (warms the pricing cache before the guard's `/model` picker).
     const providerOptions = await providerSessionOptions(task, deps.providerEnv);
-    // The id the scheduler recorded first (task journal): a restart looks for this one.
-    await deps.ptyManager.createSession(
-      [...guardedCommand(task, cwd, deps.guard).command, '--resume', conversationId],
-      {
-        ...(await sessionOptions(
-          task,
-          cwd,
-          deps.ptyManager,
-          await (deps.nodeRuntime ?? resolveNodeRuntime)(cwd)
-        )),
-        ...providerOptions,
-        sessionId,
-      }
+    // Its Node before the guard: a Codex is asked about its hook flag on the session's PATH.
+    const node = await (deps.nodeRuntime ?? resolveNodeRuntime)(cwd);
+    const guarded = await guardedCommand(
+      task,
+      cwd,
+      deps.guard,
+      node.kind === 'switch' ? node.node.bin : undefined
     );
+    // The id the scheduler recorded first (task journal): a restart looks for this one.
+    await deps.ptyManager.createSession([...guarded.command, '--resume', conversationId], {
+      ...(await sessionOptions(task, cwd, deps.ptyManager, node)),
+      ...providerOptions,
+      sessionId,
+    });
     const text = resumeText(followUp);
     const typed = Promise.resolve()
       .then(() => deliver(sessionId, text, task.agent, { trustFolder: true }))
@@ -353,7 +397,12 @@ export function createTaskLauncher(deps: {
     // guard writes the `/model` picker (it reads the discovered models from the cache).
     const providerOptions = await providerSessionOptions(task, deps.providerEnv);
     // The id the scheduler recorded first (task journal): a restart looks for this one.
-    const guarded = guardedCommand(task, cwd, deps.guard);
+    const guarded = await guardedCommand(
+      task,
+      cwd,
+      deps.guard,
+      node.kind === 'switch' ? node.node.bin : undefined
+    );
     await deps.ptyManager.createSession(guarded.command, {
       ...(await sessionOptions(task, cwd, deps.ptyManager, node)),
       ...providerOptions,
@@ -375,10 +424,13 @@ export function createTaskLauncher(deps: {
   };
 }
 
-/** Claude's fast model when the installation names none (config taskModels). */
-export const DEFAULT_FAST_MODELS: Partial<Record<TaskRecord['agent'], string>> = {
-  claude: 'sonnet',
-};
+/** Each agent's fast model when the installation names none (config taskModels; registry fastModel). */
+export const DEFAULT_FAST_MODELS: Partial<Record<TaskRecord['agent'], string>> = Object.fromEntries(
+  TASK_AGENTS.flatMap((id) => {
+    const model: string | undefined = AGENTS[id].fastModel;
+    return model ? [[id, model]] : [];
+  })
+);
 
 /** The installation's model for an agent's level; undefined = the agent's own default. */
 export function modelForLevel(
@@ -388,7 +440,7 @@ export function modelForLevel(
 ): string | undefined {
   const own = taskModels?.[agent]?.[tier];
   if (own) return own;
-  return tier === 'fast' ? DEFAULT_FAST_MODELS[agent] : undefined;
+  return tier === 'fast' ? DEFAULT_FAST_MODELS[agent] : AGENTS[agent].capableModel;
 }
 
 export interface TaskRunnerConfig {
@@ -411,7 +463,7 @@ export function taskRunners(options: {
   /** Programs found on this Mac: { name: found }. */
   available: Record<string, boolean | undefined>;
 }): Array<{ name: string; agent: TaskRecord['agent']; command: string[]; model?: string }> {
-  const plain = (['claude', 'codex'] as const).map((agent) => ({
+  const plain = TASK_AGENTS.map((agent) => ({
     name: agent as string,
     agent,
     command: options.agentCommand(agent),

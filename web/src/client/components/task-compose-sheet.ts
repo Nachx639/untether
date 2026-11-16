@@ -10,6 +10,7 @@
  */
 import { html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { AGENTS } from '../../shared/agents.js';
 import {
   TASK_PARALLEL_MAX,
   type TaskAgent,
@@ -84,7 +85,7 @@ const repoName = (repo: string) => repo.split('/').filter(Boolean).pop() ?? repo
  */
 export function agentDisplayLabel(agent: ComposeAgent): string {
   const label = agent.label.trim();
-  if (label.toLowerCase() === agent.agent) return agent.agent === 'claude' ? 'Claude' : 'Codex';
+  if (label.toLowerCase() === agent.agent) return AGENTS[agent.agent].label;
   return label;
 }
 

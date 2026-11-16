@@ -16,6 +16,7 @@
 import { html, nothing, render } from 'lit';
 import { live } from 'lit/directives/live.js';
 import { namedForAgent } from '../../shared/agent-push.js';
+import type { AgentId } from '../../shared/agents.js';
 import { type PromptTranslate, translatePrompt } from '../../shared/claude-prompt-text.js';
 import { t } from '../i18n/index.js';
 import { toast } from '../utils/action-toast.js';
@@ -46,7 +47,7 @@ export interface AnswerSheetOptions {
   /** Choices known when opening (push data, session list): replaced by the live ones. */
   choices?: PromptChoices | null;
   /** The agent that waits, when known on opening; the live read says it too. */
-  agent?: 'claude' | 'codex';
+  agent?: AgentId;
   authHeader?: () => Record<string, string>;
   onOpenSession?: () => void;
   /** Called after an answer was sent, with the toast text. */
@@ -58,7 +59,7 @@ interface LivePrompt {
   waitingFor?: string;
   choices: PromptChoices | null;
   /** Whose prompt it is (GET /prompt): Codex's has no written reply, and is named so. */
-  agent?: 'claude' | 'codex';
+  agent?: AgentId;
 }
 
 type Phase = 'loading' | 'ready' | 'sending' | 'gone';

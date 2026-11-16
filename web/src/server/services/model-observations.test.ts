@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { modelMatches, parseClaudeModel, streamEventModel } from '../../shared/agent-models.js';
 import type { ClaudeStartSettings } from '../../shared/types.js';
 import { RM_TEST_DIR } from '../../test/helpers/rm-test-dir.js';
+import { modelLine } from '../task-cli/format-task-detail.js';
 import { askClaudeOnce, type ClaudeChild } from './claude-oneshot.js';
 import {
   claudePidOfConversation,
@@ -24,9 +25,11 @@ import {
   recentTranscriptModels,
   sessionModelChanged,
   tailLines,
+  taskModelUse,
   transcriptModelChanged,
   unexpectedModelsCheck,
 } from './model-observations.js';
+import { sweepCommand } from './security-sweep.js';
 
 const NOW = Date.parse('2026-11-08T12:00:00.000Z');
 const AT = '2026-11-08T11:00:00.000Z';
@@ -234,6 +237,72 @@ describe('unexpected models (doctor)', () => {
     expect(findings).toHaveLength(1);
     expect(findings[0].problem).toContain('task router ran with claude-haiku-4-5');
     expect(findings[0].problem).toContain('asked for claude-haiku-5-5 (--model)');
+  });
+});
+
+describe("a model put in the task's command (2026-11-14 false warning)", () => {
+  // The real incident: «Security sweep: .github» ran with claude-sonnet-5-5, as its command's
+  // `--model sonnet` (effort medium) asked, and was flagged against settings.json's fable.
+  const SETTINGS = 'claude-fable-5-2';
+  const sweep = (actual: string, effort: 'low' | 'medium' | 'high' = 'medium') => {
+    const task = {
+      id: '3f50c191',
+      name: 'Security sweep: .github',
+      agent: 'claude' as const,
+      command: sweepCommand(['claude', '--dangerously-skip-permissions'], 'claude', effort),
+    };
+    return { task, use: taskModelUse(task, { model: actual, at: AT }, SETTINGS) };
+  };
+
+  it('a medium sweep on claude-sonnet-5-5 is what it asked for: no finding', async () => {
+    const { task, use } = sweep('claude-sonnet-5-5');
+    expect(use).toMatchObject({ requested: 'sonnet', requestedFrom: '--model in its command' });
+    expect(await run([use])).toEqual([]);
+    expect(modelLine({ ...task, metrics: undefined })).toBe('sonnet');
+    // Each effort's alias matches its family's real model.
+    expect(await run([sweep('claude-haiku-4-5-20251001', 'low').use])).toEqual([]);
+    expect(await run([sweep('claude-opus-5-5', 'high').use])).toEqual([]);
+  });
+
+  it('a sweep that asks for sonnet and runs with another model is flagged', async () => {
+    const findings = await run([sweep('claude-fable-5-2').use]);
+    expect(findings).toHaveLength(1);
+    expect(findings[0].key).toBe('unexpected-model:sonnet:claude-fable-5-2');
+    expect(findings[0].problem).toContain('asked for sonnet (--model in its command)');
+    expect(findings[0].problem).toContain('Security sweep: .github');
+  });
+
+  it("the task's own model wins over its command's; with neither, settings.json is asked", () => {
+    const at = { model: 'claude-opus-5-5', at: AT };
+    const base = { id: 't1', name: 'x', agent: 'claude' as const };
+    expect(
+      taskModelUse({ ...base, model: 'opus', command: ['claude', '--model', 'sonnet'] }, at)
+    ).toMatchObject({ requested: 'opus', requestedFrom: '--model' });
+    expect(
+      taskModelUse(
+        {
+          ...base,
+          model: 'sonnet',
+          modelChoice: { tier: 'fast', by: 'router', reason: 'a rename' },
+          command: ['claude'],
+        },
+        at
+      )
+    ).toMatchObject({ requested: 'sonnet', requestedFrom: 'taskModels.claude.fast' });
+    expect(taskModelUse({ ...base, command: ['claude'] }, at, SETTINGS)).toMatchObject({
+      requested: SETTINGS,
+      requestedFrom: '"model" in ~/.claude/settings.json',
+    });
+    // The user's quick start names a model: that is what the task asked for.
+    expect(
+      taskModelUse({ ...base, command: ['claude', '--model=claude-opus-5-5'] }, at, SETTINGS)
+    ).toMatchObject({ requested: 'claude-opus-5-5', requestedFrom: '--model in its command' });
+    // Settings.json is Claude's: another agent without a model asks for nothing.
+    expect(taskModelUse({ ...base, agent: 'codex', command: ['codex'] }, at, SETTINGS)).toEqual({
+      label: 'task "x" (t1)',
+      actual: 'claude-opus-5-5',
+      at: AT,
+    });
   });
 });
 

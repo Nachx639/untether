@@ -703,12 +703,25 @@ export async function pipelineLoop(
     options.onProgress?.({ state: 'merging' });
     const mergeStart = now();
     const mutex = options.mutex ?? repoMutex;
-    const moveTo = async (expected: string, sha: string, onto?: string) =>
+    const moveTo = async (
+      expected: string,
+      sha: string,
+      onto?: string,
+      batchWorking?: () => boolean
+    ) =>
       mutex.run(repoPath, async () => {
         // Recorded right before the move (task journal): a restart from here on looks at the
         // base. It throws when the record could not be saved: then the base is not moved.
         if (onto) options.onMoveBase?.({ sha, onto });
-        return moveBase(log, repoPath, base, baseRef, expected, sha);
+        return moveBase(
+          log,
+          repoPath,
+          base,
+          baseRef,
+          expected,
+          sha,
+          () => !!options.signal?.aborted || !!options.agentWorking?.() || !!batchWorking?.()
+        );
       });
 
     // Two levels: on board the merge batch; the base moves once its whole check passed.
@@ -734,7 +747,7 @@ export async function pipelineLoop(
           return composeCheckCommand(wt, all.length ? all : checks);
         },
         record: () => options.onMoveBase?.({ sha: head, onto: baseNow }),
-        move: (expected, sha) => moveTo(expected, sha),
+        move: (expected, sha, agentWorking) => moveTo(expected, sha, undefined, agentWorking),
       });
       // boardTrain took the branch back to its own work, or kept its refs and said why.
       batch.built = undefined;
@@ -766,7 +779,12 @@ export async function pipelineLoop(
         // would have merged. Without a result of its own, a merge error with the reason.
         const stop = verdict.detail as PipelineResult | undefined;
         return stop?.state && stop.blocker
-          ? { state: stop.state, blocker: stop.blocker, ...kept }
+          ? {
+              state: stop.state,
+              blocker: stop.blocker,
+              ...(stop.agentWorking ? { agentWorking: true } : {}),
+              ...kept,
+            }
           : {
               state: 'needs_you',
               blocker: { kind: 'merge-error', message: verdict.reason },

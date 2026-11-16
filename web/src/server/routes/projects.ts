@@ -294,6 +294,30 @@ export function createProjectRoutes(options: {
     });
   });
 
+  /** Migrates the orchestrator to another agent in hot; without a login: 202 (the user's OK). */
+  router.post(
+    '/projects/orchestrator/migrate',
+    async (req: AuthenticatedRequest, res: Response) => {
+      const body = (req.body ?? {}) as { repoPath?: unknown; to?: unknown; model?: unknown };
+      const result = await options.commands.run(
+        'project-orchestrator-migrate',
+        {
+          repo: body.repoPath,
+          to: body.to,
+          ...(typeof body.model === 'string' && body.model.trim()
+            ? { model: body.model.trim() }
+            : {}),
+        },
+        callerFromAuth(req.authMethod)
+      );
+      if (result.ok && result.status === 'pending-confirmation') {
+        return sendCommandResult(res, result);
+      }
+      if (!result.ok) return res.status(httpStatus(result)).json({ error: result.message });
+      res.json(result.data);
+    }
+  );
+
   router.delete('/projects/orchestrator', async (req: AuthenticatedRequest, res: Response) => {
     const service = orchestrator(req, res);
     if (!service) return;

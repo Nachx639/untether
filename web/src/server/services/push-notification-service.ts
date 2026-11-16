@@ -11,6 +11,7 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import type webpush from 'web-push';
+import { agentPush } from '../../shared/agent-push.js';
 import type { NotificationPreferences } from '../../types/config.js';
 import { createLogger } from '../utils/logger.js';
 import type { VapidManager } from '../utils/vapid-manager.js';
@@ -272,7 +273,10 @@ export class PushNotificationService {
     if (typeof sessionId === 'string' && this.isSessionMuted(sessionId)) {
       return skip('muted', `session ${sessionId} is muted`);
     }
-    if (typeof sessionId === 'string' && /^(claude|codex|gemini|task)-/.test(payload.type)) {
+    if (
+      typeof sessionId === 'string' &&
+      (agentPush(payload.type) || /^(gemini|task)-/.test(payload.type))
+    ) {
       this.lastSemanticAt.set(sessionId, Date.now());
       // The agent's own notification says more than the bell it rang for the same moment.
       const pending = this.pendingBells.get(sessionId);

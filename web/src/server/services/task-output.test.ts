@@ -578,14 +578,15 @@ describe('the guard hook and the task setup', () => {
     expect(result.out).toBe('');
   });
 
-  it("createTaskGuard: only a Claude task of a project with summarizeOutput gets it, with the project's checks", () => {
-    const make = (settings: object, command = ['claude']) => {
+  it("createTaskGuard: only a Claude task of a project with summarizeOutput gets it, with the project's checks", async () => {
+    const make = async (settings: object, command = ['claude']) => {
       const guard = createTaskGuard({
         untetherDir: dir,
         hook: ['/node', '/hook.ts'],
         settings: () => settings,
+        codexTakesHookTrust: async () => ({ kind: 'yes' }),
       });
-      guard.prepare(
+      await guard.prepare(
         {
           id: 'abc',
           command,
@@ -598,15 +599,17 @@ describe('the guard hook and the task setup', () => {
         fs.readFileSync(path.join(dir, 'agent-hooks', 'tasks', 'abc', 'policy.json'), 'utf8')
       );
     };
-    expect(make({}).summarize).toBeUndefined();
-    expect(make({ summarizeOutput: false }).summarize).toBeUndefined();
+    expect((await make({})).summarize).toBeUndefined();
+    expect((await make({ summarizeOutput: false })).summarize).toBeUndefined();
     expect(
-      make({
-        summarizeOutput: true,
-        checkCommand: 'bash scripts/check.sh',
-        fastCheckCommand: 'cd web && pnpm run check',
-        summarizeCommands: ['make verify'],
-      }).summarize
+      (
+        await make({
+          summarizeOutput: true,
+          checkCommand: 'bash scripts/check.sh',
+          fastCheckCommand: 'cd web && pnpm run check',
+          summarizeCommands: ['make verify'],
+        })
+      ).summarize
     ).toEqual({
       logDir: path.join(dir, 'agent-hooks', 'tasks', 'abc', 'output'),
       runner: ['/node', '/hook.ts'],
@@ -614,6 +617,6 @@ describe('the guard hook and the task setup', () => {
       patterns: ['make verify'],
     });
     // Codex does not read a hook's updatedInput.
-    expect(make({ summarizeOutput: true }, ['codex']).summarize).toBeUndefined();
+    expect((await make({ summarizeOutput: true }, ['codex'])).summarize).toBeUndefined();
   });
 });

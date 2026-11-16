@@ -445,6 +445,7 @@ const CONFIRM_SUMMARY: Record<ConfirmationKind, string> = {
   'project-set': 'Change the task settings',
   start: 'Start a session without a worktree',
   'project-orchestrate': "Start the project's orchestrator",
+  'project-orchestrator-migrate': "Migrate the project's orchestrator to another agent",
   'project-forget': 'Forget the project',
   'project-new': 'Create a new project',
   'auto-approve': 'Turn on autoApprove',

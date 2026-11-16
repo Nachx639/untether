@@ -1,6 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
+import { AGENT_IDS } from '../../shared/agents.js';
+import { agentAvatar, agentLogo } from './agent-avatar.js';
+import { QODER_MARK } from './icons.js';
 
 /**
  * Every agent or preview avatar goes through agent-avatar.ts, or a provider's icon and
@@ -8,7 +11,7 @@ import { describe, expect, it } from 'vitest';
  * agentAvatar() or agentLogo(), and only list it below if it is not an avatar.
  */
 const AVATAR_DRAWING =
-  /\bagentGlyph\(|\b(?:CLAUDE|CODEX|GEMINI)_MARK\b|\bicon\('eye'|class="[^"]*\b(?:psr-avatar|ut-side-avatar|ut-card-avatar|ut-agent-glyph)\b/g;
+  /\bagentGlyph\(|\b(?:CLAUDE|CODEX|GEMINI|QODER)_MARK\b|\bicon\('eye'|class="[^"]*\b(?:psr-avatar|ut-side-avatar|ut-card-avatar|ut-agent-glyph)\b/g;
 
 /** The owners (-1: any number), then what is not an avatar: a menu's eye, a loading placeholder. */
 const NOT_AN_AVATAR: Record<string, number> = {
@@ -48,5 +51,45 @@ describe('agent and preview avatars', () => {
     expect('return agentGlyph(kind, 16);'.match(AVATAR_DRAWING)).toHaveLength(1);
     expect('html`${CODEX_MARK}`'.match(AVATAR_DRAWING)).toHaveLength(1);
     expect("${icon('eye', 20)}".match(AVATAR_DRAWING)).toHaveLength(1);
+  });
+
+  /** A lit template as the text it renders (attribute and child values in place). */
+  const text = (value: unknown): string => {
+    if (Array.isArray(value)) return value.map(text).join('');
+    // providerLogo(provider, mark, …): with no provider and no avatarIcons it draws the mark.
+    const directive = value as { _$litDirective$?: unknown; values?: unknown[] } | null;
+    if (directive?._$litDirective$) return text(directive.values?.[1]);
+    const template = value as { strings?: readonly string[]; values?: unknown[] } | null;
+    if (!template?.strings) return typeof value === 'string' ? value : '';
+    return template.strings.map((part, i) => part + text(template.values?.[i])).join('');
+  };
+
+  it("Qoder's mark is a small drawn duckling tinted by the look, never an image", () => {
+    const mark = text(QODER_MARK);
+    expect(mark).toContain('viewBox="0 0 24 24"');
+    expect(mark).toContain('stroke="currentColor"');
+    // No colour of its own, no bitmap, nothing loaded: the tile's token colours it.
+    expect(mark).not.toMatch(/#[0-9a-f]{3,8}\b|rgb\(|<image|<img|href=/i);
+    expect(mark.length).toBeLessThan(700);
+  });
+
+  it('every agent of the registry has its own mark in every tile, not the shell prompt', () => {
+    const shell = text(agentLogo('shell', undefined));
+    const seen = new Set<string>();
+    for (const kind of AGENT_IDS) {
+      const logo = text(agentLogo(kind, undefined));
+      expect(logo, kind).not.toBe(shell);
+      seen.add(logo);
+      const row = text(agentAvatar({ variant: 'row', kind, state: 'working' }));
+      expect(row, kind).toContain(`psr-avatar-${kind}`);
+      expect(row, kind).toContain('<svg');
+      const side = text(agentAvatar({ variant: 'side', kind, status: 'working' }));
+      expect(side, kind).toContain('ut-agent-glyph');
+    }
+    expect(seen.size).toBe(AGENT_IDS.length);
+    const duck = text(QODER_MARK);
+    expect(text(agentAvatar({ variant: 'row', kind: 'qoder', state: 'working' }))).toContain(duck);
+    expect(text(agentAvatar({ variant: 'card', kind: 'qoder' }))).toContain(duck);
+    expect(text(agentLogo('qoder', undefined, 16))).toContain(duck);
   });
 });

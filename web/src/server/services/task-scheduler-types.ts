@@ -273,6 +273,7 @@ export interface TaskSchedulerDeps {
   ) => Promise<LaunchedSession>;
   /** The Claude conversation last seen in a session (Session.claudeSessionId). */
   claudeConversation?: (sessionId: string) => string | undefined;
+  qoderConversation?: (sessionId: string) => string | undefined;
   /** The whole last reply of the agent in a session (its report, when it changed nothing). */
   finalReply?: (sessionId: string) => Promise<string | undefined>;
   /**

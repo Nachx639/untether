@@ -675,8 +675,8 @@ export const en = {
   'terminalSelect.selectAll': 'Select All',
   'terminalSelect.paste': 'Paste',
   'directKeyboard.pasteHint': 'Hold here and choose Paste',
-  'ask.placeholder': 'Ask Claude…',
-  'ask.send': 'Send to Claude',
+  'ask.placeholderAgent': 'Ask {name}…',
+  'ask.sendAgent': 'Send to {name}',
   'ask.folder': 'Folder: {folder}',
   'ask.where': 'Ask Claude in…',
   'history.menuItem': 'History',
@@ -834,8 +834,6 @@ export const en = {
   'codex.slash.diff': 'Show the git diff, including untracked files',
   'codex.slash.init': 'Create AGENTS.md',
   'ask.agent': 'Agent',
-  'ask.placeholderCodex': 'Ask Codex…',
-  'ask.sendCodex': 'Send to Codex',
   'ask.whereCodex': 'Ask Codex in…',
   // Dictation (speech to text into the message box)
   'dictation.listening': 'Listening… speak now',
@@ -1545,6 +1543,7 @@ export const en = {
   // A quick start whose program is not on the Mac: dimmed, and a tap says so
   'quickStart.notInstalled': 'Not installed',
   'quickStart.notInstalledOnMac': '{name} is not installed on the Mac',
+  'quickStart.installAgent': '{name} is not installed. Install: {url}',
   'whatsNew.previewServers.title': 'Previews in two taps',
   'whatsNew.previewServers.body':
     '“+ Add preview” lists the web servers running on your Mac; tap one and it’s in.',
@@ -2405,6 +2404,12 @@ export const en = {
   'orch.open': 'Open orchestrator',
   'orch.newGoal': 'New goal',
   'orch.stop': 'Stop orchestrator',
+  'orch.changeAgent': 'Change agent',
+  'orch.migrateConfirmBody':
+    'Migrate the orchestrator of {name} to {agent}? Its current session is kept, ready to resume.',
+  'orch.changeAgentTitle': 'Carry on with another agent',
+  'orch.migrated': 'The orchestrator of {name} now runs on {agent}',
+  'orch.migrateFailed': 'Could not change the agent: {error}',
   'orch.stopQuestion': 'Stop the orchestrator? Its tasks keep going.',
   'orch.stopConfirm': 'Stop',
   'orch.stopped': 'Orchestrator of {name} stopped',
@@ -2608,6 +2613,16 @@ export const en = {
   'orch.error.generic': 'something went wrong; try again',
   'projectSettings.error.invalid': 'one of the values is not valid',
   'projectSettings.error.generic': 'something went wrong; try again',
+  'projectSettings.orchestratorAgent': 'Orchestrator agent',
+  'projectSettings.orchestratorAgentHint':
+    'The agent a new orchestrator runs on. The running one keeps its agent until you change it.',
+  'projectSettings.orchestratorModel': 'Orchestrator model',
+  'projectSettings.orchestratorModelPlaceholder': 'the agent’s default',
+  'projectSettings.orchestratorModelHint':
+    'Optional. Empty uses the quick start’s model, else the agent’s default.',
+  'projectSettings.orchestratorAutoMigrate': 'Migrate automatically at its usage limit',
+  'projectSettings.orchestratorAutoMigrateHint':
+    'When the orchestrator’s agent runs out of quota, carry on with another agent by itself. Off: you are offered the change.',
   'common.errorDetails': 'Details',
   // autoApprove (2026-10-24)
   'autoApprove.label': "Don't ask for my OK",

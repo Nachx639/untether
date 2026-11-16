@@ -462,7 +462,7 @@ describe("the task's session", () => {
       hook: ['/usr/bin/node', '/x/hook.ts'],
       toolProfile: (t) => tools.profileFor(t),
     });
-    const prepared = guard.prepare(task(), dir);
+    const prepared = await guard.prepare(task(), dir);
     const settings = JSON.parse(fs.readFileSync(prepared?.claudeSettings as string, 'utf8'));
     expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('/x/hook.ts');
     expect(settings.enabledPlugins['vercel@official']).toBe(false);
@@ -487,15 +487,15 @@ describe("the task's session", () => {
     expect(TASK_ALLOWED_TOOLS).toContain('Bash(ut project tools want:*)');
   });
 
-  it('a Codex task gets no pruning keys', () => {
+  it('a Codex task gets no pruning keys', async () => {
     const toolProfile = vi.fn(() => null);
     const guard = createTaskGuard({
       untetherDir: dir,
       hook: ['/n', '/h'],
       toolProfile,
-      codexTakesHookTrust: () => true,
+      codexTakesHookTrust: async () => ({ kind: 'yes' }),
     });
-    guard.prepare(task({ agent: 'codex', command: ['codex'] }), dir);
+    await guard.prepare(task({ agent: 'codex', command: ['codex'] }), dir);
     expect(toolProfile).not.toHaveBeenCalled();
   });
 });

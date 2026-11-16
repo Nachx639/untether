@@ -36,6 +36,7 @@ import type { PipelineMode } from './task-merge.js';
 import {
   autoFixReasonOf,
   budgeted,
+  CODEX_IDLE_MS,
   HISTORY_LIMIT,
   isFinal,
   isSettled,
@@ -192,7 +193,7 @@ export abstract class TaskSchedulerCore {
     backToWork: boolean
   ): Promise<TaskActionResult>;
   protected abstract watchTyped(task: TaskRecord, launched: LaunchedSession): void;
-  protected abstract armFinishedStop(task: TaskRecord, since?: number): void;
+  protected abstract armFinishedStop(task: TaskRecord): void;
   protected abstract cancelFinishedStop(taskId: string): void;
   protected abstract dropSession(task: TaskRecord, sessionId: string): Promise<void>;
   protected abstract launchPrompt(task: TaskRecord): string;
@@ -268,6 +269,26 @@ export abstract class TaskSchedulerCore {
       this.deps.onError?.(`Task ${task.id}: its agent's events could not be read`, error);
       return undefined;
     }
+  }
+
+  /** A turn stays active however long its last command or model response takes. */
+  protected agentBusy(task: TaskRecord): boolean {
+    if (!task.sessionId || this.deps.sessionStatus(task.sessionId) !== 'running') return false;
+    const events = this.events(task);
+    if (events) {
+      return events.toolsOpen > 0 || !['turn-ended', 'ended', 'halted'].includes(events.state);
+    }
+    const status = this.lastStatus.get(task.sessionId);
+    if (status) return status !== 'idle';
+    const output = this.deps.lastOutputAt?.(task.sessionId);
+    // A configured event reader that cannot identify this session is not proof of idle.
+    return !!this.deps.agentState || (output !== undefined && this.now() - output < CODEX_IDLE_MS);
+  }
+
+  /** New work since completion also invalidates it when that work has already gone idle. */
+  protected completionInvalidated(task: TaskRecord): boolean {
+    const since = task.completionRequestedAt;
+    return since !== undefined && (this.events(task)?.lastWorkStartedAt ?? 0) > since;
   }
 
   /**
@@ -526,6 +547,8 @@ export abstract class TaskSchedulerCore {
       delete task.pushed;
       // New work: a wait for the base starts over when it is merged again.
       delete task.baseWait;
+      // Back at work (a fix round, a resume): no pending completion left to revoke.
+      delete task.completionRequestedAt;
     }
     // A halt holds while the agent is paused or sent on; any other end closes the streak.
     if (state !== 'paused' && state !== 'working') delete task.halt;

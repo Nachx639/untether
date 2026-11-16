@@ -70,6 +70,8 @@ describe('Config Routes', () => {
     const configRoutes = createConfigRoutes({
       configService: mockConfigService,
       macSessions: macOnly,
+      // No shell is started, and no agent of this Mac is added to the lists expected below.
+      quickStartAvailability: { check: async () => ({}) },
     });
 
     app.use('/api', configRoutes);
@@ -816,6 +818,7 @@ describe('Config Routes', () => {
                 { command: 'opencode 4' },
               ],
             }),
+            getNotificationPreferences: () => undefined,
           } as unknown as ConfigService,
           quickStartAvailability: { check },
         })
@@ -830,9 +833,37 @@ describe('Config Routes', () => {
 
       const response = await request(availabilityApp(check)).get('/api/quick-start/availability');
 
-      expect(check).toHaveBeenCalledWith(['claude', 'gemini', 'opencode']);
+      // Every agent of the registry is asked about too, once: the ask box dims a missing one.
+      expect(check).toHaveBeenCalledWith(['claude', 'gemini', 'opencode', 'codex', 'qodercli']);
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ claude: true, gemini: false, opencode: true });
+      expect(response.body).toEqual({
+        claude: true,
+        gemini: false,
+        opencode: true,
+        codex: true,
+        qodercli: true,
+      });
+    });
+
+    it('GET /api/config offers a registry agent the list lacks only when it is installed', async () => {
+      const check = vi.fn(async (programs: string[]) =>
+        Object.fromEntries(programs.map((program) => [program, program === 'qodercli']))
+      );
+      const response = await request(availabilityApp(check)).get('/api/config');
+      // Asked only about the agents no quick start runs; Codex is not installed, so not added.
+      expect(check).toHaveBeenCalledWith(['codex', 'qodercli']);
+      expect(response.body.quickStartCommands).toEqual([
+        { name: '✨ claude', command: 'claude --dangerously-skip-permissions' },
+        { command: 'gemini' },
+        { command: 'opencode 4' },
+        { name: 'Qoder', command: 'qodercli' },
+      ]);
+      const failing = await request(
+        availabilityApp(async () => {
+          throw new Error('no shell');
+        })
+      ).get('/api/config');
+      expect(failing.body.quickStartCommands).toHaveLength(3);
     });
 
     it('answers {} (every quick start offered) when the check fails', async () => {

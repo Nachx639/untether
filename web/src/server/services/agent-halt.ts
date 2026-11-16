@@ -18,6 +18,7 @@
  * that went on after a retry, is no halt. Codex's "Heads up, you have less than 5% of your 5h
  * limit left" is a warning, not a halt.
  */
+import { AGENTS, TASK_AGENTS, type TaskAgent } from '../../shared/agents.js';
 
 export type AgentHaltKind = 'usage-limit' | 'api-error' | 'auth' | 'model';
 
@@ -286,10 +287,10 @@ export function parseResumeAt(text: string, now: number): number | undefined {
   return at;
 }
 
-const AGENT_NAMES = { claude: 'Claude', codex: 'Codex' } as const;
+const AGENT_NAMES = Object.fromEntries(TASK_AGENTS.map((id) => [id, AGENTS[id].label]));
 
 /** "Codex hit its usage limit", "Claude lost its login", "Claude got an API error". */
-export function haltHeadline(kind: AgentHaltKind, agent: 'claude' | 'codex'): string {
+export function haltHeadline(kind: AgentHaltKind, agent: TaskAgent): string {
   const name = AGENT_NAMES[agent];
   switch (kind) {
     case 'usage-limit':

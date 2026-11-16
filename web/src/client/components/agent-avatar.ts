@@ -8,8 +8,17 @@
  * replaces the app's mark in all of them; an image or emoji is then the whole avatar, no tile.
  */
 import { html, nothing, type TemplateResult } from 'lit';
+import { isAgentId } from '../../shared/agents.js';
 import type { AvatarIconKey } from '../../shared/model-providers.js';
-import { type AgentKind, agentGlyph, CLAUDE_MARK, CODEX_MARK, GEMINI_MARK, icon } from './icons.js';
+import {
+  type AgentKind,
+  agentGlyph,
+  CLAUDE_MARK,
+  CODEX_MARK,
+  GEMINI_MARK,
+  icon,
+  QODER_MARK,
+} from './icons.js';
 import { type ProviderRef, providerCorner, providerLogo } from './provider-badge.js';
 
 export type AvatarKind = AgentKind | 'gemini' | 'terminal';
@@ -38,13 +47,13 @@ interface PreviewAvatarOptions {
 }
 
 function glyphKind(kind: AvatarKind): AgentKind {
-  return kind === 'claude' || kind === 'codex' ? kind : 'shell';
+  return isAgentId(kind) ? kind : 'shell';
 }
 
-/** Gemini has a mark of its own but no entry in avatarIcons; it must not wear the shell's. */
+/** Gemini and Qoder have marks of their own but no entry in avatarIcons; they must not wear the shell's. */
 function avatarIconKey(kind: AvatarKind): AvatarIconKey | undefined {
   if (kind === 'claude' || kind === 'codex') return kind;
-  return kind === 'gemini' ? undefined : 'shell';
+  return isAgentId(kind) ? undefined : 'shell';
 }
 
 /** Only the logo, for lists with no tile: the provider's icon or the agent's. */
@@ -68,6 +77,7 @@ function rowMark(kind: AvatarKind) {
   if (kind === 'claude') return CLAUDE_MARK;
   if (kind === 'codex') return CODEX_MARK;
   if (kind === 'gemini') return GEMINI_MARK;
+  if (kind === 'qoder') return QODER_MARK;
   return icon('terminal', 20);
 }
 

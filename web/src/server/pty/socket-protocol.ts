@@ -107,6 +107,8 @@ export interface StatusResponse {
   buildDate?: string;
   /** Which build the server is and the `ut` commands it knows (build-info.ts). */
   build?: BuildInfo;
+  /** The Node the server runs on: the one that loads its checkout's native modules (native-check.ts). */
+  node?: { execPath: string; version: string; modules: string };
   /** What the installed app's own update is doing, in one line (installed-app-updater.ts). */
   appUpdate?: string;
   followMode?: {

@@ -39,7 +39,14 @@ export type PromptAnswer =
 /** Unanswered this long, the user's phone hears of it, whoever the task reports to. */
 export const PROMPT_ESCALATE_MS = 10 * 60_000;
 
-const NO = /^\s*no\b/i;
+/**
+ * The refusal, however the agent names it: Claude's "No", Qoder's "Reject" (its dialog is
+ * Approve / Always approve / Reject), and the deny/decline/cancel/disallow/refuse/block/abort/never
+ * of others. 2026-11-12: `ut task answer … deny` could not reject Qoder's MCP-server dialog — none
+ * of its options begins with "no" — so it said "The prompt has no such option" and the orchestrator
+ * had to press 3 by hand; "Reject" was even read as an approval (optionApproves).
+ */
+const NO = /^\s*(?:no|deny|reject|decline|disallow|refuse|cancel|abort|block|never)\b/i;
 const YES = /^\s*(?:yes|allow|approve|proceed|continue|accept)\b/i;
 
 /** "Yes" itself, not "Yes, and don't ask again for …" (that widens what was asked). */
@@ -56,7 +63,7 @@ export function denyOption(options: readonly string[]): number {
   return options.findIndex((option) => NO.test(option)) + 1;
 }
 
-/** Anything but a "No" lets the call run. */
+/** Anything but a refusal (No, Reject, Deny…) lets the call run. */
 export function optionApproves(option: string): boolean {
   return !NO.test(option);
 }

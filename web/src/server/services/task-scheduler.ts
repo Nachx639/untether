@@ -85,7 +85,6 @@ export {
   budgetAdvice,
   CODEX_IDLE_MS,
   clockText,
-  FINISHED_SESSION_BUSY_MS,
   FINISHED_SESSION_GRACE_MS,
   FINISHED_SESSION_LINGER_MS,
   fairest,

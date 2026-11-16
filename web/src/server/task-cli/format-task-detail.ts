@@ -3,6 +3,7 @@
 import * as path from 'path';
 import { modelMatches, taskActualModel } from '../../shared/agent-models.js';
 import { promptLines } from '../../shared/agent-prompt.js';
+import { taskAskedModel } from '../../shared/agents.js';
 import { budgetLine, type TaskBudget } from '../../shared/task-budget.js';
 import type { TaskConfirmation } from '../../shared/task-confirmations.js';
 import {
@@ -84,18 +85,20 @@ export function toolsLine(tools: TaskToolsInfo): string {
  * claude-opus-4-8" (2026-11-08: the real model, read from its transcript, next to the asked one).
  */
 export function modelLine(
-  task: Pick<TaskRecord, 'model' | 'modelChoice' | 'modelProvider' | 'metrics'>
+  task: Pick<TaskRecord, 'model' | 'modelChoice' | 'modelProvider' | 'metrics' | 'command'>
 ): string {
+  // Its own model, else the one its command carries (a security sweep's, the quick start's).
+  const askedModel = taskAskedModel(task);
   // A provider task (model-providers.ts): "<provider>:<model> (external provider)".
   const model = task.modelProvider
     ? `${task.modelProvider}:${task.model ?? '?'} (external provider)`
-    : (task.model ?? "the agent's default");
+    : (askedModel ?? "the agent's default");
   const choice = task.modelChoice;
   const level = choice?.tier ? `${choice.tier}, ` : '';
   const asked = choice ? `${model} · ${level}${choice.by}: ${choice.reason}` : model;
   const actual = taskActualModel(task);
   if (!actual) return asked;
-  const differs = task.model && !task.modelProvider && !modelMatches(task.model, actual);
+  const differs = askedModel && !task.modelProvider && !modelMatches(askedModel, actual);
   return `${asked}; real: ${actual}${differs ? ' (not the asked model)' : ''}`;
 }
 

@@ -546,14 +546,15 @@ describe('TaskScheduler', () => {
       expect(scheduler.get(newer.id)?.summary).toBe('Hecho');
     });
 
-    it('waits while its agent still works, up to a limit', async () => {
+    it('never kills an active turn, even beyond the former busy timeout', async () => {
       const scheduler = makeStopping();
       await scheduler.start(0);
       await scheduler.create(task());
       statuses.set('s1', 'running');
       await scheduler.markDone('s1', 'Hecho');
       scheduler.onClaudeTransition('s1', 'idle', 'busy', idle());
-      await vi.advanceTimersByTimeAsync(5_000);
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+      expect(await scheduler.stopLingeringSession(scheduler.list()[0].id)).toBe('not-needed');
       expect(stopSession).not.toHaveBeenCalled();
       scheduler.onClaudeTransition('s1', 'busy', 'idle', idle());
       await vi.advanceTimersByTimeAsync(1_000);

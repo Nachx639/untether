@@ -69,6 +69,8 @@ export abstract class TaskSchedulerFinish extends TaskSchedulerSessions {
       (entry) => entry.sessionId === sessionId && SESSION_STATES.includes(entry.state)
     );
     if (!task) return undefined;
+    delete task.reportRequired;
+    task.completionRequestedAt = Math.max(this.now(), this.events(task)?.lastWorkStartedAt ?? 0);
     if (summary?.trim()) task.summary = summary.trim().slice(0, TASK_SUMMARY_MAX);
     const verified = report.verified?.trim().slice(0, TASK_VERIFIED_MAX);
     const undo = report.undo?.trim().slice(0, TASK_UNDO_MAX);
@@ -501,6 +503,17 @@ export abstract class TaskSchedulerFinish extends TaskSchedulerSessions {
         await this.haltStops(task, halt);
         return;
       }
+      // Qoder's Stop is a turn boundary, including intermediate turns. It is not a
+      // task report. A completion revoked by renewed work needs a fresh report too.
+      if (task.agent === 'qoder' || task.reportRequired) {
+        this.finishing.delete(task.id);
+        const reply = this.events(task)?.finalMessage ?? this.lastReply.get(task.id) ?? '';
+        if (this.endedOnQuestion(task, reply)) {
+          this.setState(task, 'needs_you', { kind: 'question', message: reply.slice(0, 2000) });
+          this.save();
+        }
+        return;
+      }
     }
     if (task.security?.kind === 'sweep') {
       try {
@@ -546,6 +559,10 @@ export abstract class TaskSchedulerFinish extends TaskSchedulerSessions {
         }
         if (isFinal(task)) return;
         const changed = (task.stats?.commits ?? 0) > 0;
+        if (task.reportRequired || this.completionInvalidated(task)) {
+          this.workResumed(task);
+          return;
+        }
         // What the agent's own result says, against its branch (2026-11-01: decided by its
         // outcome, no longer by its prose).
         const result = task.result;
@@ -640,6 +657,10 @@ export abstract class TaskSchedulerFinish extends TaskSchedulerSessions {
       }
       task.finishedAt = new Date(this.now()).toISOString();
       if (pipeline) {
+        task.completionRequestedAt ??= Math.max(
+          this.now(),
+          this.events(task)?.lastWorkStartedAt ?? 0
+        );
         // Shown as checking right away; the pipeline sends the push when it ends.
         this.setState(task, 'verifying');
         this.save();

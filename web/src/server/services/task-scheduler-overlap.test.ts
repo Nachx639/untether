@@ -383,11 +383,11 @@ describe("holding a task agent's tool calls (task guard)", () => {
     fs.rmSync(dir, RM_TEST_DIR);
   });
 
-  it('a guarded session: the hold is a file with its own end, lifted by its release', () => {
+  it('a guarded session: the hold is a file with its own end, lifted by its release', async () => {
     const { guard, record } = guarded();
     // No guard files yet: no hook would wait.
     expect(guard.holdTools('abc123')).toBeNull();
-    expect(guard.prepare(record, '/wt/x')).not.toBeNull();
+    expect(await guard.prepare(record, '/wt/x')).not.toBeNull();
     const before = Date.now();
     const release = guard.holdTools('abc123');
     expect(release).not.toBeNull();
@@ -398,17 +398,17 @@ describe("holding a task agent's tool calls (task guard)", () => {
     expect(fs.existsSync(holdFile())).toBe(false);
   });
 
-  it('a session that runs without its guard cannot be held', () => {
+  it('a session that runs without its guard cannot be held', async () => {
     const { guard, record } = guarded();
-    guard.prepare(record, '/wt/x');
+    await guard.prepare(record, '/wt/x');
     guard.unguarded(record, 'an old Codex');
     expect(guard.holdTools('abc123')).toBeNull();
     expect(fs.existsSync(holdFile())).toBe(false);
   });
 
-  it("the hook makes a tool call wait while the hold lasts, and never past the hold's own end", () => {
+  it("the hook makes a tool call wait while the hold lasts, and never past the hold's own end", async () => {
     const { guard, record } = guarded();
-    guard.prepare(record, '/wt/x');
+    await guard.prepare(record, '/wt/x');
     let started = Date.now();
     expect(call()).toBe(0);
     expect(Date.now() - started).toBeLessThan(200);

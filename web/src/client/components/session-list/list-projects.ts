@@ -4,6 +4,7 @@
  */
 import { html } from 'lit';
 import { state } from 'lit/decorators.js';
+import { AGENTS, TASK_AGENTS, type TaskAgent } from '../../../shared/agents.js';
 import type { TaskRecord } from '../../../shared/tasks.js';
 import type { Session } from '../../../shared/types.js';
 import { t } from '../../i18n/index.js';
@@ -370,6 +371,20 @@ export abstract class SessionListProjects extends SessionListBase {
     return entry ? this.projectIconFor(entry.repoPath) : null;
   }
 
+  /** «Cambiar agente»: the orchestrator carries on with another agent (its old session kept). */
+  protected async migrateOrchestrator(repoPath: string, name: string, to: TaskAgent) {
+    const result = await this.taskBoard.store.migrateOrchestrator(repoPath, to);
+    toast(
+      result.ok
+        ? { kind: 'success', text: t('orch.migrated', { name, agent: AGENTS[to].label }) }
+        : {
+            kind: 'error',
+            text: t('orch.migrateFailed', { error: result.message || result.error || '' }),
+          }
+    );
+    if (result.ok) void this.taskBoard.store.refresh();
+  }
+
   /**
    * "Olvidar" on a project whose folder is gone: DELETE /api/projects?repo= drops its settings,
    * pin and orchestrator, then the board is read again. Refused (409 `open-tasks`) while it
@@ -587,6 +602,33 @@ export abstract class SessionListProjects extends SessionListBase {
             icon: 'sparkles',
             testId: 'orchestrator-new-goal',
             run: () => goalSheet(true),
+          },
+          {
+            label: t('orch.changeAgent'),
+            icon: 'restart',
+            testId: 'orchestrator-change-agent',
+            keepOpen: true,
+            run: () =>
+              s.step(
+                (pick) => html`<div
+                  class="psr-sheet-group ut-surface--floating ut-surface--material"
+                  data-testid="orchestrator-migrate"
+                >
+                  <div class="psr-sheet-title">${t('orch.changeAgentTitle')}</div>
+                  ${actionItems(
+                    pick,
+                    TASK_AGENTS.filter(
+                      (agent) =>
+                        agent !== (this.projectNotice(repoPath)?.orchestratorAgent ?? 'claude')
+                    ).map((agent) => ({
+                      label: AGENTS[agent].label,
+                      icon: 'sparkles' as const,
+                      testId: `orchestrator-migrate-${agent}`,
+                      run: () => void this.migrateOrchestrator(repoPath, name, agent),
+                    }))
+                  )}
+                </div>`
+              ),
           },
           {
             label: t(adopted ? 'orch.stopAdopted' : 'orch.stop'),

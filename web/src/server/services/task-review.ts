@@ -32,6 +32,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { AGENTS, TASK_AGENTS } from '../../shared/agents.js';
 import type { SecurityEffort } from '../../shared/security.js';
 import { fitResultLines, type TaskResult, taskResultLines } from '../../shared/task-result.js';
 import {
@@ -48,6 +49,8 @@ import {
 import { run } from '../utils/exec-file.js';
 import { askForJson, extractJsonObject } from './ai-json-reply.js';
 import { askClaudeOnce, type ClaudeOnceOptions } from './claude-oneshot.js';
+import { askQoderOnce, type QoderOnce } from './qoder-oneshot.js';
+import { QuickStartAvailability } from './quick-start-availability.js';
 import { askCodexOnce, type CodexOnce } from './security-review.js';
 
 /** Sonnet reviews code better than Haiku (the copilot's default). */
@@ -618,11 +621,30 @@ export interface TaskReviewerOptions extends Partial<ClaudeOnceOptions> {
   replyDir?: string;
   /** One question to Codex (default `codex exec`, read-only, no network: security-review.ts). */
   codex?: CodexOnce;
+  qoder?: QoderOnce;
   /**
    * Whether a family's CLI is installed (checked before asking it; a missing one falls back at
    * once). Default: it is just asked, and no answer falls back.
    */
   available?: (agent: TaskAgent) => Promise<boolean>;
+}
+
+/** One look (cached minutes) at which reviewers' CLIs this Mac has, as sessions find them. */
+let reviewerPrograms: QuickStartAvailability | undefined;
+
+/**
+ * Whether a family's own CLI is installed, when none was given: only for the real askers (one
+ * given in options, a test's fake, is always "installed"). 2026-11-12 review: without it a
+ * Qoder or Codex that is not on the Mac was started for every review and only then failed.
+ */
+function installedReviewer(options: TaskReviewerOptions): (agent: TaskAgent) => Promise<boolean> {
+  return async (agent) => {
+    if (agent === 'claude') return true;
+    if ((agent === 'codex' && options.codex) || (agent === 'qoder' && options.qoder)) return true;
+    reviewerPrograms ??= new QuickStartAvailability();
+    const program = AGENTS[agent].executable;
+    return (await reviewerPrograms.check([program]))[program] !== false;
+  };
 }
 
 /**
@@ -633,10 +655,22 @@ export interface TaskReviewerOptions extends Partial<ClaudeOnceOptions> {
  * out, unreadable twice) never blocks: Claude reviews as before and `fallback` says why.
  */
 export function createTaskReviewer(options: TaskReviewerOptions = {}): TaskReviewer {
-  const { now = Date.now, replyDir, codex = askCodexOnce, available, ...claude } = options;
+  const {
+    now = Date.now,
+    replyDir,
+    codex = askCodexOnce,
+    qoder = askQoderOnce,
+    available = installedReviewer(options),
+    ...claude
+  } = options;
   const claudeModel = claude.model ?? REVIEW_MODEL;
   const askOne = async (agent: TaskAgent, request: ReviewRequest): Promise<TaskReview> => {
-    const model = agent === 'codex' ? `codex (${CODEX_REVIEW_EFFORT})` : claudeModel;
+    const model =
+      agent === 'codex'
+        ? `codex (${CODEX_REVIEW_EFFORT})`
+        : agent === 'qoder'
+          ? 'auto'
+          : claudeModel;
     const base = {
       at: new Date(now()).toISOString(),
       model,
@@ -653,20 +687,26 @@ export function createTaskReviewer(options: TaskReviewerOptions = {}): TaskRevie
               timeoutMs: CODEX_REVIEW_TIMEOUT_MS,
               cwd,
             })
-          : askClaudeOnce(
-              {
-                timeoutMs: REVIEW_TIMEOUT_MS,
+          : agent === 'qoder'
+            ? qoder(`${REVIEW_SYSTEM_PROMPT}\n\n${question}`, {
                 cwd,
-                purpose: 'task review',
-                ...claude,
-                model: claudeModel,
-              },
-              REVIEW_SYSTEM_PROMPT,
-              question
-            ),
+                timeoutMs: REVIEW_TIMEOUT_MS,
+                model,
+              })
+            : askClaudeOnce(
+                {
+                  timeoutMs: REVIEW_TIMEOUT_MS,
+                  cwd,
+                  purpose: 'task review',
+                  ...claude,
+                  model: claudeModel,
+                },
+                REVIEW_SYSTEM_PROMPT,
+                question
+              ),
       question: reviewQuestion(request),
       accept: acceptReview,
-      label: agent === 'codex' ? 'task-review-codex' : 'task-review',
+      label: agent === 'claude' ? 'task-review' : `task-review-${agent}`,
       unique: true,
       shorterHint: REVIEW_SHORTER,
       replyDir,
@@ -680,7 +720,7 @@ export function createTaskReviewer(options: TaskReviewerOptions = {}): TaskRevie
         reason:
           agent === 'codex'
             ? 'no answer from codex (not installed, not logged in, out of quota, or it timed out)'
-            : 'no answer from claude (not installed, no token, or it timed out)',
+            : `no answer from ${agent} (not installed, no token, or it timed out)`,
       };
     }
     if (!read.ok) {
@@ -690,24 +730,36 @@ export function createTaskReviewer(options: TaskReviewerOptions = {}): TaskRevie
   };
   return async (request) => {
     const author = request.agent ?? 'claude';
+    // Cross review: the other family first, then the task agents left that are not its author
+    // (Qoder, 2026-11-12), and Claude last as before. Without it Claude alone.
     const wanted = pickReviewer(author, !!request.crossReview);
-    let fallback: string | undefined;
-    if (wanted !== 'claude') {
-      const installed = available ? await available(wanted).catch(() => true) : true;
-      if (!installed) {
-        fallback = `${wanted} is not installed`;
-      } else {
-        const review = await askOne(wanted, request);
-        if (review.verdict !== 'unavailable') return { ...review, crossReview: true };
-        fallback = `${wanted}: ${review.reason ?? 'unavailable'}`;
+    const candidates: TaskAgent[] = request.crossReview
+      ? [
+          ...new Set<TaskAgent>([
+            wanted,
+            ...TASK_AGENTS.filter((id) => id !== author && id !== 'claude'),
+            'claude',
+          ]),
+        ]
+      : ['claude'];
+    const failures: string[] = [];
+    let last: TaskReview | undefined;
+    for (const agent of candidates) {
+      if (agent !== 'claude' && available && !(await available(agent).catch(() => true))) {
+        failures.push(`${agent} is not installed`);
+        continue;
       }
+      const review = await askOne(agent, request);
+      last = {
+        ...review,
+        ...(agent !== author ? { crossReview: true } : {}),
+        ...(failures.length ? { fallback: failures.join('; ') } : {}),
+      };
+      if (review.verdict !== 'unavailable') return last;
+      failures.push(`${agent}: ${review.reason ?? 'unavailable'}`);
     }
-    const review = await askOne('claude', request);
-    return {
-      ...review,
-      ...(author !== 'claude' ? { crossReview: true } : {}),
-      ...(fallback ? { fallback } : {}),
-    };
+    // Claude is always asked last, so there is always an answer to give back.
+    return last as TaskReview;
   };
 }
 

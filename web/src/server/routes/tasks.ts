@@ -43,6 +43,7 @@
 import { randomUUID } from 'crypto';
 import { type Response, Router } from 'express';
 import { z } from 'zod';
+import { TASK_AGENTS } from '../../shared/agents.js';
 import { TASK_NAME_MAX, TASK_PROMPT_MAX } from '../../shared/tasks.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 import type { ConfigService } from '../services/config-service.js';
@@ -68,7 +69,7 @@ const TaskFields = {
   prompt: z.string().trim().min(1).max(TASK_PROMPT_MAX),
   workingDir: z.string().trim().min(1).max(4096),
   command: z.array(z.string().min(1).max(4096)).min(1).max(64),
-  agent: z.enum(['claude', 'codex']),
+  agent: z.enum(TASK_AGENTS),
   shielded: z.boolean(),
   notify: z.boolean(),
 };

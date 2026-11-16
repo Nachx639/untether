@@ -4,6 +4,7 @@
  * (allowed without a permission prompt) instead of leaving the engine to guess from silence.
  */
 
+import { type AgentId, agentPlatformNote } from './agents.js';
 import { TASK_RESULT_EXAMPLE } from './task-result.js';
 
 export interface TaskPromptContext {
@@ -11,13 +12,15 @@ export interface TaskPromptContext {
   branch: string;
   /** The branch it will be merged into. */
   baseBranch: string;
+  /** The task's agent: its brief carries the agent's platform note (Qoder's, 2026-11-12). */
+  agent?: AgentId;
 }
 
 /** What a compaction of the task's conversation must keep. */
 export const TASK_COMPACT_INSTRUCTIONS =
   'Compact instructions: when this conversation is compacted, keep this task and the rules above as they are; the output of failing tests and checks verbatim (command, failing test names, error messages, stack lines); the diffs and the paths of the files changed or still to change; the commits made; and the decisions taken with their reasons, including approaches tried and dropped. Passing output and files only read can be summarised.';
 
-export function taskPromptSuffix({ branch, baseBranch }: TaskPromptContext): string {
+export function taskPromptSuffix({ branch, baseBranch, agent }: TaskPromptContext): string {
   return [
     '---',
     // 2026-10-20: "do not … merge" contradicted the conflict fix, which asks to merge the base
@@ -42,6 +45,7 @@ export function taskPromptSuffix({ branch, baseBranch }: TaskPromptContext): str
     // instructions" section from what is in context (its docs put one in CLAUDE.md), so the
     // brief carries it. Codex's compaction summarises this conversation too.
     TASK_COMPACT_INSTRUCTIONS,
+    ...(agent && agentPlatformNote(agent) ? [agentPlatformNote(agent)] : []),
   ].join('\n');
 }
 

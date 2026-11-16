@@ -11,11 +11,9 @@ import { TASK_REPORT_MAX } from '../../shared/orchestrator-prompt.js';
 import { beginEffect, endEffect, pendingEffect } from '../../shared/task-effects.js';
 import { buildTaskPrompt } from '../../shared/task-prompt.js';
 import { fillTaskPlaceholders, type TaskRecord } from '../../shared/tasks.js';
-import { BACKGROUND } from './claude-status-notifier.js';
 import { resumeText } from './task-launcher.js';
 import { TaskSchedulerOverlap } from './task-scheduler-overlap.js';
 import {
-  FINISHED_SESSION_BUSY_MS,
   FINISHED_SESSION_GRACE_MS,
   isFinal,
   limitKeyOf,
@@ -125,11 +123,13 @@ export abstract class TaskSchedulerSessions extends TaskSchedulerOverlap {
    * (`afterRestart`) count against MAX_TASK_RESUMES: the user reopening it is no crash loop.
    */
   protected resumableConversation(task: TaskRecord, afterRestart: boolean): string | undefined {
-    if (task.agent !== 'claude') return;
+    if (task.agent !== 'claude' && task.agent !== 'qoder') return;
     if (task.isolation === 'worktree' && !task.worktreePath) return;
     if (afterRestart && (task.resumes ?? 0) >= MAX_TASK_RESUMES) return;
     if (!task.sessionId || !this.deps.resume) return;
-    return this.deps.claudeConversation?.(task.sessionId);
+    return task.agent === 'qoder'
+      ? this.deps.qoderConversation?.(task.sessionId)
+      : this.deps.claudeConversation?.(task.sessionId);
   }
 
   /**
@@ -195,7 +195,7 @@ export abstract class TaskSchedulerSessions extends TaskSchedulerOverlap {
         'What is needed now:',
         text,
       ].join('\n'),
-      { branch: task.branch, baseBranch: task.baseBranch ?? 'its base branch' }
+      { branch: task.branch, baseBranch: task.baseBranch ?? 'its base branch', agent: task.agent }
     );
     const oldSessionId = task.sessionId;
     if (oldSessionId) this.replacing.add(oldSessionId);
@@ -370,6 +370,7 @@ export abstract class TaskSchedulerSessions extends TaskSchedulerOverlap {
     return buildTaskPrompt(prompt, {
       branch: task.branch as string,
       baseBranch: task.baseBranch as string,
+      agent: task.agent,
     });
   }
 
@@ -487,7 +488,7 @@ export abstract class TaskSchedulerSessions extends TaskSchedulerOverlap {
     return inUse ? undefined : sessionId;
   }
 
-  protected armFinishedStop(task: TaskRecord, since = this.now()): void {
+  protected armFinishedStop(task: TaskRecord): void {
     this.cancelFinishedStop(task.id);
     if (!task.sessionId) {
       this.track(this.dropDoneWorktree(task));
@@ -495,11 +496,9 @@ export abstract class TaskSchedulerSessions extends TaskSchedulerOverlap {
     }
     const timer = setTimeout(() => {
       this.finishedTimers.delete(task.id);
-      // Its agent still at work (its last words after `ut task done`): later, up to a limit.
-      const status = task.sessionId ? this.lastStatus.get(task.sessionId) : undefined;
-      const busy = status === 'busy' || status === BACKGROUND;
-      if (busy && this.now() - since < FINISHED_SESSION_BUSY_MS) {
-        this.armFinishedStop(task, since);
+      // No timeout turns an active turn into permission to kill it.
+      if (this.agentBusy(task)) {
+        this.armFinishedStop(task);
         return;
       }
       this.track(
@@ -527,6 +526,7 @@ export abstract class TaskSchedulerSessions extends TaskSchedulerOverlap {
   ): Promise<'stopped' | 'not-needed' | 'failed'> {
     const sessionId = this.finishedSessionToStop(task);
     if (!sessionId) return 'not-needed';
+    if (this.agentBusy(task)) return 'not-needed';
     if (!this.deps.stopSession) return 'failed';
     if (!task.summary) {
       const report = await this.reportOf(sessionId, task);
@@ -537,7 +537,11 @@ export abstract class TaskSchedulerSessions extends TaskSchedulerOverlap {
     }
     // Checked again: the user may have reopened it, or it moved on, while the report was read.
     if (this.finishedSessionToStop(task) !== sessionId) return 'not-needed';
+    if (this.agentBusy(task)) return 'not-needed';
     try {
+      this.deps.onError?.(
+        `Task ${task.id}: stopping idle session ${sessionId}; task is ${task.state}`
+      );
       await this.deps.stopSession(sessionId);
       return 'stopped';
     } catch (error) {

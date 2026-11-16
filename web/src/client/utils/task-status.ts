@@ -12,6 +12,7 @@
  *   falló       failed                                      (red, with the reason)
  */
 import { taskActualModel } from '../../shared/agent-models.js';
+import { taskAskedModel } from '../../shared/agents.js';
 import { agentConversationTitle } from '../../shared/session-title.js';
 import {
   formatBudgetValue,
@@ -579,15 +580,20 @@ export function runnerName(ref: TaskRunnerRef): string {
  * a task on its agent's default that never changed and whose model was not read yet.
  */
 export function taskAgentLine(
-  task: Pick<TaskRecord, 'agent' | 'runner' | 'model' | 'modelChoice' | 'agentChanges' | 'metrics'>
+  task: Pick<
+    TaskRecord,
+    'agent' | 'runner' | 'model' | 'modelChoice' | 'agentChanges' | 'metrics' | 'command'
+  >
 ): string {
   const changes = task.agentChanges ?? [];
   const actual = taskActualModel(task);
-  if (!task.model && !task.modelChoice && !changes.length && !actual) return '';
+  // Its own model, else the one its command carries (a security sweep's, the quick start's).
+  const model = taskAskedModel(task);
+  if (!model && !task.modelChoice && !changes.length && !actual) return '';
   const current = runnerName({
     agent: task.agent,
     runner: task.runner ?? task.agent,
-    ...(task.model ? { model: task.model } : {}),
+    ...(model ? { model } : {}),
   });
   const tier = task.modelChoice?.tier;
   const parts = [

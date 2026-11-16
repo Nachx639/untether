@@ -5,6 +5,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { PassThrough } from 'stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { TaskAgent } from '../../shared/agents.js';
 import { countReview, reviewBlocks, type TaskReview } from '../../shared/tasks.js';
 import { RM_TEST_DIR } from '../../test/helpers/rm-test-dir.js';
 import {
@@ -77,6 +78,7 @@ describe('task-review', () => {
   };
   const reviewer = (script: (child: FakeChild) => void) =>
     createTaskReviewer({
+      qoder: async () => null,
       claudeBin: '/bin/claude',
       tokenFile,
       spawn: spawner(script),
@@ -268,13 +270,19 @@ describe('task-review', () => {
 
   it('is unavailable without claude, without a token, on a timeout or a bad answer', async () => {
     const spawn = vi.fn();
-    const noClaude = createTaskReviewer({ claudeBin: null, tokenFile, spawn });
+    const noClaude = createTaskReviewer({
+      qoder: async () => null,
+      claudeBin: null,
+      tokenFile,
+      spawn,
+    });
     await expect(noClaude(request)).resolves.toMatchObject({
       verdict: 'unavailable',
       issues: [],
       headSha: 'f00d',
     });
     const noToken = createTaskReviewer({
+      qoder: async () => null,
       claudeBin: '/bin/claude',
       tokenFile: path.join(tmp, 'missing'),
       spawn,
@@ -307,6 +315,7 @@ describe('task-review', () => {
     const replies = [answer.slice(0, 120), answer];
     calls = [];
     const retried = await createTaskReviewer({
+      qoder: async () => null,
       claudeBin: '/bin/claude',
       tokenFile,
       replyDir,
@@ -558,6 +567,7 @@ describe('cross review (2026-11-01)', () => {
   let tokenFile: string;
   let claudeCalls: number;
   let codexPrompts: Array<{ prompt: string; effort: string; timeoutMs: number; cwd: string }>;
+  let qoderPrompts: string[];
 
   beforeEach(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ut-cross-review-'));
@@ -565,6 +575,7 @@ describe('cross review (2026-11-01)', () => {
     fs.writeFileSync(tokenFile, 'tok-123\n');
     claudeCalls = 0;
     codexPrompts = [];
+    qoderPrompts = [];
   });
   afterEach(() => fs.rmSync(tmp, RM_TEST_DIR));
 
@@ -583,9 +594,14 @@ describe('cross review (2026-11-01)', () => {
   const make = (
     codexReply: string | null,
     claudeReply = OK,
-    available?: (agent: 'claude' | 'codex') => Promise<boolean>
+    available?: (agent: TaskAgent) => Promise<boolean>,
+    qoderReply: string | null = null
   ) =>
     createTaskReviewer({
+      qoder: async (prompt) => {
+        qoderPrompts.push(prompt);
+        return qoderReply;
+      },
       claudeBin: '/bin/claude',
       tokenFile,
       replyDir: path.join(tmp, 'ai-replies'),
@@ -672,14 +688,63 @@ describe('cross review (2026-11-01)', () => {
     const review = await make(
       OK,
       OK,
-      async (agent) => agent !== 'codex'
+      async (agent) => agent === 'claude'
     )({
       ...request,
       agent: 'claude',
       crossReview: true,
     });
     expect(codexPrompts).toHaveLength(0);
-    expect(review).toMatchObject({ agent: 'claude', fallback: 'codex is not installed' });
+    expect(qoderPrompts).toHaveLength(0);
+    expect(review).toMatchObject({
+      agent: 'claude',
+      fallback: 'codex is not installed; qoder is not installed',
+    });
+  });
+
+  it('asks Qoder when Codex cannot review a Claude task, before falling back to Claude', async () => {
+    const review = await make(
+      null,
+      OK,
+      undefined,
+      OK
+    )({
+      ...request,
+      agent: 'claude',
+      crossReview: true,
+    });
+    expect(qoderPrompts).toHaveLength(1);
+    expect(qoderPrompts[0]).toContain(request.prompt);
+    expect(claudeCalls).toBe(0);
+    expect(review).toMatchObject({ verdict: 'ok', agent: 'qoder', crossReview: true });
+    expect(review.fallback).toMatch(/^codex: no answer from codex/);
+  });
+
+  it('never has Qoder review its own task: Codex first, then Claude', async () => {
+    const byCodex = await make(
+      OK,
+      OK,
+      undefined,
+      OK
+    )({
+      ...request,
+      agent: 'qoder',
+      crossReview: true,
+    });
+    expect(byCodex).toMatchObject({ agent: 'codex', crossReview: true });
+    expect(pickReviewer('qoder', true)).toBe('codex');
+    const byClaude = await make(
+      null,
+      OK,
+      undefined,
+      OK
+    )({
+      ...request,
+      agent: 'qoder',
+      crossReview: true,
+    });
+    expect(byClaude).toMatchObject({ agent: 'claude', crossReview: true });
+    expect(qoderPrompts).toHaveLength(0);
   });
 
   it('is unavailable only when the fallback cannot answer either', async () => {

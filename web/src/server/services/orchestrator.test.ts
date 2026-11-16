@@ -2,6 +2,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AgentMessage } from '../../shared/agent-messages.js';
+import { AGENTS, TASK_AGENTS, type TaskAgent } from '../../shared/agents.js';
 import {
   DIGEST_MINUTES_DEFAULT,
   orchestratorRelayMessage,
@@ -9,6 +11,7 @@ import {
 import type { TaskRecord } from '../../shared/tasks.js';
 import { RM_TEST_DIR } from '../../test/helpers/rm-test-dir.js';
 import { forgetLoopFailuresForTests, loopFailures } from '../utils/periodic-loop.js';
+import type { AgentHalt } from './agent-halt.js';
 import { MessageLedger } from './agent-messages.js';
 import { BACKGROUND } from './claude-status-notifier.js';
 import {
@@ -77,6 +80,14 @@ describe('Orchestrator', () => {
   let gone: Set<string>;
   /** Replaces the default deliver (types at once while the session runs). */
   let deliver: OrchestratorDeps['deliver'] | null;
+  /** Migration doubles: suspended sessions, re-pointed tasks, conversation, messages, halts. */
+  let suspended: string[];
+  let repointed: Array<[string, string, string]>;
+  let turns: Array<{ role: string; text: string }>;
+  let openMessages: AgentMessage[];
+  let halts: Map<string, AgentHalt>;
+  let targetAgent: TaskAgent | undefined;
+  let sessionAgents: Map<string, TaskAgent>;
 
   const deps = (): OrchestratorDeps => ({
     commands,
@@ -102,7 +113,22 @@ describe('Orchestrator', () => {
       stopped.push(sessionId);
       running.delete(sessionId);
     },
-    claudeCommand: () => ['/opt/bin/claude', '--model', 'opus'],
+    agentCommand: (agent) =>
+      agent === 'claude' ? ['/opt/bin/claude', '--model', 'opus'] : [AGENTS[agent].executable],
+    agentOf: (sessionId) => sessionAgents.get(sessionId),
+    suspendSession: async (sessionId) => {
+      suspended.push(sessionId);
+      return true;
+    },
+    conversation: async () => turns,
+    openMessages: () => openMessages,
+    repointTasks: (oldSessionId, newSessionId, repoPath) => {
+      repointed.push([oldSessionId, newSessionId, repoPath]);
+      return 1;
+    },
+    migrateTarget: () => targetAgent,
+    halt: (sessionId) => halts.get(sessionId),
+    handoffWaitMs: 90_000,
     resolveRepo: async (dir) => (dir.startsWith('/repo') ? '/repo' : null),
     adoptTasks: (sessionId, repoPath) => {
       adopted.push([sessionId, repoPath]);
@@ -158,6 +184,13 @@ describe('Orchestrator', () => {
     adopted = [];
     gone = new Set();
     deliver = null;
+    suspended = [];
+    repointed = [];
+    turns = [];
+    openMessages = [];
+    halts = new Map();
+    targetAgent = undefined;
+    sessionAgents = new Map();
     commands = new TaskCommands({ scheduler: () => null, settings, notify: vi.fn() });
     orchestrator = make();
   });
@@ -232,7 +265,7 @@ describe('Orchestrator', () => {
   });
 
   it("uses plain claude when the user's quick start is something else", async () => {
-    const other = make({ claudeCommand: () => ['codex'] });
+    const other = make({ agentCommand: () => ['codex'] });
     await other.start('/repo', 'x');
     expect(created[0].command[0]).toBe('claude');
   });
@@ -1326,7 +1359,7 @@ describe('Orchestrator', () => {
     expect(delivered[0].text).toContain('GOAL (from the user):\nLogin con GitHub');
   });
 
-  it("refuses a session that is gone, not Claude, a task's own session, and a second orchestrator", async () => {
+  it("refuses a session that is gone, no agent, a task's own session, and a second orchestrator", async () => {
     expect(await orchestrator.adopt('/repo', 'nope')).toMatchObject({
       ok: false,
       code: 'bad-request',
@@ -1334,7 +1367,7 @@ describe('Orchestrator', () => {
     running.add('shell-1');
     expect(await orchestrator.adopt('/repo', 'shell-1')).toMatchObject({
       ok: false,
-      message: 'That session is not running Claude',
+      message: 'That session is not running Claude, Codex or Qoder',
     });
     running.add('task-session');
     tasks.push(task({ sessionId: 'task-session', state: 'working' }));
@@ -1787,6 +1820,270 @@ describe('Orchestrator', () => {
         'only the user can pick it there'
       );
       expect(lines.find((line) => line.includes('v1aaaaaa'))).toContain('(fixes ran out)');
+    });
+  });
+
+  describe('any agent, and migration (2026-11-12)', () => {
+    it('orchestratorCommand restricts Claude and Qoder to ut tools, Codex by instruction', () => {
+      expect(orchestratorCommand(['claude', '--dangerously-skip-permissions'], 'claude')).toEqual([
+        'claude',
+        '--allowedTools',
+        'Bash(ut task:*)',
+        'Bash(ut project:*)',
+      ]);
+      const qoder = orchestratorCommand(
+        ['qodercli', '--permission-mode', 'bypass_permissions'],
+        'qoder'
+      );
+      expect(qoder[0]).toBe('qodercli');
+      expect(qoder).not.toContain('bypass_permissions');
+      expect(qoder).toContain('--strict-mcp-config');
+      expect(qoder).toContain('--allowedTools');
+      const codex = orchestratorCommand(['codex'], 'codex');
+      expect(codex[0]).toBe('codex');
+      expect(codex).not.toContain('--allowedTools');
+      expect(codex).toContain('check_for_update_on_startup=false');
+    });
+
+    it('orchestratorCommand sets the model with the agent’s own flag', () => {
+      expect(orchestratorCommand(['claude', '--model', 'opus'], 'claude', 'sonnet')).toEqual([
+        'claude',
+        '--model',
+        'sonnet',
+        '--allowedTools',
+        'Bash(ut task:*)',
+        'Bash(ut project:*)',
+      ]);
+      expect(orchestratorCommand(['codex'], 'codex', 'gpt-5')).toContain('-m');
+      expect(orchestratorCommand(['codex'], 'codex', 'gpt-5')).toContain('gpt-5');
+    });
+
+    it('starts the orchestrator on each agent the project picks, with the same brief', async () => {
+      for (const agent of TASK_AGENTS) {
+        const local = make();
+        created.length = 0;
+        delivered.length = 0;
+        settings.update('/repo', {
+          orchestratorAgent: agent,
+          orchestratorModel: agent === 'qoder' ? 'efficient' : null,
+        });
+        const result = await local.start('/repo', 'x');
+        expect(result.ok).toBe(true);
+        expect(path.basename(created[0].command[0])).toBe(AGENTS[agent].executable);
+        if (agent === 'qoder') expect(created[0].command).toContain('efficient');
+        // Whatever the agent, it gets the orchestrator's prompt and rights.
+        expect(
+          delivered.some((d) => d.text.includes('You are the orchestrator of the project'))
+        ).toBe(true);
+        expect(settings.get('/repo').orchestratorSessionId).toBe(result.ok && result.sessionId);
+        await local.stop('/repo');
+      }
+    });
+
+    it('migrates with the orchestrator’s written handoff; the old session is suspended, not killed', async () => {
+      const sessionId = await started();
+      sessionAgents.set(sessionId, 'claude');
+      const migrating = orchestrator.migrate('/repo', 'qoder');
+      await settle();
+      // It asked the current orchestrator for its handoff.
+      expect(
+        delivered.some(
+          (d) => d.sessionId === sessionId && d.text.includes('ut project orchestrator handoff')
+        )
+      ).toBe(true);
+      expect(
+        orchestrator.submitHandoff('/repo', 'GOAL: login with Google. Keep the user’s Spanish.')
+      ).toBe(true);
+      const result = await migrating;
+      expect(result).toMatchObject({
+        ok: true,
+        toAgent: 'qoder',
+        handoff: 'agent',
+        suspended: true,
+      });
+      if (!result.ok) return;
+      expect(created[1].command[0]).toBe('qodercli');
+      expect(
+        delivered.some(
+          (d) => d.sessionId === result.sessionId && d.text.includes('GOAL: login with Google')
+        )
+      ).toBe(true);
+      expect(suspended).toEqual([sessionId]);
+      expect(stopped).toEqual([]);
+      expect(settings.get('/repo').orchestratorAgent).toBe('qoder');
+      expect(settings.get('/repo').orchestratorSessionId).toBe(result.sessionId);
+      expect(repointed).toEqual([[sessionId, result.sessionId, '/repo']]);
+      expect(orchestrator.sessionFor('/repo')).toBe(result.sessionId);
+    });
+
+    it('builds the handoff itself when the orchestrator does not answer in time', async () => {
+      const sessionId = await started();
+      tasks.push(
+        task({
+          id: 't1aaaaaaaa',
+          orchestratorSessionId: sessionId,
+          state: 'working',
+          name: 'Login',
+          origin: 'orchestrator',
+        })
+      );
+      turns = [
+        { role: 'user', text: 'haz login con Google' },
+        { role: 'assistant', text: 'voy a ello' },
+      ];
+      const migrating = orchestrator.migrate('/repo', 'codex');
+      await settle();
+      advance(90_000);
+      await settle();
+      const result = await migrating;
+      expect(result).toMatchObject({ ok: true, toAgent: 'codex', handoff: 'untether' });
+      if (!result.ok) return;
+      const brief = delivered.find((d) => d.sessionId === result.sessionId)?.text ?? '';
+      expect(brief).toContain('Login');
+      expect(brief).toContain('haz login con Google');
+      expect(created[1].command[0]).toBe('codex');
+    });
+
+    it('does not ask a busy or halted orchestrator; it builds the handoff', async () => {
+      const sessionId = await started();
+      halts.set(sessionId, {
+        kind: 'usage-limit',
+        message: 'usage limit reached',
+        resumeAt: clock + 3_600_000,
+      });
+      const result = await orchestrator.migrate('/repo', 'qoder');
+      expect(result).toMatchObject({ ok: true, handoff: 'untether' });
+      // No handoff request was typed (it is at its limit).
+      expect(delivered.some((d) => d.text.includes('ut project orchestrator handoff'))).toBe(false);
+    });
+
+    it('carries queued messages and task events to the new orchestrator, once', async () => {
+      const sessionId = await started();
+      orchestrator.onClaudeTransition(sessionId, 'busy');
+      orchestrator.notice('/repo', 'a pending note');
+      tasks.push(
+        task({
+          id: 't1aaaaaaaa',
+          orchestratorSessionId: sessionId,
+          state: 'working',
+          origin: 'orchestrator',
+        })
+      );
+      orchestrator.routeTaskPush(push('task-ready', { taskId: 't1aaaaaaaa' }));
+      const result = await orchestrator.migrate('/repo', 'codex');
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const newText = delivered
+        .filter((d) => d.sessionId === result.sessionId)
+        .map((d) => d.text)
+        .join('\n');
+      expect(newText).toContain('a pending note');
+      expect(newText).toContain('t1aaaaaa');
+      expect(newText.split('a pending note').length - 1).toBe(1);
+      // Nothing was pushed to the phone for the carried event.
+      expect(notified).toEqual([]);
+    });
+
+    it('does not carry the old agent’s model to a different agent (review 2026-11-12)', async () => {
+      await started();
+      settings.update('/repo', { orchestratorAgent: 'claude', orchestratorModel: 'opus' });
+      const migrating = orchestrator.migrate('/repo', 'qoder');
+      await settle();
+      orchestrator.submitHandoff('/repo', 'handoff');
+      const result = await migrating;
+      expect(result.ok).toBe(true);
+      // 'opus' is not a Qoder model: the new command goes without it, the setting is cleared.
+      expect(created[1].command).not.toContain('opus');
+      expect(settings.get('/repo').orchestratorModel).toBeUndefined();
+      expect(settings.get('/repo').orchestratorAgent).toBe('qoder');
+    });
+
+    it('keeps the model when only the model changes on the same agent', async () => {
+      await started();
+      settings.update('/repo', { orchestratorAgent: 'claude', orchestratorModel: 'opus' });
+      const migrating = orchestrator.migrate('/repo', 'claude', 'sonnet');
+      await settle();
+      orchestrator.submitHandoff('/repo', 'handoff');
+      const result = await migrating;
+      expect(result.ok).toBe(true);
+      expect(created[1].command).toContain('sonnet');
+      expect(settings.get('/repo').orchestratorModel).toBe('sonnet');
+    });
+
+    it('drops a handoff request that never typed: it does not follow to the new orchestrator', async () => {
+      await started();
+      // Hold the handoff request (never typed): it stays queued while the wait runs out.
+      deliver = (sid, text) => {
+        if (text.includes('ut project orchestrator handoff')) return false;
+        if (!running.has(sid)) return false;
+        delivered.push({ sessionId: sid, text });
+        return true;
+      };
+      const migrating = orchestrator.migrate('/repo', 'qoder');
+      await settle();
+      advance(90_000);
+      await settle();
+      const result = await migrating;
+      expect(result).toMatchObject({ ok: true, handoff: 'untether' });
+      if (!result.ok) return;
+      const newText = delivered
+        .filter((d) => d.sessionId === result.sessionId)
+        .map((d) => d.text)
+        .join('\n');
+      expect(newText).not.toContain('ut project orchestrator handoff');
+      expect(orchestrator.pending(result.sessionId).join('\n')).not.toContain(
+        'ut project orchestrator handoff'
+      );
+    });
+
+    it('refuses a migration that changes nothing, and one with no orchestrator', async () => {
+      await started();
+      settings.update('/repo', { orchestratorAgent: 'claude' });
+      expect(await orchestrator.migrate('/repo', 'claude')).toMatchObject({
+        ok: false,
+        code: 'bad-request',
+      });
+      expect(await orchestrator.migrate('/other', 'qoder')).toMatchObject({ ok: false });
+    });
+
+    it('submitHandoff is false when no migration waits', async () => {
+      await started();
+      expect(orchestrator.submitHandoff('/repo', 'x')).toBe(false);
+    });
+
+    it('offers the migration when the orchestrator’s agent hits its usage limit', async () => {
+      const sessionId = await started();
+      targetAgent = 'qoder';
+      halts.set(sessionId, {
+        kind: 'usage-limit',
+        message: 'usage limit reached',
+        resumeAt: clock + 3_600_000,
+      });
+      orchestrator.onClaudeTransition(sessionId, 'idle');
+      const offer = notified.find((n) => n.type === 'orchestrator-limit');
+      expect(offer).toBeTruthy();
+      expect(offer?.data).toMatchObject({ repoPath: '/repo', toAgent: 'qoder' });
+      // Told once, not on every look.
+      orchestrator.onClaudeTransition(sessionId, 'idle');
+      expect(notified.filter((n) => n.type === 'orchestrator-limit')).toHaveLength(1);
+    });
+
+    it('auto-migrates at the usage limit when the project turned it on', async () => {
+      const sessionId = await started();
+      targetAgent = 'qoder';
+      settings.update('/repo', { orchestratorAutoMigrate: true });
+      halts.set(sessionId, {
+        kind: 'usage-limit',
+        message: 'usage limit reached',
+        resumeAt: clock + 3_600_000,
+      });
+      orchestrator.onClaudeTransition(sessionId, 'idle');
+      await settle();
+      advance(90_000);
+      await settle();
+      expect(settings.get('/repo').orchestratorAgent).toBe('qoder');
+      expect(orchestrator.sessionFor('/repo')).not.toBe(sessionId);
+      expect(notified.some((n) => n.type === 'orchestrator-limit')).toBe(false);
     });
   });
 });

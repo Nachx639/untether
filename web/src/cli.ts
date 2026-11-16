@@ -2,11 +2,17 @@
 // Entry point for the server - imports the modular server which starts automatically
 
 import { spawn } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, realpathSync } from 'fs';
 import { constants as osConstants } from 'os';
 import * as path from 'path';
 import { currentBuild, describeBuild } from './server/build-info.js';
-import { checkNativeMain, checkNativeModules } from './server/native-check.js';
+import {
+  checkNativeMain,
+  checkNativeModules,
+  nodeThatLoads,
+  openWithNode,
+  ownNode,
+} from './server/native-check.js';
 import { startUntetherServer } from './server/server.js';
 import { pamStatus } from './server/services/authenticate-pam-loader.js';
 import { guardHookMain } from './server/services/task-guard-hook.js';
@@ -36,18 +42,16 @@ if (process.argv[2] === 'version') {
   process.exit(0);
 }
 
-// The native modules, opened by this very executable (native-check.ts): the build and the
-// release ask a built app this before it is signed.
-if (process.argv[2] === 'check-native') {
-  const bundleDir = process.env.UNTETHER_SEA ? path.dirname(process.execPath) : undefined;
-  const ptyFile = bundleDir
-    ? path.join(bundleDir, 'pty.node')
-    : path.join(__dirname, '..', 'node_modules', 'node-pty', 'build', 'Release', 'pty.node');
+// The native modules of a built app, opened by this very executable (native-check.ts): the
+// build and the release ask it this before it is signed. A source checkout's are asked further
+// down (handleCheckNativeCommand): with the Node of the server that runs from it.
+if (process.argv[2] === 'check-native' && process.env.UNTETHER_SEA) {
+  const bundleDir = path.dirname(process.execPath);
   checkNativeMain(
     checkNativeModules({
       bundleDir,
       pam: pamStatus,
-      openPty: () => process.dlopen({ exports: {} }, ptyFile),
+      openPty: () => process.dlopen({ exports: {} }, path.join(bundleDir, 'pty.node')),
     })
   );
 }
@@ -243,6 +247,41 @@ async function handleForwardCommand(): Promise<void> {
     closeLogger();
     process.exit(1);
   }
+}
+
+/**
+ * `check-native` in a source checkout: its native modules are for the Node of the server that
+ * runs from it, not for whichever Node asks (2026-11-14, native-check.ts). They are opened in a
+ * child of that Node; with this one only when no server runs from this checkout.
+ */
+async function handleCheckNativeCommand(): Promise<never> {
+  const { SocketApiClient } = await import('./server/socket-api-client.js');
+  const status = await new SocketApiClient().getStatus().catch(() => undefined);
+  const loader = nodeThatLoads({
+    own: ownNode(),
+    cli: currentBuild(),
+    server: status?.running ? status : undefined,
+  });
+  const addon = (name: string, file: string) =>
+    path.join(
+      realpathSync(path.dirname(require.resolve(`${name}/package.json`))),
+      'build',
+      'Release',
+      file
+    );
+  const lines = checkNativeModules({
+    pam: () => {
+      try {
+        openWithNode(loader.node.execPath, addon('authenticate-pam', 'authenticate_pam.node'));
+        return { loaded: true };
+      } catch (error) {
+        return { loaded: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    },
+    openPty: () => openWithNode(loader.node.execPath, addon('node-pty', 'pty.node')),
+  });
+  closeLogger();
+  checkNativeMain(lines, loader, { checkout: true });
 }
 
 /**
@@ -573,6 +612,10 @@ async function parseCommandAndExecute(): Promise<void> {
 
     case 'check-slot':
       await handleCheckSlotCommand();
+      break;
+
+    case 'check-native':
+      await handleCheckNativeCommand();
       break;
 
     case 'diag': // its own module (server/diag-cli.ts)

@@ -29,6 +29,8 @@ import {
   modelMatches,
   parseClaudeModel,
 } from '../../shared/agent-models.js';
+import { commandModel } from '../../shared/agents.js';
+import type { TaskRecord } from '../../shared/tasks/record.js';
 import type { ClaudeStartSettings, Session } from '../../shared/types.js';
 import type { DoctorCheck, DoctorFinding } from './untether-doctor.js';
 
@@ -514,6 +516,35 @@ export async function sessionModelChanged(
     if (file && (await transcriptModelChanged(file))) return true;
   }
   return false;
+}
+
+/**
+ * A task's use: what it asked for is its own model (--model, a level's taskModels), else the
+ * model its command line carries (2026-11-14: a security sweep's `--model sonnet` was compared
+ * against settings.json and flagged), else, for Claude, settings.json's when its claude started.
+ */
+export function taskModelUse(
+  task: Pick<TaskRecord, 'id' | 'name' | 'agent' | 'model' | 'modelChoice' | 'command'>,
+  last: { model: string; at: string },
+  settingsModel?: string
+): ModelUse {
+  const tier = task.modelChoice?.tier;
+  const inCommand = task.model ? undefined : commandModel(task.command);
+  const asked: Array<[string | undefined, string]> = [
+    [
+      task.model,
+      tier && task.modelChoice?.by !== 'user' ? `taskModels.${task.agent}.${tier}` : '--model',
+    ],
+    [inCommand, '--model in its command'],
+    [task.agent === 'claude' ? settingsModel : undefined, '"model" in ~/.claude/settings.json'],
+  ];
+  const [requested, requestedFrom] = asked.find(([model]) => !!model) ?? [];
+  return {
+    label: `task "${task.name}" (${task.id})`,
+    ...(requested ? { requested, requestedFrom } : {}),
+    actual: last.model,
+    at: last.at,
+  };
 }
 
 /** Why a use is unexpected, or undefined when it is not. */

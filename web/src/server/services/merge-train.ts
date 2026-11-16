@@ -56,7 +56,9 @@ export interface TrainCar {
   /** Records (task journal) that the base is about to get its head; before any move. */
   recordMove?(): void;
   /** Moves the base from `expected` to `sha`. */
-  move(expected: string, sha: string): Promise<TrainMove>;
+  move(expected: string, sha: string, agentWorking?: () => boolean): Promise<TrainMove>;
+  /** Every included task must still be idle when the batch moves the base. */
+  agentWorking?(): boolean;
   /** The batch check's run, recorded on every car of the batch. */
   batchRan?(run: { start: number; end: number; outcome: string; by: string }): void;
   note?(text: string): void;
@@ -229,7 +231,9 @@ export function createMergeTrains(options: MergeTrainOptions): MergeTrains {
       }
       if (merging >= 0) {
         for (const { car } of cars.slice(0, merging + 1)) car.recordMove?.();
-        const moved = await cars[merging].car.move(train.main, cars[merging].car.head);
+        const moved = await cars[merging].car.move(train.main, cars[merging].car.head, () =>
+          cars.slice(0, merging + 1).some(({ car }) => car.agentWorking?.() || car.signal?.aborted)
+        );
         if (moved.kind === 'moved') {
           again(0, 'the base moved while the batch was checked');
           return;

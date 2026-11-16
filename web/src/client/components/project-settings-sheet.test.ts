@@ -85,6 +85,10 @@ describe('project settings sheet', () => {
         // Model by difficulty off and the other agent only offered unless chosen (2026-11-01).
         modelRouting: null,
         agentFallback: null,
+        // Orchestrator on Claude by default, no model, no auto-migrate (2026-11-12).
+        orchestratorAgent: null,
+        orchestratorModel: null,
+        orchestratorAutoMigrate: null,
         // Off by default: the sweep's switch saves nothing until turned on.
         securitySweep: null,
         // No provider connector unless the user sets one up (2026-10-26).

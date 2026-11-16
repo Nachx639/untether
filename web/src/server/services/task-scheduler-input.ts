@@ -16,6 +16,7 @@ import {
   type TaskPrompt,
   untetherWrapper,
 } from '../../shared/agent-prompt.js';
+import { AGENTS } from '../../shared/agents.js';
 import { endEffect, pendingEffect } from '../../shared/task-effects.js';
 import type { TaskFollowUp, TaskRecord } from '../../shared/tasks.js';
 import { TaskSchedulerAgents } from './task-scheduler-agents.js';
@@ -40,6 +41,24 @@ import type { LaunchedSession, TaskActionResult } from './task-scheduler-types.j
 const WRAPPED_PUSH_MAX = 1500;
 
 export abstract class TaskSchedulerInput extends TaskSchedulerAgents {
+  /** Completion cannot survive another turn/tool call, even when no file changed yet. */
+  protected workResumed(task: TaskRecord): void {
+    // A paused task is halted on purpose (a usage limit): retry brings it back, not this.
+    if ((isFinal(task) && task.state !== 'done') || task.state === 'paused' || task.reportRequired)
+      return;
+    this.pipeRuns.get(task.id)?.leave.abort();
+    this.cancelHold(task.id);
+    task.reportRequired = true;
+    delete task.completionRequestedAt;
+    delete task.finishedAt;
+    this.setState(task, 'working');
+    this.save();
+    const note =
+      '[untether] Your agent is still working or resumed after completion. The merge was cancelled; the task is working again and your session stays open. Finish the work, then report again with `ut task done --result -`.';
+    this.deps.onError?.(`Task ${task.id}: ${note}`);
+    this.track(this.deliverText(task, note, 'auto', false).then(() => undefined));
+  }
+
   protected typePendingNow(task: TaskRecord): void {
     const timer = this.inputTimers.get(task.id);
     if (timer) clearTimeout(timer);
@@ -296,10 +315,10 @@ export abstract class TaskSchedulerInput extends TaskSchedulerAgents {
     if (stall.reason !== reason) {
       const why = {
         busy:
-          task.agent === 'codex'
-            ? 'Codex is not back at its prompt'
-            : 'Claude is not ready to take it (starting, or a screen Untether does not know)',
-        menu: "Claude shows a choice of its own on the task's screen",
+          task.agent === 'claude'
+            ? 'Claude is not ready to take it (starting, or a screen Untether does not know)'
+            : `${AGENTS[task.agent].label} is not back at its prompt`,
+        menu: `${AGENTS[task.agent].label} shows a choice of its own on the task's screen`,
         gone: 'its session has ended',
       }[reason];
       this.deps.onError?.(`task ${task.id}: a message was not typed yet (${why}); trying again`);
@@ -343,7 +362,7 @@ export abstract class TaskSchedulerInput extends TaskSchedulerAgents {
           this.taskPayload(
             task,
             'task-needs-you',
-            `A message for its agent has waited ${Math.round((now - stall.since) / 60_000)} min: ${task.agent === 'codex' ? 'Codex has not been back at its prompt' : 'Claude has not been ready to take it'}. It goes in with the time it was sent once it is. Open the task to see its screen.`
+            `A message for its agent has waited ${Math.round((now - stall.since) / 60_000)} min: ${task.agent === 'claude' ? 'Claude has not been ready to take it' : `${AGENTS[task.agent].label} has not been back at its prompt`}. It goes in with the time it was sent once it is. Open the task to see its screen.`
           )
         );
       }
@@ -357,7 +376,7 @@ export abstract class TaskSchedulerInput extends TaskSchedulerAgents {
       }
       this.notifyState(task, '', {
         notice: 'menu',
-        body: `Claude is waiting for a choice on the task's screen (${task.blocker?.message ?? 'a question'}): pick an option there; the message sent to it is not typed until then (later than 2 min, with the time it was sent).`,
+        body: `${AGENTS[task.agent].label} is waiting for a choice on the task's screen (${task.blocker?.message ?? 'a question'}): pick an option there; the message sent to it is not typed until then (later than 2 min, with the time it was sent).`,
       });
     }
     const base = this.deps.inputRetryMs ?? INPUT_RETRY_MS;
@@ -380,9 +399,9 @@ export abstract class TaskSchedulerInput extends TaskSchedulerAgents {
     }
     const held = task.sessionId ? this.userHolds.get(task.sessionId) : undefined;
     if (held) return `${held} (Untether never types over the user's own input)`;
-    return task.agent === 'codex'
-      ? 'Codex is at work and only takes text at its prompt'
-      : 'Claude is not ready to take it (starting, or a screen Untether does not know)';
+    return task.agent === 'claude'
+      ? 'Claude is not ready to take it (starting, or a screen Untether does not know)'
+      : `${AGENTS[task.agent].label} is at work and only takes text at its prompt`;
   }
 
   /** The typing into a task's session waits on the user's own input there, and why. */
@@ -654,13 +673,14 @@ export abstract class TaskSchedulerInput extends TaskSchedulerAgents {
     // Told once per session, across restarts too (choiceToldSession; 2026-11-02: told again
     // after each restart, as the retried message met the same choice).
     if (!task || isFinal(task) || task.choiceToldSession === sessionId) return;
-    // Claude's own menus are told by its status ("waiting"), with their question.
-    if (task.agent === 'claude' && this.lastStatus.get(sessionId) === 'waiting') return;
+    // Claude's own menus (and Qoder's, from its hooks) are told by its status ("waiting"),
+    // with their question.
+    if (task.agent !== 'codex' && this.lastStatus.get(sessionId) === 'waiting') return;
     task.choiceToldSession = sessionId;
     this.save();
     const toOrchestrator = task.origin === 'orchestrator' && !!task.orchestratorSessionId;
     if (!task.notify && !toOrchestrator) return;
-    const agent = task.agent === 'codex' ? 'Codex' : 'Claude';
+    const agent = AGENTS[task.agent].label;
     this.post(
       this.taskPayload(
         task,

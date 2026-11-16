@@ -7,6 +7,7 @@
  */
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { AGENT_IDS } from '../../shared/agents.js';
 import type { Session } from '../../shared/types.js';
 import { LocaleController, t } from '../i18n/index.js';
 import { authClient } from '../services/auth-client.js';
@@ -46,7 +47,7 @@ const REFRESH_MS = 15_000;
 const HEARTBEAT_MS = 30_000;
 const TAP_SLOP_PX = 10;
 const LIST_MAX = 8;
-const AGENTS = new Set(['claude', 'codex', 'gemini']);
+const AGENTS = new Set<string>(AGENT_IDS);
 
 export function isAgentSession(session: Session | null): boolean {
   if (session?.status !== 'running') return false;

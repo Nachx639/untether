@@ -4,6 +4,7 @@
 
 import * as path from 'path';
 import { z } from 'zod';
+import { TASK_AGENTS } from '../../shared/agents.js';
 import {
   parseBudgetSpec,
   TASK_BUDGET_SPEC_MAX,
@@ -130,7 +131,7 @@ const NewSchema = z.object({
   cwd: pathField.optional(),
   repoPath: pathField.optional(),
   command: z.array(z.string().min(1).max(4096)).min(1).max(64).optional(),
-  agent: z.enum(['claude', 'codex']).default('claude'),
+  agent: z.enum(TASK_AGENTS).default('claude'),
   shielded: z.boolean().default(false),
   notify: z.boolean().default(true),
   runAt: RunAtSchema.nullish(),
@@ -152,7 +153,7 @@ const NewSchema = z.object({
 });
 
 const SubmitSchema = RouteSchema.extend({
-  agent: z.enum(['claude', 'codex']).default('claude'),
+  agent: z.enum(TASK_AGENTS).default('claude'),
   /** A task id (or branch) to send it to, or 'new'; none = route it. */
   choice: refField.optional(),
   title: titleField.optional(),
@@ -268,10 +269,10 @@ async function create(
   }
   const resolvedModel = resolveModelInput(input.model, self.deps.providers?.());
   if (!resolvedModel.ok) return fail('bad-request', resolvedModel.error);
-  if (resolvedModel.value.modelProvider && input.agent === 'codex') {
+  if (resolvedModel.value.modelProvider && input.agent !== 'claude') {
     return fail(
       'bad-request',
-      `Model provider "${resolvedModel.value.modelProvider}" runs Claude Code; it cannot run with --agent codex.`
+      `Model provider "${resolvedModel.value.modelProvider}" runs Claude Code; it cannot run with --agent ${input.agent}.`
     );
   }
   let repo: string | null = null;

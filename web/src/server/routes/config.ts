@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { AGENT_IDS, AGENTS, agentsNotIn, withRegisteredAgents } from '../../shared/agents.js';
 import { DEFAULT_REPOSITORY_BASE_PATH } from '../../shared/constants.js';
 import type { MacOpenMode } from '../../shared/mac-sessions.js';
 import type { MacShareLauncher, MacShareOffReason } from '../../shared/mac-share.js';
@@ -160,9 +161,16 @@ export function createConfigRoutes(options: ConfigRouteOptions): Router {
    */
   router.get('/quick-start/availability', async (_req, res) => {
     try {
-      const programs = configService
-        .getConfig()
-        .quickStartCommands.map((entry) => quickStartProgram(entry.command));
+      // The configured quick starts' programs, and every agent's: the "what to do" box dims
+      // an agent that is not installed and says how to install it.
+      const programs = [
+        ...new Set([
+          ...configService
+            .getConfig()
+            .quickStartCommands.map((entry) => quickStartProgram(entry.command)),
+          ...AGENT_IDS.map((id) => AGENTS[id].executable),
+        ]),
+      ];
       res.json(await quickStartAvailability.check(programs));
     } catch (error) {
       logger.warn('[GET /api/quick-start/availability] check failed:', error);
@@ -204,9 +212,15 @@ export function createConfigRoutes(options: ConfigRouteOptions): Router {
    * Get application configuration
    * GET /api/config
    */
-  router.get('/config', (_req, res) => {
+  router.get('/config', async (_req, res) => {
     try {
       const untetherConfig = configService.getConfig();
+      // An agent of the registry the list lacks is offered when it is installed here (asked
+      // once every few minutes; a check that fails adds nothing).
+      const lacking = agentsNotIn(untetherConfig.quickStartCommands);
+      const installed = lacking.length
+        ? await quickStartAvailability.check(lacking).catch(() => ({}))
+        : {};
       const repositoryBasePath = untetherConfig.repositoryBasePath || DEFAULT_REPOSITORY_BASE_PATH;
       const macSessions = macSessionsSettings(untetherConfig, options.macSessions);
       const macShare = macShareSettings(untetherConfig, options.macShare ?? options.macSessions);
@@ -214,7 +228,7 @@ export function createConfigRoutes(options: ConfigRouteOptions): Router {
       const config: AppConfig = {
         repositoryBasePath: repositoryBasePath,
         serverConfigured: true, // Always configured when server is running
-        quickStartCommands: untetherConfig.quickStartCommands,
+        quickStartCommands: withRegisteredAgents(untetherConfig.quickStartCommands, installed),
         notificationPreferences: configService.getNotificationPreferences(),
         autoCleanupExitedAfterDays: untetherConfig.autoCleanupExitedAfterDays ?? 0,
         autoApprove: untetherConfig.autoApprove === true,

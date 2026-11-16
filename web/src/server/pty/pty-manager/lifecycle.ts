@@ -136,6 +136,10 @@ export abstract class PtyManagerLifecycle extends PtyManagerSpawn {
   }
 
   /** Remember Claude's conversation title so a finished session is still recognizable. */
+  setQoderSession(sessionId: string, qoderSession: NonNullable<SessionInfo['qoderSession']>): void {
+    this.patchSessionInfo(sessionId, { qoderSession });
+  }
+
   setClaudeTitle(sessionId: string, claudeTitle: string): void {
     const info = this.sessionManager.loadSessionInfo(sessionId);
     if (!info || info.claudeTitle === claudeTitle) return;

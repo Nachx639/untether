@@ -24,6 +24,7 @@
 
 import { html, LitElement, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { type AgentId, commandAgent, isAgentId } from '../../shared/agents.js';
 import {
   isDeclineOption,
   promptKind,
@@ -103,12 +104,12 @@ function markSwipeOpen(row: PhoneSessionRow) {
   swipeOpenRow = row;
 }
 
-export type RowGlyphKind = 'claude' | 'codex' | 'gemini' | 'terminal';
+export type RowGlyphKind = AgentId | 'terminal';
 
 /** Which glyph a row's avatar shows: the agent's mark, else a terminal prompt (no letters). */
 export function rowGlyphKind(tool: string, isClaude = false): RowGlyphKind {
   if (isClaude || tool === 'claude') return 'claude';
-  if (tool === 'codex' || tool === 'gemini') return tool;
+  if (isAgentId(tool)) return tool;
   return 'terminal';
 }
 
@@ -197,7 +198,7 @@ const WRAPPER_FLAGS = /^-/;
 /** Programs that run another one: `exec claude`, `env X=1 codex`, `caffeinate -i claude`. */
 const WRAPPERS = new Set(['exec', 'env', 'nohup', 'command', 'sudo', 'caffeinate', 'time']);
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
-const AGENT_WORD = /(?:^|[\s/;&|(])(claude|codex|gemini)(?=$|[\s;&|)])/;
+const AGENT_WORD = /(?:^|[\s/;&|(])(claude|codex|gemini|qodercli)(?=$|[\s;&|)])/;
 
 /** The program a list of words runs, past wrappers, their flags and VAR=value assignments. */
 function programOf(words: string[]): string {
@@ -228,6 +229,8 @@ export function sessionTool(
   session: Pick<Session, 'command' | 'codexActive' | 'geminiActive'>
 ): string {
   // `codex` / `gemini` typed inside a shell: the server spots its process in the session.
+  const registered = commandAgent(session.command);
+  if (registered) return registered;
   if (session.codexActive) return 'codex';
   if (session.geminiActive) return 'gemini';
   const argv = Array.isArray(session.command) ? session.command : [];

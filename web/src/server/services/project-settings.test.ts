@@ -101,6 +101,8 @@ describe('project settings', () => {
       { verifyTimeoutSec: 1 },
       { checkCommand: '' },
       { defaultAgent: 'gemini' },
+      { orchestratorAgent: 'gemini' },
+      { orchestratorModel: '' },
       { aiReview: 'yes' },
       { unknownKey: true },
       { savingHoldoutPct: 101 },
@@ -118,6 +120,28 @@ describe('project settings', () => {
       savingAutoOff: autoOff,
     });
     expect(store.get(repo)).toMatchObject({ savingHoldoutPct: 20, savingAutoOff: autoOff });
+  });
+
+  it('keeps the orchestrator’s agent, model and auto-migrate (2026-11-12)', () => {
+    const store = new ProjectSettingsStore(file);
+    store.update(repo, {
+      orchestratorAgent: 'qoder',
+      orchestratorModel: 'efficient',
+      orchestratorAutoMigrate: true,
+    });
+    expect(store.get(repo)).toMatchObject({
+      orchestratorAgent: 'qoder',
+      orchestratorModel: 'efficient',
+      orchestratorAutoMigrate: true,
+    });
+    // claude is the default: clearing the agent goes back to it.
+    store.update(repo, {
+      orchestratorAgent: null,
+      orchestratorModel: null,
+      orchestratorAutoMigrate: null,
+    });
+    expect(store.getStored(repo).orchestratorAgent).toBeUndefined();
+    expect(store.get(repo).orchestratorAgent ?? 'claude').toBe('claude');
   });
 
   it('keeps provider connectors by where their credential is, never a value (2026-10-26)', () => {

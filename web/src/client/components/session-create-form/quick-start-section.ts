@@ -8,6 +8,7 @@
  */
 import { html, LitElement, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { AGENTS, agentForExecutable } from '../../../shared/agents.js';
 import { quickStartProgram } from '../../../shared/quick-start.js';
 import type { Session } from '../../../shared/types.js';
 import type { QuickStartCommand } from '../../../types/config.js';
@@ -178,6 +179,18 @@ export class QuickStartSection extends LitElement {
     ></quick-start-editor>`;
   }
 
+  /** How to install a registered agent the Mac lacks, under the notice that says so. */
+  private renderInstallLink() {
+    const agent = this.unavailableProgram ? agentForExecutable(this.unavailableProgram) : undefined;
+    if (!agent) return nothing;
+    const { label, installUrl } = AGENTS[agent];
+    return html`<p id="quick-start-install-link" class="mt-1 text-caption text-text-muted">
+      <a href=${installUrl} target="_blank" rel="noopener noreferrer"
+        >${t('quickStart.installAgent', { name: label, url: installUrl })}</a
+      >
+    </p>`;
+  }
+
   render() {
     if (this.editMode) {
       return html`<div class="mt-4 -mx-5">${this.renderEditor(true)}</div>`;
@@ -269,6 +282,7 @@ export class QuickStartSection extends LitElement {
               </p>`
             : nothing
         }
+        ${this.renderInstallLink()}
       </div>
     `;
   }

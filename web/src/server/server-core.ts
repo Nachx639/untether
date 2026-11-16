@@ -6,6 +6,7 @@ import compression from 'compression';
 import * as fs from 'fs';
 import helmet from 'helmet';
 import * as path from 'path';
+import { AGENTS, commandAgent } from '../shared/agents.js';
 import { parseScreenChoices } from '../shared/claude-screen.js';
 import { cellsToText } from '../shared/terminal-text-formatter.js';
 import type { Session } from '../shared/types.js';
@@ -22,6 +23,7 @@ import type { AppContext } from './server-context.js';
 import { AgentEventService } from './services/agent-event-service.js';
 import { SignalLedger } from './services/agent-events.js';
 import { AuthService } from './services/auth-service.js';
+import { pamStatus } from './services/authenticate-pam-loader.js';
 import { BackupExclusion } from './services/backup-exclusion.js';
 import { CastOutputHub } from './services/cast-output-hub.js';
 import { readClaudeStatuses } from './services/claude-chat.js';
@@ -66,6 +68,8 @@ import {
   previewsFileFor,
 } from './services/preview-registry.js';
 import { createPreviewServer, mainOriginPreviewGuard } from './services/preview-server.js';
+import { readQoderChat } from './services/qoder-chat.js';
+import { ensureQoderHookFiles, qoderSightings } from './services/qoder-hooks.js';
 import { RemoteRegistry } from './services/remote-registry.js';
 import {
   createResourceMonitor,
@@ -266,7 +270,16 @@ export async function setupCore(ctx: AppContext) {
   // Codex's rollout is followed. The screen is what is left when neither is there.
   const hookFiles = claudeHookFiles(path.dirname(CONTROL_DIR));
   ptyManager.setSpawnRewriter((command) => {
+    const agent = commandAgent(command);
+    // Qoder's own hooks (qoder-hooks.ts), into the same mailboxes as Claude's.
+    if (agent && AGENTS[agent].hookProtocol === 'qoder') {
+      const qoder = ensureQoderHookFiles(path.dirname(hookFiles.eventsDir), (message) =>
+        logger.warn(message)
+      );
+      return qoder ? withClaudeHooks(command, qoder.settings, AGENTS[agent].executable) : command;
+    }
     // Written again when missing or changed: Claude would not start on a missing --settings.
+    // withClaudeHooks leaves any command that does not start claude as it is.
     const files = ensureClaudeHookFiles(hookFiles, (message) => logger.warn(message));
     return files ? withClaudeHooks(command, files.settings) : command;
   });
@@ -298,6 +311,11 @@ export async function setupCore(ctx: AppContext) {
   });
   const agentEvents = new AgentEventService({
     eventsDir: hookFiles.eventsDir,
+    onQoderSession: (id, binding) => {
+      const existing = ptyManager.getSession(id)?.qoderSession;
+      if (existing?.id !== binding.id || existing?.transcriptPath !== binding.transcriptPath)
+        ptyManager.setQoderSession(id, binding);
+    },
     codexRollout: (sessionId) => {
       const ref = codexSessions.ref(sessionId);
       return ref ? codexRolloutPath(ref) : null;
@@ -341,6 +359,12 @@ export async function setupCore(ctx: AppContext) {
           if (seen) sessionStates.observe(sessionId, 'codex', seen.state, { reason: seen.reason });
         }
         for (const session of running) {
+          if (commandAgent(session.command) === 'qoder') {
+            const snapshot = agentEvents.snapshot(session.id);
+            const seen = snapshot ? sessionStateOf(snapshot.state) : undefined;
+            if (seen)
+              sessionStates.observe(session.id, 'qoder', seen.state, { reason: seen.reason });
+          }
           if (session.status !== 'running' || !isGeminiCommand(session.command)) continue;
           const chat = readGeminiChat(session);
           sessionStates.observe(session.id, 'gemini', chat.status === 'busy' ? 'busy' : 'idle');
@@ -532,8 +556,8 @@ export function setupClaudeStatus(ctx: AppContext) {
       stateFile: path.join(ctx.controlDir, 'claude-status.json'),
       // Codex's "finished" and "needs you" (2026-11-10), from its rollout: the sessions it
       // runs in were looked up by the agent events' own timer.
-      readAgents: (sessions) =>
-        codexSightings(sessions, {
+      readAgents: async (sessions) => {
+        const codex = await codexSightings(sessions, {
           ref: (sessionId) => ctx.codexSessions.ref(sessionId),
           snapshot: (sessionId) => ctx.agentEvents.snapshot(sessionId),
           // The thread's name first, as the list shows it (codex-thread.ts).
@@ -542,15 +566,41 @@ export function setupClaudeStatus(ctx: AppContext) {
             return (thread ? codexThreadTitle(thread) : undefined) ?? readCodexChat(ref).title;
           },
           withMenu: (sessionId, own) => codexMenus.status(sessionId, own),
-        }),
+        });
+        // Qoder's, from its hooks (qoder-hooks.ts): a session Codex is not seen in.
+        const qoder = qoderSightings(
+          sessions.filter(({ id }) => !codex.has(id)),
+          {
+            snapshot: (sessionId) => ctx.agentEvents.snapshot(sessionId),
+            title: (sessionId) => {
+              const session = ptyManager.getSession(sessionId);
+              return session ? readQoderChat(session).title : undefined;
+            },
+          }
+        );
+        return new Map([...codex, ...qoder]);
+      },
     }
   );
   // Task sessions: their status drives the task, and their plain "finished" gives way to the
   // task's own push (one push, not two).
   claudeNotifier.onTransition((sessionId, previous, status, claude, agent) => {
     // Codex's are for the push only: its tasks follow its rollout themselves, and its states
-    // reach the event log from the agent events' timer.
-    if (agent !== 'claude') return;
+    // reach the event log from the agent events' timer. An orchestrator's Codex still gates its
+    // delivery on the status (2026-11-12).
+    if (agent === 'codex') {
+      ctx.orchestrator?.onClaudeTransition(sessionId, status);
+      return;
+    }
+    // Qoder's come from its hooks, in Claude's words: its tasks follow them like Claude's
+    // (needs you on a prompt, done once its turn is over). Its states reach the event log
+    // from the agent events' timer; an orchestrator's Qoder gates its delivery on them too.
+    if (agent !== 'claude') {
+      ctx.taskScheduler?.onClaudeTransition(sessionId, previous, status, claude);
+      ctx.orchestrator?.onClaudeTransition(sessionId, status);
+      if (status === 'busy') ctx.taskCommands?.messages.turnStarted(sessionId);
+      return;
+    }
     // The doctor's agent-events check: a hooked Claude seen at work must have sent events.
     if (status === 'busy') {
       claudeBusySeen.set(sessionId, Date.now());
@@ -641,6 +691,9 @@ export function setupAuth(ctx: AppContext) {
 
   // Initialize authentication service
   const authService = new AuthService();
+  // The server is who loads authenticate-pam: it says at its start when it does not load
+  // (the loader opens nothing by itself, authenticate-pam-loader.ts 2026-11-14).
+  pamStatus();
   logger.debug('Initialized authentication service');
 
   // Initialize v3 WebSocket hub (single-socket terminal transport)

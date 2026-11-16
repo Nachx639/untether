@@ -881,7 +881,7 @@ export class TaskRow extends LitElement {
     >
       ${agentAvatar({
         variant: 'side',
-        kind: task.agent === 'codex' ? 'codex' : 'claude',
+        kind: task.agent,
         status: side,
         provider: this.provider,
       })}
@@ -913,7 +913,7 @@ export class TaskRow extends LitElement {
     const stats = taskStatsLine(task);
     const agentLine = taskAgentLine(task);
     const caption = [task.branch, stats].filter(Boolean).join(' · ');
-    const kind = task.agent === 'codex' ? 'codex' : 'claude';
+    const kind = task.agent;
     const done = this.variant === 'done';
     // "Hechas" shows no buttons but "Deshacer" on a task merged lately.
     const allActions = done

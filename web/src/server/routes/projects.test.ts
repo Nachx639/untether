@@ -348,7 +348,7 @@ describe('project routes', () => {
           stopped.push(id);
           running.delete(id);
         },
-        claudeCommand: () => ['claude'],
+        agentCommand: () => ['claude'],
         resolveRepo: async (dir) => (dir.startsWith(repo) && fs.existsSync(repo) ? repo : null),
       });
       orch = express();

@@ -227,6 +227,10 @@ describe('task status (home board)', () => {
         })
       )
     ).toBe('Claude (sonnet) · rápido');
+    // 2026-11-14: a model its command carries (a security sweep's) is the one it asked for.
+    expect(taskAgentLine(task({ agent: 'claude', command: ['claude', '--model', 'sonnet'] }))).toBe(
+      'Claude (sonnet)'
+    );
     const changed = task({
       agent: 'claude',
       modelChoice: { tier: 'capable', by: 'default', reason: 'unsure' },

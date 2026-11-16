@@ -1,3 +1,4 @@
+import { AGENT_IDS, AGENTS, type AgentId } from '../../../shared/agents.js';
 import type { MessageKey } from '../../i18n/index.js';
 import type { ClaudeActivity } from '../../utils/claude-activity.js';
 
@@ -35,13 +36,28 @@ export interface ChatResponse {
   messagesVersion?: string;
 }
 
-export type ChatAgent = 'claude' | 'codex' | 'gemini';
+export type ChatAgent = AgentId;
 
 /** Each agent's name and wording in the chat view. */
 export const AGENT_TEXT: Record<
   ChatAgent,
   { name: string; empty: MessageKey; working: MessageKey; finished: MessageKey; stop: MessageKey }
 > = {
+  ...(Object.fromEntries(
+    AGENT_IDS.map((id) => [
+      id,
+      {
+        name: AGENTS[id].label,
+        empty: 'chat.empty',
+        working: 'chat.working',
+        finished: 'a11y.chat.finished',
+        stop: 'chat.stopClaude',
+      },
+    ])
+  ) as Record<
+    ChatAgent,
+    { name: string; empty: MessageKey; working: MessageKey; finished: MessageKey; stop: MessageKey }
+  >),
   claude: {
     name: 'Claude',
     empty: 'chat.empty',

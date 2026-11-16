@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.0.2] - 2026-11-16
+
+Qoder joins Claude Code and Codex, and the project's orchestrator runs on the agent you choose.
+
+### Added
+
+- **Qoder.** Qoder is an agent of Untether next to Claude Code and Codex, with its own icon: its sessions appear in the list, and it can be given tasks and review them.
+- **Orchestrator on any agent.** A project's orchestrator runs on Claude, Codex or Qoder, and moves to another one without stopping: in Settings, with «Change agent», or from the offer it makes when the agent reaches its usage limit.
+
+### Fixed
+
+- **Qoder tasks.** A Qoder task session no longer stops at the project's MCP approval dialog, and the end of a turn is not taken as the end of the task: a task is never closed or merged while its agent is still working.
+- **Tasks.** `ut task answer deny` rejects the dialog of any agent.
+- **Tasks.** A task can no longer install dependencies or rebuild native modules in the main checkout.
+- **Doctor.** No more false warnings for tasks that wait for other tasks, for a model put in a task's command, or for native modules that are right for the Node that loads them.
+- **Command guard.** A failed check of Codex is no longer remembered: it is asked again, on the session's own PATH.
+
 ## [1.0.1] - 2026-11-12
 
 Fixes to the first stable version.

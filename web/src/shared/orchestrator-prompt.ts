@@ -15,6 +15,7 @@
  * in other projects, ran pkill/curl/git, and put prompts in double quotes that broke on `$`.
  */
 import type { UserDecisionQuote } from './agent-messages.js';
+import { agentPlatformNote, type TaskAgent } from './agents.js';
 import { fitResultLines } from './task-result.js';
 import type { TaskBlockerKind } from './tasks.js';
 
@@ -52,6 +53,8 @@ export interface OrchestratorBriefInput {
   repoName: string;
   /** The configured external model providers; none/empty: the brief says nothing of them. */
   providers?: OrchestratorProvider[];
+  /** The orchestrator's agent: its brief carries the agent's platform note (Qoder's). */
+  agent?: TaskAgent;
 }
 
 /**
@@ -219,7 +222,9 @@ export function orchestratorPrompt({
   repoPath,
   repoName,
   providers,
+  agent,
 }: OrchestratorBriefInput): string {
+  const note = agent ? agentPlatformNote(agent) : '';
   return `You are the orchestrator of the project "${repoName}" (${repoPath}). The user gave you a goal; reach it by running coding agents as tasks, not by editing code yourself. The user is usually away from the computer and reads your messages on a phone.
 
 GOAL (from the user):
@@ -227,7 +232,7 @@ ${cleanGoal(goal)}
 
 ${manual(repoPath, providers)}
 
-Start now: split the goal and start the first tasks.`;
+Start now: split the goal and start the first tasks.${note ? `\n\n${note}` : ''}`;
 }
 
 export interface OrchestratorAdoptInput {
@@ -239,6 +244,8 @@ export interface OrchestratorAdoptInput {
   adoptedTasks: number;
   /** The configured external model providers (model-providers.ts); none: unchanged. */
   providers?: OrchestratorProvider[];
+  /** The orchestrator's agent: its brief carries the agent's platform note (Qoder's). */
+  agent?: TaskAgent;
 }
 
 /**
@@ -253,6 +260,7 @@ export function orchestratorAdoptPrompt({
   repoName,
   adoptedTasks,
   providers,
+  agent,
 }: OrchestratorAdoptInput): string {
   const text = cleanGoal(goal);
   const goalPart = text
@@ -261,6 +269,7 @@ export function orchestratorAdoptPrompt({
   const tasksPart = adoptedTasks
     ? `\n\n${adoptedTasks === 1 ? 'The open task you started earlier reports' : `The ${adoptedTasks} open tasks you started earlier report`} to you now: check them with \`ut task list --repo ${quoteArg(repoPath)}\`.`
     : '';
+  const note = agent ? agentPlatformNote(agent) : '';
   return `[untether] The user made you the orchestrator of the project "${repoName}". From now on, reach the goal by running coding agents as tasks, not by editing code yourself. The user is usually away from the computer and reads your messages on a phone.
 
 YOUR PROJECT is ${repoPath}. Your session may sit in another folder: every command must carry \`--repo ${quoteArg(repoPath)}\`.
@@ -270,7 +279,125 @@ ${goalPart}${tasksPart}
 
 ${manual(repoPath, providers)}
 
-Start now: tell the user in one short line that you are orchestrating, then split the remaining work into tasks.`;
+Start now: tell the user in one short line that you are orchestrating, then split the remaining work into tasks.${note ? `\n\n${note}` : ''}`;
+}
+
+/** How long a migration waits for the current orchestrator's written handoff (orchestrator.ts). */
+export const HANDOFF_WAIT_MS = 90_000;
+/** The most recent conversation turns Untether puts in a fallback handoff. */
+export const HANDOFF_TURNS = 12;
+/** The whole handoff (the agent's or Untether's) is cut at this many characters. */
+export const HANDOFF_MAX = 8000;
+
+/**
+ * What the current orchestrator is asked when it is migrated to another agent: a written
+ * handoff, given back through `ut project orchestrator handoff` (the migration waits for it a
+ * short while). Its literal conversation does not travel between agents; this handoff does.
+ */
+export function orchestratorHandoffRequest(options: { repoPath: string; toLabel: string }): string {
+  const repo = quoteArg(options.repoPath);
+  return `[untether] You are being migrated to another agent (${options.toLabel}); a new orchestrator takes over from you. Write its handoff now, in one turn, and give it back with:
+ut project orchestrator handoff --repo ${repo} - <<'EOF'
+<the handoff>
+EOF
+Include, as plain facts: the goal; the user's decisions that still hold; each open task and what you expect from it; commitments pending with the user and with other projects' orchestrators (their message ids); preferences of the user you learned. Your literal conversation does not travel — this handoff does, so write what the next orchestrator needs to carry on without asking the user again. Then end your turn. If you do not answer in time, Untether builds the handoff from what it knows.`;
+}
+
+/** The new orchestrator's brief on migration: the manual plus the handoff it takes over from. */
+export function orchestratorMigratePrompt(options: {
+  repoPath: string;
+  repoName: string;
+  handoff: string;
+  /** True when Untether built the handoff (the previous orchestrator did not answer). */
+  fromUntether?: boolean;
+  providers?: OrchestratorProvider[];
+  /** The new orchestrator's agent: its brief carries the agent's platform note (Qoder's). */
+  agent?: TaskAgent;
+}): string {
+  const { repoPath, repoName, handoff, fromUntether, providers, agent } = options;
+  const source = fromUntether
+    ? 'built by Untether from what it knows (the previous orchestrator did not answer)'
+    : 'written by the previous orchestrator';
+  const cut = handoff.length > HANDOFF_MAX ? `${handoff.slice(0, HANDOFF_MAX - 1)}…` : handoff;
+  const note = agent ? agentPlatformNote(agent) : '';
+  return `You are the orchestrator of the project "${repoName}" (${repoPath}), taking over from another agent. The user is usually away from the computer and reads your messages on a phone. Reach the goal by running coding agents as tasks, not by editing code yourself.
+
+HANDOFF (${source}; your conversation starts here — the previous orchestrator's literal conversation does not travel):
+${cleanGoal(cut)}
+
+${manual(repoPath, providers)}
+
+Start now: read the handoff, look at the open tasks (\`ut task list --repo ${quoteArg(repoPath)}\`), and carry on from where it left off. Do not ask the user again what the handoff already answers. If something is genuinely theirs to decide, ask one short question and end your turn; otherwise reply only ${ORCHESTRATOR_QUIET_MARKER}.${note ? `\n\n${note}` : ''}`;
+}
+
+/** A task as the fallback handoff names it (orchestrator.ts gathers these). */
+export interface HandoffTask {
+  id: string;
+  name: string;
+  state: string;
+  blocker?: string;
+  summary?: string;
+}
+/** A pending message between agents as the fallback handoff names it. */
+export interface HandoffMessage {
+  id: string;
+  from: string;
+  preview: string;
+}
+/** A conversation turn as the fallback handoff quotes it. */
+export interface HandoffTurn {
+  role: string;
+  text: string;
+}
+
+/**
+ * The handoff Untether builds when the current orchestrator does not answer a migration (out
+ * of quota, busy, gone): the open tasks and their state, the messages between agents still
+ * pending, and the last turns of the user and the orchestrator from the session. The facts
+ * only — never a guess at the goal.
+ */
+export function untetherHandoff(input: {
+  tasks: HandoffTask[];
+  messages: HandoffMessage[];
+  turns: HandoffTurn[];
+}): string {
+  const lines = [
+    "Untether built this handoff: the previous orchestrator did not answer. The goal is not recorded here — read the open tasks and the user's recent words below, and ask the user one short question only if nothing answers it.",
+  ];
+  lines.push('', 'OPEN TASKS:');
+  if (input.tasks.length) {
+    for (const task of input.tasks) {
+      const detail = [task.blocker, task.summary].filter(Boolean).join(' — ');
+      lines.push(
+        `- ${task.id.slice(0, 8)} "${oneLine(task.name)}": ${task.state}${detail ? ` (${oneLine(detail)})` : ''}`
+      );
+    }
+  } else {
+    lines.push('- none');
+  }
+  lines.push('', 'MESSAGES BETWEEN AGENTS STILL PENDING:');
+  if (input.messages.length) {
+    for (const message of input.messages) {
+      lines.push(`- ${message.id} from ${oneLine(message.from)}: ${oneLine(message.preview)}`);
+    }
+  } else {
+    lines.push('- none');
+  }
+  lines.push(
+    '',
+    `RECENT CONVERSATION (last ${input.turns.length} turns; "user" is the user, "assistant" the previous orchestrator):`
+  );
+  if (input.turns.length) {
+    for (const turn of input.turns) {
+      const text = oneLine(turn.text);
+      lines.push(
+        `${turn.role === 'user' ? 'user' : 'assistant'}: ${text.length > 600 ? `${text.slice(0, 599)}…` : text}`
+      );
+    }
+  } else {
+    lines.push('(none read)');
+  }
+  return lines.join('\n');
 }
 
 /** What happened to a task, as typed into its orchestrator. */

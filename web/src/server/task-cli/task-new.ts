@@ -1,4 +1,5 @@
 /** `ut task new`: a new task, or with --route the open task its prompt belongs to. */
+import { TASK_AGENTS } from '../../shared/agents.js';
 
 import { type TaskTouch, touchLine } from '../../shared/task-serial.js';
 import type { TaskRecord } from '../../shared/tasks.js';
@@ -6,7 +7,7 @@ import { commaList } from './flags.js';
 import { queuedNote, shortId } from './format-task-line.js';
 import { type CommandFamily, UsageError } from './types.js';
 
-const USAGE = `  ut task new [--repo DIR] [--agent claude|codex] [--model fast|capable|NAME|PROVIDER:MODEL]
+const USAGE = `  ut task new [--repo DIR] [--agent ${TASK_AGENTS.join('|')}] [--model fast|capable|NAME|PROVIDER:MODEL]
               [--title T] [--base BRANCH] [--parallel N] [--no-worktree] [--merge auto|ask]
               [--budget SPEC] [--after ID[,ID...]] [--zone NAME[,NAME...]] [--route] [--json]
               [--] "prompt" | -

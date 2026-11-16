@@ -4,6 +4,10 @@ import type { TaskResult } from '../task-result.js';
 
 /** What a task's record keeps of this (TaskRecord, tasks/record.ts). */
 export interface TaskReportFields {
+  /** Work resumed after completion: only a fresh `ut task done` releases the task. */
+  reportRequired?: boolean;
+  /** When the current completion was requested, before any asynchronous finishing work. */
+  completionRequestedAt?: number;
   /** What the agent said it did (`ut task done --summary`). */
   summary?: string;
   /** What the agent said about how it checked its work and how to undo it (`ut task done`). */
